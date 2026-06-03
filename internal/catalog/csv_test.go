@@ -110,6 +110,19 @@ func TestRoundTripBlankFill(t *testing.T) {
 	}
 }
 
+func TestReadCSVOldSchemaNoSkillCols(t *testing.T) {
+	// Header WITHOUT skill/wieldstyle (the pre-change schema), plus a stat column.
+	oldCSV := "id,name,slot,tier,itemlevel,armor_type,classes,weapon_min_dmg,weapon_max_dmg,delay,damage_rating,gamelink,strength\n" +
+		"1,Dirk,Primary,FABLED,70,,assassin,0,0,0,0,lnk,32\n"
+	got, err := ReadCSV(strings.NewReader(oldCSV))
+	require.NoError(t, err)
+	require.Len(t, got, 1)
+	require.Equal(t, "Dirk", string(got[0].DisplayName))
+	require.Equal(t, int64(1), got[0].ID)
+	require.Equal(t, 32.0, got[0].Modifiers["strength"].Value) // stat column read correctly, not misaligned
+	require.Equal(t, "", got[0].TypeInfo.Skill)                // absent column -> empty, no panic/misread
+}
+
 func TestRoundTripWeaponSkillWieldstyle(t *testing.T) {
 	items := []census.Item{
 		{ID: 1, DisplayName: "Dirk", Slots: []census.Slot{{Name: "Primary"}},

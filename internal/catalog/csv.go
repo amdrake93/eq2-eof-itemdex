@@ -107,41 +107,58 @@ func ReadCSV(r io.Reader) ([]census.Item, error) {
 	for i, h := range header {
 		idx[h] = i
 	}
-	statCols := header[len(fixedCols):]
+	fixedSet := make(map[string]struct{}, len(fixedCols))
+	for _, c := range fixedCols {
+		fixedSet[c] = struct{}{}
+	}
+	var statCols []string
+	for _, h := range header {
+		if _, ok := fixedSet[h]; !ok {
+			statCols = append(statCols, h)
+		}
+	}
+
+	get := func(row []string, name string) string {
+		if i, ok := idx[name]; ok && i < len(row) {
+			return row[i]
+		}
+		return ""
+	}
+
 	var items []census.Item
 	for _, row := range rows[1:] {
-		id, _ := strconv.ParseInt(row[idx["id"]], 10, 64) //nolint:errcheck
-		lvl, _ := strconv.Atoi(row[idx["itemlevel"]])     //nolint:errcheck
+		id, _ := strconv.ParseInt(get(row, "id"), 10, 64) //nolint:errcheck
+		lvl, _ := strconv.Atoi(get(row, "itemlevel"))     //nolint:errcheck
 		it := census.Item{
 			ID:          id,
-			DisplayName: census.FlexString(row[idx["name"]]),
-			Tier:        row[idx["tier"]],
+			DisplayName: census.FlexString(get(row, "name")),
+			Tier:        get(row, "tier"),
 			ItemLevel:   lvl,
-			GameLink:    row[idx["gamelink"]],
+			GameLink:    get(row, "gamelink"),
 			TypeInfo: census.TypeInfo{
-				SkillType:     SkillTypeFromArmorType(row[idx["armor_type"]]),
-				MinBaseDamage: atof(row[idx["weapon_min_dmg"]]),
-				MaxBaseDamage: atof(row[idx["weapon_max_dmg"]]),
-				Delay:         atof(row[idx["delay"]]),
-				DamageRating:  atof(row[idx["damage_rating"]]),
-				Skill:         row[idx["skill"]],
-				WieldStyle:    row[idx["wieldstyle"]],
+				SkillType:     SkillTypeFromArmorType(get(row, "armor_type")),
+				MinBaseDamage: atof(get(row, "weapon_min_dmg")),
+				MaxBaseDamage: atof(get(row, "weapon_max_dmg")),
+				Delay:         atof(get(row, "delay")),
+				DamageRating:  atof(get(row, "damage_rating")),
+				Skill:         get(row, "skill"),
+				WieldStyle:    get(row, "wieldstyle"),
 				Classes:       map[string]census.ClassReq{},
 			},
 			Modifiers: map[string]census.Modifier{},
 		}
-		for _, name := range strings.Split(row[idx["slot"]], "|") {
+		for _, name := range strings.Split(get(row, "slot"), "|") {
 			if name != "" {
 				it.Slots = append(it.Slots, census.Slot{Name: name})
 			}
 		}
-		for _, c := range strings.Split(row[idx["classes"]], "|") {
+		for _, c := range strings.Split(get(row, "classes"), "|") {
 			if c != "" {
 				it.TypeInfo.Classes[c] = census.ClassReq{}
 			}
 		}
 		for _, k := range statCols {
-			if cell := row[idx[k]]; cell != "" {
+			if cell := get(row, k); cell != "" {
 				it.Modifiers[k] = census.Modifier{Value: atof(cell)}
 			}
 		}
