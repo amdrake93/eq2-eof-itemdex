@@ -29,7 +29,7 @@ func TestLoadFromCacheWhenPresent(t *testing.T) {
 	got, err := LoadCache(dir)
 	require.NoError(t, err)
 	require.Len(t, got, 1)
-	require.Equal(t, "Sword", got[0].DisplayName)
+	require.Equal(t, "Sword", string(got[0].DisplayName))
 }
 
 func TestCacheExists(t *testing.T) {

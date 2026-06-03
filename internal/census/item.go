@@ -5,21 +5,40 @@ import (
 	"fmt"
 )
 
+// FlexString unmarshals a JSON value that the Census API sometimes emits as a
+// string and sometimes as a bare number (e.g. displayname on unnamed items).
+// Numbers are converted to their decimal string representation.
+type FlexString string
+
+func (f *FlexString) UnmarshalJSON(b []byte) error {
+	if len(b) > 0 && b[0] == '"' {
+		var s string
+		if err := json.Unmarshal(b, &s); err != nil {
+			return err
+		}
+		*f = FlexString(s)
+		return nil
+	}
+	// Treat raw JSON number (or any other scalar) as its literal string.
+	*f = FlexString(b)
+	return nil
+}
+
 type Slot struct {
 	ID   int    `json:"id"`
 	Name string `json:"name"`
 }
 
 type Modifier struct {
-	DisplayName string  `json:"displayname"`
-	Type        string  `json:"type"`
-	Value       float64 `json:"value"`
+	DisplayName FlexString `json:"displayname"`
+	Type        string     `json:"type"`
+	Value       float64    `json:"value"`
 }
 
 type ClassReq struct {
-	DisplayName string `json:"displayname"`
-	ID          int    `json:"id"`
-	Level       int    `json:"level"`
+	DisplayName FlexString `json:"displayname"`
+	ID          int        `json:"id"`
+	Level       int        `json:"level"`
 }
 
 type TypeInfo struct {
@@ -50,7 +69,7 @@ type Extended struct {
 
 type Item struct {
 	ID          int64               `json:"id"`
-	DisplayName string              `json:"displayname"`
+	DisplayName FlexString          `json:"displayname"`
 	Tier        string              `json:"tier"`
 	ItemLevel   int                 `json:"itemlevel"`
 	GameLink    string              `json:"gamelink"`

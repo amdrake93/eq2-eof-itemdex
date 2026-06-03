@@ -24,13 +24,14 @@ func New(sid string) *Client {
 	return &Client{
 		BaseURL: "https://census.daybreakgames.com",
 		SID:     sid,
-		HTTP:    &http.Client{Timeout: 30 * time.Second},
+		HTTP:    &http.Client{Timeout: 60 * time.Second},
 		Limiter: rate.NewLimiter(rate.Every(6*time.Second), 1),
 		Backoff: 30 * time.Second,
 	}
 }
 
-// Get performs GET {BaseURL}/{SID}/{verb}/eq2/{collection}/?{query}; one 429 retry.
+// Get performs GET {BaseURL}/{SID}/{verb}/eq2/{collection}/?{query}.
+// It retries once on HTTP 429 or on a network timeout, backing off before retry.
 func (c *Client) Get(ctx context.Context, verb, collection, query string) ([]byte, error) {
 	url := fmt.Sprintf("%s/%s/%s/eq2/%s/?%s", c.BaseURL, c.SID, verb, collection, query)
 	for attempt := 0; attempt < 2; attempt++ {
@@ -43,7 +44,12 @@ func (c *Client) Get(ctx context.Context, verb, collection, query string) ([]byt
 		}
 		resp, err := c.HTTP.Do(req)
 		if err != nil {
-			return nil, err
+			// Network-level error (timeout, connection reset, etc.) — backoff and retry.
+			if attempt == 0 {
+				time.Sleep(c.Backoff)
+				continue
+			}
+			return nil, fmt.Errorf("census %s: %w", collection, err)
 		}
 		body, readErr := io.ReadAll(resp.Body)
 		if closeErr := resp.Body.Close(); closeErr != nil && readErr == nil {

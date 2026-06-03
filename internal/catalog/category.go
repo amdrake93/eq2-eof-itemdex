@@ -52,8 +52,25 @@ var armorSkillType = map[string]string{
 	"heavyarmor":     "Plate",
 }
 
+// armorTypeToSkillType is the reverse of armorSkillType, used when restoring
+// items from the CSV cache so that SkillType (needed for re-categorisation) is
+// preserved through round-trips.
+var armorTypeToSkillType = map[string]string{
+	"Cloth":   "verylightarmor",
+	"Leather": "lightarmor",
+	"Chain":   "mediumarmor",
+	"Plate":   "heavyarmor",
+}
+
 // ArmorType maps a Census typeinfo.skilltype to Cloth/Leather/Chain/Plate.
 // Returns "" for non-armor skill types.
 func ArmorType(skillType string) string {
 	return armorSkillType[strings.ToLower(skillType)]
+}
+
+// SkillTypeFromArmorType is the inverse of ArmorType; it reconstructs the
+// Census skilltype string from a stored armor_type label (used during CSV
+// cache load-back to preserve SkillType through round-trips).
+func SkillTypeFromArmorType(armorType string) string {
+	return armorTypeToSkillType[armorType]
 }

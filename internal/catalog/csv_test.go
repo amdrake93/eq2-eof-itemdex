@@ -59,7 +59,7 @@ func TestRoundTrip(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ReadCSV: %v", err)
 	}
-	if len(got) != 1 || got[0].DisplayName != "Sword" {
+	if len(got) != 1 || string(got[0].DisplayName) != "Sword" {
 		t.Fatalf("round-trip mismatch: %+v", got)
 	}
 	if got[0].Modifiers["strength"].Value != 40 {

@@ -65,7 +65,7 @@ func WriteCSV(w io.Writer, items []census.Item) error {
 	for _, it := range items {
 		row := []string{
 			strconv.FormatInt(it.ID, 10),
-			it.DisplayName,
+			string(it.DisplayName),
 			slotNames(it),
 			it.Tier,
 			strconv.Itoa(it.ItemLevel),
@@ -112,11 +112,12 @@ func ReadCSV(r io.Reader) ([]census.Item, error) {
 		lvl, _ := strconv.Atoi(row[idx["itemlevel"]])     //nolint:errcheck
 		it := census.Item{
 			ID:          id,
-			DisplayName: row[idx["name"]],
+			DisplayName: census.FlexString(row[idx["name"]]),
 			Tier:        row[idx["tier"]],
 			ItemLevel:   lvl,
 			GameLink:    row[idx["gamelink"]],
 			TypeInfo: census.TypeInfo{
+				SkillType:     SkillTypeFromArmorType(row[idx["armor_type"]]),
 				MinBaseDamage: atof(row[idx["weapon_min_dmg"]]),
 				MaxBaseDamage: atof(row[idx["weapon_max_dmg"]]),
 				Delay:         atof(row[idx["delay"]]),

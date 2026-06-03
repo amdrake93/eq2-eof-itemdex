@@ -23,7 +23,7 @@ func TestDecodeItems(t *testing.T) {
 	require.Len(t, items, 1)
 
 	it := items[0]
-	require.Equal(t, "Soulfire Hammer", it.DisplayName)
+	require.Equal(t, "Soulfire Hammer", string(it.DisplayName))
 	require.Equal(t, 70, it.ItemLevel)
 	require.Equal(t, "Primary", it.Slots[0].Name)
 	require.Contains(t, it.TypeInfo.Classes, "assassin")
