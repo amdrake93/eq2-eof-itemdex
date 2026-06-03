@@ -55,8 +55,11 @@ func (e *PartialError) Error() string {
 
 func (e *PartialError) Unwrap() error { return e.Cause }
 
-// isQuotaError reports whether a Census error response is the s:example quota
-// message rather than a real API error.
+// isQuotaError reports whether an error is the s:example session-quota cutoff
+// rather than a real API failure. When the quota is exhausted, Census returns
+// {"error":"Missing Service ID. A valid Service ID is required for continued
+// api use..."}, which DecodeItems surfaces as a "census error: Missing Service
+// ID" message — so we match on that sentinel substring.
 func isQuotaError(err error) bool {
 	return err != nil && strings.Contains(err.Error(), "Missing Service ID")
 }

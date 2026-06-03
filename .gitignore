@@ -16,3 +16,6 @@ go.work.sum
 # Generated CSVs are intentionally tracked (shareable catalog + cache).
 # Uncomment to treat them as local-only instead:
 # /data/*.csv
+
+# Resume-state file from interrupted multi-session pulls — never commit
+/data/.census_next_offset
