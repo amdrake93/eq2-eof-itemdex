@@ -1,0 +1,18 @@
+# Binaries
+/bin/
+*.exe
+*.out
+*.test
+
+# Go
+/vendor/
+go.work
+go.work.sum
+
+# Env / OS
+.env
+.DS_Store
+
+# Generated CSVs are intentionally tracked (shareable catalog + cache).
+# Uncomment to treat them as local-only instead:
+# /data/*.csv
