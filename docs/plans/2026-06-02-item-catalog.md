@@ -90,20 +90,20 @@ In tests, disable throttling with `c.Limiter = rate.NewLimiter(rate.Inf, 1)` (in
 
 ---
 
-## Go Patterns Used Here (the *why*, for learning)
+## Go-Specific Notes (for learning)
 
-These are the idioms this plan leans on. The **plan** explains them; the **code** stays comment-free — in Go, clear names and small functions are expected to carry the meaning, and reviewers treat heavy comments as a smell.
+Assuming strong general SWE — these cover only what's *particular to Go* (language mechanics, toolchain, ecosystem), not generic best practices. Code stays comment-free; the plan carries the why.
 
-- **`cmd/` + `internal/` layout.** Entrypoints live in `cmd/<binary>/`; everything else in `internal/`. The Go toolchain *enforces* that `internal/` packages can't be imported from outside this module — free encapsulation, so we can refactor internals freely. This is the de-facto standard layout.
-- **Dependency injection for testability.** `census.Client` exposes `BaseURL`, `HTTP`, and `Limiter` as fields, so tests point `BaseURL` at an `httptest.Server` and set `Limiter` to `rate.Inf`. Result: unit tests hit no real network, run in milliseconds, and are deterministic. The rule of thumb is "make the thing you want to swap a field or a parameter."
-- **`context.Context` as the first argument.** Every call that does I/O takes `ctx context.Context` first. It carries cancellation/deadlines down the call tree — e.g. `rate.Limiter.Wait(ctx)` returns early if the context is cancelled. This is universal in Go networking code.
-- **Error wrapping with `%w`.** Return `fmt.Errorf("context: %w", err)` rather than swallowing or string-concatenating errors. `%w` preserves the chain so callers can use `errors.Is`/`errors.As`. We also surface Census's in-body error envelopes (`errorCode`) as real Go errors instead of silently returning empty data.
-- **Table-driven tests.** Tests like the classifier use a slice of `{name, input, want}` cases in one loop. It's the canonical Go test style: adding a case is one line, and each can become a subtest via `t.Run`. You'll see it everywhere in real Go.
-- **`testify` `require` vs `assert`.** `require.*` fails *and stops* the test (use it for preconditions — if decode fails, later asserts are meaningless). `assert.*` records a failure but *continues* (use it when you want to see all mismatches at once). Picking the right one is a small but real skill.
-- **Accept interfaces, return structs.** `WriteCSV(w io.Writer, …)` takes the `io.Writer` interface, so production passes an `*os.File` and tests pass a `*bytes.Buffer` — same code, no temp files. Functions return concrete types (`*Client`) so callers get the full API.
-- **`rate.Limiter` over sleep.** A token-bucket limiter (`rate.Every(6s)`, burst 1) is context-aware and composes correctly under concurrency; a hand-rolled `time.Sleep` doesn't. Reaching for the standard `x/` package here is the "don't reinvent it" lesson.
-- **`log/slog` for progress.** Structured key/value logs (`slog.Info("fetched page", "start", start)`) are levelled and machine-parseable — the modern stdlib standard, preferred over `fmt.Printf` for anything operational.
-- **Exported vs unexported = capitalization.** `Item` is public, `itemListResponse` is private to the package. Visibility is controlled purely by the first letter — keep the surface area small by exporting only what callers need.
+- **`internal/` is compiler-enforced.** Packages under `internal/` *cannot* be imported from outside the module — the toolchain guarantees the encapsulation, it's not just a naming convention.
+- **Visibility = capitalization.** `Item` is exported, `itemListResponse` is package-private. The first letter decides it; there's no `public`/`private` keyword, so you control API surface purely by casing.
+- **Zero values are load-bearing.** One `TypeInfo` struct holds both armor and weapon fields; for an armor item the weapon floats are simply `0` (Go zero-initializes every field). That's *why* a single flat struct decodes both JSON shapes — no optional pointers or separate types needed.
+- **`context.Context` goes first, always.** Threading `ctx` lets `rate.Limiter.Wait(ctx)` and `http.NewRequestWithContext` honor cancellation/deadlines; linters flag a `ctx` that isn't the first param.
+- **`%w` is the wrapping verb.** `fmt.Errorf("…: %w", err)` keeps the underlying error matchable via `errors.Is`/`errors.As`; `%v` would flatten it to a string. (The Go *mechanism*, not the concept.)
+- **Table-driven tests + `t.Run`.** The idiomatic Go test shape: a `[]struct{…}` of cases in one loop, each an optional named subtest. `go test -run TestX/case_name` then targets a single case.
+- **`require` vs `assert` (testify).** stdlib has no assertion lib, so testify is the ecosystem default. `require.*` → `t.FailNow` (stops the test); `assert.*` → `t.Fail` (continues). Use `require` when a later line would panic on the failure.
+- **"Accept interfaces, return structs."** A Go aphorism in action: `WriteCSV(w io.Writer, …)` accepts the narrow `io.Writer` (so `*os.File` and `*bytes.Buffer` both work), while constructors return concrete `*Client`. Don't pre-abstract returns.
+- **`golang.org/x/…` is "almost-stdlib."** Go-team-maintained; reaching for `x/time/rate`'s token-bucket `Limiter` is the idiomatic call over hand-rolling a ticker.
+- **`gofmt` ends formatting debates.** Layout isn't a style choice in Go — `gofmt`/`golangci-lint` decide it and CI enforces it. Never hand-format.
 
 ---
 
