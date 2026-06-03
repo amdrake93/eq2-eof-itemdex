@@ -86,6 +86,7 @@ The DB is both an analysis engine and a shareable artifact.
 ## 7. Outputs
 
 - **`bis-report.md`** — for each baseline (solo, raid), a per-slot listing of the **top 3 Fabled + top 3 Legendary** items (name, tier, DPS score, key stat line, gamelink), plus the **derived stat-weight table** and the **assumptions/constants block**. Rationale: Legendary ≈ dungeon gear, Fabled ≈ raid gear, so the split gives non-raid options alongside raid options — and surfaces the cases where a Legendary out-scores a Fabled (a flat top-N would hide that). Any **Mythical** in a slot (e.g. the Soulfire weapon) is shown at the top as the ceiling. Showing multiple per tier also supports the set-bonus overlay (§8).
+- **Every ranked item shows a score *breakdown*** — its top contributing terms as `stat × weight` (e.g. `crit 1.8 × W_crit = …`, `MA 4.0 × W_ma = …`), not just the total. This makes each ranking **explainable**, which is the point of §9: an expert reading the report can see *why* an item placed where it did and immediately spot a wrong weight/constant.
 - **`bis.db`** — the scored SQLite DB.
 
 ---
@@ -102,13 +103,23 @@ This requires one model capability: a **locked-items input** — force specific 
 
 ---
 
-## 9. Validation (validate the engine, not the answer)
+## 9. Validation
 
-No pre-assumed "item X ranks top" anchors — the rankings are the result to discover, and a wrong pre-assumption (cf. the "Grinning Dirk" mis-step in Plan 1) defeats the point. Instead:
+Two layers, with different jobs. The unit tests prove the code computes the equations correctly; **the expert review proves the *model* is right** — and the second is the one that matters most, because years of play experience can judge a BiS list at a glance.
 
-- **Provable mechanics tests:** the CA `effect_list` parser (known CA text → expected damage numbers); the DPS equations (hand-computed input → expected output); weight derivation + scoring on synthetic items with known stats.
-- **Hand-calc spot-check:** recompute a couple of *real* items' DPS by hand and confirm the model matches — verifying the math, not which item wins.
-- The **solo-vs-raid diff** is reported as an output and sanity-read, not asserted in advance.
+**Primary — expert review of explainable output (the main validation path).**
+The report is built to be eyeballed against experience. The per-item **score breakdown** (§7) makes every ranking transparent, so a result that contradicts domain knowledge points *directly* at the culprit — a mis-weighted stat, a wrong constant, or a bad translation. The loop:
+> generate report → expert reviews against experience → flags any ranking that "feels wrong" → the breakdown shows which stat/weight caused it → fix that input/constant → re-run.
+This is iterative and human-in-the-loop by design. The model is "validated" when its rankings stop surprising the expert (and the surprises that remain are genuine insights, not bugs).
+
+**Secondary — provable mechanics tests (prove the math, not the answer).**
+No pre-assumed "item X ranks top" anchors — that's the "Grinning Dirk" mis-step from Plan 1. Instead:
+- CA `effect_list` parser (known CA text → expected damage numbers).
+- DPS equations (hand-computed input → expected output).
+- Weight derivation + scoring on synthetic items with known stats.
+- Hand-calc spot-check: recompute a couple of *real* items' DPS by hand, confirm the model matches.
+
+The **solo-vs-raid diff** is reported as an output and sanity-read — never asserted in advance.
 
 ---
 
