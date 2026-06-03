@@ -1,0 +1,28 @@
+package model
+
+import (
+	"testing"
+
+	"github.com/amdrake93/eq2-eof-itemdex/internal/spell"
+	"github.com/stretchr/testify/require"
+)
+
+func approx(t *testing.T, want, got float64) {
+	t.Helper()
+	require.InDelta(t, want, got, 0.01)
+}
+
+func TestAutoDPS(t *testing.T) {
+	w := Weapon{AvgDamage: 100, DelaySecs: 2.0}
+	approx(t, 50.0, AutoDPS(StatBlock{}, w))                // 100/2, all factors 1
+	approx(t, 100.0, AutoDPS(StatBlock{Haste: 100}, w))     // effDelay 1.0
+	approx(t, 75.0, AutoDPS(StatBlock{MultiAttack: 50}, w)) // ×1.5
+	approx(t, 65.0, AutoDPS(StatBlock{CritChance: 100}, w)) // ×1.30
+}
+
+func TestCADPS(t *testing.T) {
+	ca := spell.CombatArt{Name: "X", MinDamage: 800, MaxDamage: 1200, RecastSecs: 10}
+	approx(t, 100.0, CADPS(StatBlock{}, []spell.CombatArt{ca}))            // 1000/10
+	approx(t, 110.0, CADPS(StatBlock{Potency: 10}, []spell.CombatArt{ca})) // base ×1.1
+	approx(t, 200.0, CADPS(StatBlock{Reuse: 100}, []spell.CombatArt{ca}))  // recast halved
+}
