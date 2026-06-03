@@ -46,6 +46,8 @@ type TypeInfo struct {
 	SkillType     string              `json:"skilltype"`
 	KnowledgeDesc string              `json:"knowledgedesc"`
 	Classes       map[string]ClassReq `json:"classes"`
+	Skill         string              `json:"skill"`      // weapon skill: piercing/slashing/crushing/ranged…
+	WieldStyle    string              `json:"wieldstyle"` // One-Handed / Two-Handed
 	DamageRating  float64             `json:"damagerating"`
 	Delay         float64             `json:"delay"`
 	MinBaseDamage float64             `json:"minbasedamage"`

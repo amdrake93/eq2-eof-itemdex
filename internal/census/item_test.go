@@ -42,3 +42,15 @@ func TestDecodeItemsError(t *testing.T) {
 	_, err := DecodeItems([]byte(`{"errorCode":"SERVER_ERROR"}`))
 	require.Error(t, err, "expected error on SERVER_ERROR payload")
 }
+
+func TestDecodeWeaponSkillAndWieldStyle(t *testing.T) {
+	body := `{"item_list":[{
+	  "id":701979186,"displayname":"Grinning Dirk of Horror","type":"Weapon",
+	  "typeinfo":{"name":"weapon","skill":"piercing","wieldstyle":"One-Handed","delay":4.0,"damagerating":72.1}
+	}],"returned":1}`
+	items, err := DecodeItems([]byte(body))
+	require.NoError(t, err)
+	require.Len(t, items, 1)
+	require.Equal(t, "piercing", items[0].TypeInfo.Skill)
+	require.Equal(t, "One-Handed", items[0].TypeInfo.WieldStyle)
+}
