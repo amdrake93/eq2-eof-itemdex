@@ -279,7 +279,8 @@ A special-interest list cutting across **all categories and all classes**: every
 
 Design is language-neutral; chosen implementation is **Go** (learning goal, mirrors a work webapp migration).
 
-- HTTP: stdlib `net/http`; a small throttled client (token-bucket / `time.Ticker` at ≤10/min) with 429 backoff.
+- **Dependencies (lean idiomatic, not stdlib-only):** `golang.org/x/time/rate` (throttling), `github.com/stretchr/testify` (tests), `log/slog` (logging); tooling `golangci-lint` + `Makefile`. Everything else stdlib.
+- HTTP: stdlib `net/http` with a `rate.Limiter` (10 req/min) and a 429 backoff retry.
 - JSON: `encoding/json` with typed structs for the item / spell / world_list shapes; keep a permissive decoder for the variable `typeinfo`/`modifiers`/`flags` sub-objects (`map[string]json.RawMessage` or targeted structs).
 - Parsing: `regexp` for `effect_list` damage extraction.
 - Paging: bounded goroutine concurrency is unnecessary given the 10/min cap — sequential paging with the throttle is simplest and correct.

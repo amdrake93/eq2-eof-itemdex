@@ -6,9 +6,87 @@
 
 **Architecture:** A throttled stdlib HTTP client pages the `item` collection (server-side pruned to Varsoon items under the level-70 cap), an EoF classifier keeps items whose Varsoon first-discovery falls in the unlock window, and a CSV writer emits wide-format category files. A data-source layer reads existing CSVs by default and only re-queries Census on `--refresh`.
 
-**Tech Stack:** Go 1.26, stdlib only (`net/http`, `encoding/json`, `regexp`, `encoding/csv`, `testing`, `net/http/httptest`). Module `github.com/amdrake93/eq2-eof-itemdex`.
+**Tech Stack:** Go 1.26. Lean idiomatic deps: `golang.org/x/time/rate` (throttling), `github.com/stretchr/testify` (tests), `log/slog` (logging). Tooling: `golangci-lint` + `Makefile`. stdlib for `net/http`, `encoding/json`, `encoding/csv`, `flag`, `regexp`. Module `github.com/amdrake93/eq2-eof-itemdex`.
 
 This is **Plan 1 of 2**. Plan 2 (Assassin DPS model & BiS) builds on the item types and classifier defined here.
+
+---
+
+## Conventions & Dependencies (read first)
+
+Lean idiomatic Go stack (not stdlib-only). Installed/added in Task 0.
+
+- **Deps:** `golang.org/x/time/rate` (throttling), `github.com/stretchr/testify` (test assertions). **Tooling:** `golangci-lint` + `Makefile`. **Logging:** `log/slog` (stdlib). Everything else stdlib.
+- **Testing convention:** every test uses testify — `require.*` for fatal checks, `assert.*` for non-fatal. Where a snippet below shows `if got != want { t.Fatalf(...) }`, write `require.Equal(t, want, got)` / `require.NoError(t, err)` / `require.Contains(t, s, sub)`.
+- **Progress logging:** the pull (Tasks 7–9) logs via `slog` (e.g. `slog.Info("fetched page", "start", start, "kept", len(out))`), not `fmt.Printf`.
+
+**Canonical Census client — supersedes the hand-rolled throttle in Task 1 Step 3.** Throttle via `x/time/rate`, not mutex+sleep:
+
+```go
+package census
+
+import (
+	"context"
+	"fmt"
+	"io"
+	"net/http"
+	"time"
+
+	"golang.org/x/time/rate"
+)
+
+type Client struct {
+	BaseURL string
+	SID     string
+	HTTP    *http.Client
+	Limiter *rate.Limiter
+	Backoff time.Duration
+}
+
+func New(sid string) *Client {
+	return &Client{
+		BaseURL: "https://census.daybreakgames.com",
+		SID:     sid,
+		HTTP:    &http.Client{Timeout: 30 * time.Second},
+		Limiter: rate.NewLimiter(rate.Every(6*time.Second), 1), // 10 req/min
+		Backoff: 30 * time.Second,
+	}
+}
+
+// Get performs GET {BaseURL}/{SID}/{verb}/eq2/{collection}/?{query}; one 429 retry.
+func (c *Client) Get(ctx context.Context, verb, collection, query string) ([]byte, error) {
+	url := fmt.Sprintf("%s/%s/%s/eq2/%s/?%s", c.BaseURL, c.SID, verb, collection, query)
+	for attempt := 0; attempt < 2; attempt++ {
+		if err := c.Limiter.Wait(ctx); err != nil {
+			return nil, err
+		}
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+		if err != nil {
+			return nil, err
+		}
+		resp, err := c.HTTP.Do(req)
+		if err != nil {
+			return nil, err
+		}
+		body, err := io.ReadAll(resp.Body)
+		resp.Body.Close()
+		if err != nil {
+			return nil, err
+		}
+		if resp.StatusCode == http.StatusTooManyRequests {
+			time.Sleep(c.Backoff)
+			continue
+		}
+		if resp.StatusCode != http.StatusOK {
+			return nil, fmt.Errorf("census %s: status %d: %s", collection, resp.StatusCode, body)
+		}
+		return body, nil
+	}
+	return nil, fmt.Errorf("census %s: rate limited after retry", collection)
+}
+```
+
+In tests, disable throttling with `c.Limiter = rate.NewLimiter(rate.Inf, 1)` (instead of the `c.MinInterval = 0` shown in Task 1's snippet).
 
 ---
 
@@ -30,31 +108,72 @@ Test files sit beside each (`*_test.go`).
 
 ---
 
-## Task 0: Module init
+## Task 0: Module init, dependencies & tooling
 
 **Files:**
-- Create: `go.mod`
+- Create: `go.mod`, `.golangci.yml`, `Makefile`
 
 - [ ] **Step 1: Initialize the module**
 
 Run: `cd ~/repos/eq2-eof-itemdex && go mod init github.com/amdrake93/eq2-eof-itemdex`
-Expected: creates `go.mod` containing `module github.com/amdrake93/eq2-eof-itemdex` and `go 1.26`.
+Expected: creates `go.mod` with `module github.com/amdrake93/eq2-eof-itemdex` and `go 1.26`.
 
-- [ ] **Step 2: Verify it builds (empty)**
+- [ ] **Step 2: Add dependencies**
 
-Run: `go build ./...`
-Expected: no output, exit 0.
+Run: `go get golang.org/x/time/rate github.com/stretchr/testify`
+Expected: both appear in `go.mod` / `go.sum`. (`make tidy` after each task prunes to actual imports.)
 
-- [ ] **Step 3: Commit**
+- [ ] **Step 3: Install the linter**
+
+Run: `brew install golangci-lint` then `golangci-lint version`
+Expected: prints a version (already have `gh`/`go` from earlier setup).
+
+- [ ] **Step 4: Create `.golangci.yml`**
+
+```yaml
+run:
+  timeout: 2m
+linters:
+  enable:
+    - gofmt
+    - govet
+    - staticcheck
+    - errcheck
+    - ineffassign
+    - unused
+```
+
+- [ ] **Step 5: Create `Makefile`**
+
+```makefile
+.PHONY: test lint build tidy
+test:
+	go test ./...
+lint:
+	golangci-lint run
+build:
+	go build ./...
+tidy:
+	go mod tidy
+```
+
+- [ ] **Step 6: Verify build + lint**
+
+Run: `make build && make lint`
+Expected: exit 0 (no Go files yet is fine).
+
+- [ ] **Step 7: Commit**
 
 ```bash
-git add go.mod
-git commit -m "chore: go module init"
+git add go.mod go.sum .golangci.yml Makefile
+git commit -m "chore: module, deps (x/time/rate, testify), golangci-lint + Makefile"
 ```
 
 ---
 
 ## Task 1: Throttled Census client
+
+> Use the **canonical client** from *Conventions & Dependencies* above — it throttles via `x/time/rate`. The `MinInterval` version in the snippets below is superseded: keep the test logic, but set `c.Limiter = rate.NewLimiter(rate.Inf, 1)` instead of `c.MinInterval = 0`, and prefer testify assertions.
 
 **Files:**
 - Create: `internal/census/client.go`
