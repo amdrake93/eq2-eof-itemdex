@@ -1488,7 +1488,7 @@ git commit -m "feat: itemdex CLI with csv-cache-first loading"
 
 ---
 
-## Task 10: README usage + data decision
+## Task 10: README usage + publish catalog CSVs
 
 **Files:**
 - Modify: `README.md`
@@ -1505,16 +1505,18 @@ go run ./cmd/itemdex --refresh  # force a fresh Census pull, rewriting data/*.cs
 
 Outputs `data/weapons.csv`, `data/armor.csv`, `data/jewelry-charms.csv`, and `data/maxlife.csv`
 (every EoF item with Max Health, any class). Stats are exactly as Census reports them — no translations.
+
+The latest catalogs are committed in `data/` — clone or pull the repo to use them directly, no run required.
 ```
 
-- [ ] **Step 2: Decide whether to track `data/*.csv`**
+- [ ] **Step 2: Confirm `data/*.csv` is tracked**
 
-If sharing the catalogs via GitHub (recommended — that's the point), `git add data/*.csv`. Otherwise uncomment the `/data/*.csv` line in `.gitignore`.
+The CSVs are committed so people can clone/pull the repo for the data directly (no Go toolchain needed). Verify `.gitignore` does **not** exclude them — the `# /data/*.csv` line must stay commented out.
 
 - [ ] **Step 3: Commit + push**
 
 ```bash
-git add README.md data/  # include data/ only if sharing the catalogs
+git add README.md data/
 git commit -m "docs: usage; publish EoF item catalog CSVs"
 git push
 ```
