@@ -69,3 +69,42 @@ func TestRoundTrip(t *testing.T) {
 		t.Fatalf("lost class eligibility: %+v", got[0].TypeInfo.Classes)
 	}
 }
+
+// TestRoundTripBlankFill exercises the union-column blank-fill path: two items
+// with disjoint stats must round-trip so each item keeps only its own stat —
+// a blank cell must produce an absent modifier, not a zero-valued entry.
+func TestRoundTripBlankFill(t *testing.T) {
+	items := []census.Item{
+		{ID: 1, DisplayName: "Sword",
+			TypeInfo:  census.TypeInfo{Classes: map[string]census.ClassReq{}},
+			Modifiers: map[string]census.Modifier{"strength": {Value: 40}},
+		},
+		{ID: 2, DisplayName: "Cap",
+			TypeInfo:  census.TypeInfo{Classes: map[string]census.ClassReq{}},
+			Modifiers: map[string]census.Modifier{"stamina": {Value: 55}},
+		},
+	}
+	var buf bytes.Buffer
+	if err := WriteCSV(&buf, items); err != nil {
+		t.Fatalf("WriteCSV: %v", err)
+	}
+	got, err := ReadCSV(&buf)
+	if err != nil {
+		t.Fatalf("ReadCSV: %v", err)
+	}
+	if len(got) != 2 {
+		t.Fatalf("want 2 items, got %d", len(got))
+	}
+	if got[0].Modifiers["strength"].Value != 40 {
+		t.Errorf("item 0 lost strength: %+v", got[0].Modifiers)
+	}
+	if _, ok := got[0].Modifiers["stamina"]; ok {
+		t.Errorf("item 0 should not have stamina (blank cell): %+v", got[0].Modifiers)
+	}
+	if got[1].Modifiers["stamina"].Value != 55 {
+		t.Errorf("item 1 lost stamina: %+v", got[1].Modifiers)
+	}
+	if _, ok := got[1].Modifiers["strength"]; ok {
+		t.Errorf("item 1 should not have strength (blank cell): %+v", got[1].Modifiers)
+	}
+}
