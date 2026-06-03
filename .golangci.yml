@@ -10,3 +10,7 @@ linters:
     - errcheck
     - ineffassign
     - unused
+
+formatters:
+  enable:
+    - gofmt
