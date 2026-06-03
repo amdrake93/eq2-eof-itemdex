@@ -19,3 +19,4 @@ go.work.sum
 
 # Resume-state file from interrupted multi-session pulls — never commit
 /data/.census_next_offset
+/bis.db
