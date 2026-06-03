@@ -16,8 +16,10 @@ import (
 )
 
 // categoryFiles are the per-category catalog CSVs (NOT maxlife.csv, which is a
-// cross-cut subset and would duplicate items if loaded).
-var categoryFiles = []string{"weapons.csv", "armor.csv", "jewelry-charms.csv", "other.csv"}
+// cross-cut subset and would duplicate items if loaded). Non-gear items (slot
+// category "other") are intentionally excluded from the catalog and the model's
+// input — see FreshPull.
+var categoryFiles = []string{"weapons.csv", "armor.csv", "jewelry-charms.csv"}
 
 // offsetFile stores the next Census page offset for incremental pulls.
 const offsetFile = ".census_next_offset"
@@ -129,15 +131,23 @@ func FreshPull(ctx context.Context, c *census.Client, dir string, pageSize int) 
 	}
 
 	allItems := append(prior, newItems...)
-	for cat, group := range catalog.SplitByCategory(allItems) {
+
+	// Drop non-gear (slot category "other"): the catalog and the model only
+	// care about equippable gear.
+	groups := catalog.SplitByCategory(allItems)
+	delete(groups, "other")
+
+	var gear []census.Item
+	for cat, group := range groups {
 		if err := writeFile(filepath.Join(dir, cat+".csv"), group); err != nil {
 			return nil, err
 		}
+		gear = append(gear, group...)
 	}
-	if err := writeFile(filepath.Join(dir, "maxlife.csv"), catalog.WithMaxLife(allItems)); err != nil {
+	if err := writeFile(filepath.Join(dir, "maxlife.csv"), catalog.WithMaxLife(gear)); err != nil {
 		return nil, err
 	}
-	return allItems, nil
+	return gear, nil
 }
 
 func writeFile(path string, items []census.Item) (err error) {
