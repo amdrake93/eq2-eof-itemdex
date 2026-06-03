@@ -74,7 +74,9 @@ Data flow: gear (Plan-1 cache) + Assassin CAs → `model` derives weights per ba
 
 ## 6. SQLite Schema (modernc, pure-Go)
 
-- `items` — one row per gear item: `id`, `name`, `slot`, `tier`, `itemlevel`, `armor_type`, `skill`, `wieldstyle`, `classes`, `gamelink`, + stat columns (or a normalized `item_stats(item_id, stat, value)` table — implementer's call during planning; normalized is friendlier for SQL aggregation).
+**Normalized schema:**
+- `items` — one row per gear item: `id`, `name`, `slot`, `tier`, `itemlevel`, `armor_type`, `skill`, `wieldstyle`, `classes`, `gamelink`.
+- `item_stats` — `(item_id, stat, value)`, one row per modifier (friendly for SQL aggregation / scoring).
 - `scores` — `(item_id, baseline, dps_score, slot)` so a single query ranks per slot per baseline, and the user can sort/filter/explore (coverage gaps, runner-ups, etc.) freely.
 
 The DB is both an analysis engine and a shareable artifact.
@@ -83,7 +85,7 @@ The DB is both an analysis engine and a shareable artifact.
 
 ## 7. Outputs
 
-- **`bis-report.md`** — for each baseline (solo, raid): a per-slot table of the **top-N** items (name, tier, DPS score, key stat line, gamelink), plus the **derived stat-weight table** and the **assumptions/constants block**. Top-N (not just #1) is deliberate — it supports the set-bonus overlay (§8).
+- **`bis-report.md`** — for each baseline (solo, raid), a per-slot listing of the **top 3 Fabled + top 3 Legendary** items (name, tier, DPS score, key stat line, gamelink), plus the **derived stat-weight table** and the **assumptions/constants block**. Rationale: Legendary ≈ dungeon gear, Fabled ≈ raid gear, so the split gives non-raid options alongside raid options — and surfaces the cases where a Legendary out-scores a Fabled (a flat top-N would hide that). Any **Mythical** in a slot (e.g. the Soulfire weapon) is shown at the top as the ceiling. Showing multiple per tier also supports the set-bonus overlay (§8).
 - **`bis.db`** — the scored SQLite DB.
 
 ---
@@ -134,4 +136,3 @@ All from `docs/design.md` §2.1 / §4, reproduced in `internal/baseline` with pr
 
 - Baseline numeric values (confirm with guild leader / Varsoon parse) — parameterized, so refinement is a re-run.
 - Exact crit baseline per context (AAs vs buffs) — feeds the baselines.
-- `items` table shape (wide vs normalized `item_stats`) — settle in writing-plans.
