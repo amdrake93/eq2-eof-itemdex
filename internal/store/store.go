@@ -7,6 +7,7 @@ import (
 
 	"github.com/amdrake93/eq2-eof-itemdex/internal/catalog"
 	"github.com/amdrake93/eq2-eof-itemdex/internal/census"
+	"github.com/amdrake93/eq2-eof-itemdex/internal/spell"
 	_ "modernc.org/sqlite" // pure-Go driver, registers "sqlite"
 )
 
@@ -63,6 +64,29 @@ func classList(it census.Item) string {
 	}
 	sort.Strings(names)
 	return strings.Join(names, "|")
+}
+
+// LoadCombatArts inserts the Assassin's combat arts.
+func (d *DB) LoadCombatArts(arts []spell.CombatArt) (err error) {
+	tx, err := d.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err != nil {
+			_ = tx.Rollback()
+		}
+	}()
+	for _, a := range arts {
+		if _, err = tx.Exec(
+			`INSERT OR REPLACE INTO combat_arts (name,level,min_dmg,max_dmg,recast_secs,cast_secs_hundredths)
+			 VALUES (?,?,?,?,?,?)`,
+			a.Name, a.Level, a.MinDamage, a.MaxDamage, a.RecastSecs, a.CastSecsHundredths,
+		); err != nil {
+			return err
+		}
+	}
+	return tx.Commit()
 }
 
 // LoadGear inserts items and their modifier stats in a single transaction.
