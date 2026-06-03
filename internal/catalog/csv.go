@@ -12,7 +12,7 @@ import (
 
 var fixedCols = []string{
 	"id", "name", "slot", "tier", "itemlevel", "armor_type", "classes",
-	"weapon_min_dmg", "weapon_max_dmg", "delay", "damage_rating", "gamelink",
+	"weapon_min_dmg", "weapon_max_dmg", "delay", "damage_rating", "skill", "wieldstyle", "gamelink",
 }
 
 func slotNames(it census.Item) string {
@@ -75,6 +75,8 @@ func WriteCSV(w io.Writer, items []census.Item) error {
 			floatStr(it.TypeInfo.MaxBaseDamage),
 			floatStr(it.TypeInfo.Delay),
 			floatStr(it.TypeInfo.DamageRating),
+			it.TypeInfo.Skill,
+			it.TypeInfo.WieldStyle,
 			it.GameLink,
 		}
 		for _, k := range statCols {
@@ -122,6 +124,8 @@ func ReadCSV(r io.Reader) ([]census.Item, error) {
 				MaxBaseDamage: atof(row[idx["weapon_max_dmg"]]),
 				Delay:         atof(row[idx["delay"]]),
 				DamageRating:  atof(row[idx["damage_rating"]]),
+				Skill:         row[idx["skill"]],
+				WieldStyle:    row[idx["wieldstyle"]],
 				Classes:       map[string]census.ClassReq{},
 			},
 			Modifiers: map[string]census.Modifier{},

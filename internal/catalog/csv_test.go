@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/amdrake93/eq2-eof-itemdex/internal/census"
+	"github.com/stretchr/testify/require"
 )
 
 func TestWriteCSVUnionColumns(t *testing.T) {
@@ -107,4 +108,22 @@ func TestRoundTripBlankFill(t *testing.T) {
 	if _, ok := got[1].Modifiers["strength"]; ok {
 		t.Errorf("item 1 should not have strength (blank cell): %+v", got[1].Modifiers)
 	}
+}
+
+func TestRoundTripWeaponSkillWieldstyle(t *testing.T) {
+	items := []census.Item{
+		{ID: 1, DisplayName: "Dirk", Slots: []census.Slot{{Name: "Primary"}},
+			TypeInfo:  census.TypeInfo{Skill: "piercing", WieldStyle: "One-Handed", Classes: map[string]census.ClassReq{"assassin": {}}},
+			Modifiers: map[string]census.Modifier{},
+		},
+	}
+	var buf bytes.Buffer
+	require.NoError(t, WriteCSV(&buf, items))
+	require.Contains(t, buf.String(), "skill")
+	require.Contains(t, buf.String(), "wieldstyle")
+
+	got, err := ReadCSV(&buf)
+	require.NoError(t, err)
+	require.Equal(t, "piercing", got[0].TypeInfo.Skill)
+	require.Equal(t, "One-Handed", got[0].TypeInfo.WieldStyle)
 }
