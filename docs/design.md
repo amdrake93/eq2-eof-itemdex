@@ -12,7 +12,7 @@
 Produce a **best-in-slot (BiS) gear list, per equipment slot, for a level-70 Echoes of Faydwer (EoF) Assassin** as it exists on a Daybreak Census *Time-Locked Expansion* (TLE) server (Varsoon-style), ranked by a **relative DPS model**, together with the **derived per-stat weights** that drive the ranking.
 
 - **Deliverable:** an analysis/report (per-slot BiS table + derived stat weights + a fully provenance-tagged assumptions block). Not a reusable product, not a raw dataset dump.
-- **Secondary deliverable:** shareable CSV exports (§10) — a **comprehensive EoF item catalog by category (all classes, not just Assassin-usable)**, plus a cross-class Max Health list for tanks (optionally KoS-extended). The Assassin-usability filter applies only to the stat-weight/BiS math, never to the CSVs.
+- **Secondary deliverable:** shareable CSV exports (§10) — an **all-class EoF *gear* catalog by category** (every itemlevel/tier; non-gear excluded), plus a cross-class Max Health list for tanks (optionally KoS-extended). The Assassin-usability filter applies only to the stat-weight/BiS math, never to the CSVs.
 - **Class:** Assassin only (Scout → Predator; melee DPS).
 - **Item universe:** all EoF items the Assassin can equip, **from all sources** (raid / group / quest / dropped), each **tagged** by source/tier so the raid-BiS and the no-raid-realistic pick are both visible.
 - **Item version:** the **Varsoon-current** version of each item (the version actually present on the target server), selected automatically by the classifier in §3.
@@ -53,10 +53,11 @@ Census returns the **current/modern** version of every item and spell. The targe
 | Census shows | On TLE | Provenance |
 |---|---|---|
 | Fervor / Fervor Overcap | **does not exist** → ignore | user |
-| Crit Bonus on items | **removed from items** → not a gear stat | user |
+| `critbonus` (item modifier) | **ignored entirely** — stripped on server | user |
 | Velocity (Coercer) "Multi-Attack +57.6" | **DPS-mod +57.6** (era remap, same value) | user |
 | Villainy (Assassin) "Multi-Attack +34.2" | **stays Multi-Attack** | Varsoon testing |
-| Double Attack | **removed from engine** | user |
+| Double Attack (engine) | **removed from engine** | user |
+| `doubleattackchance` (item modifier key) | **= Multi-Attack** — legacy key; its Census `displayname` is already "Multi Attack" (`multiattackchance`/`multiattack` keys do not exist) | Census probe |
 
 > Every translation is per-effect and must carry its provenance. Do **not** generalize one buff's remap to another.
 
@@ -231,11 +232,13 @@ A fresh pull also persists the **CA + buff spell data** (§5, §6) to a small ca
 A persistence/sharing deliverable, **independent of the DPS model**: a faithful catalog of the queried items so others can browse items by slot and see their stats. Because Census queries are throttled (§2), this also preserves the expensive query results for reuse without re-querying.
 
 ### Scope
-**The CSV catalog is comprehensive: every EoF-era item and its stats, regardless of class.** The Assassin-usability filter (`typeinfo.classes` contains `assassin`) is applied **only** to the stat-weight / DPS model / BiS analysis (§4, §9) — **never** to the CSV exports. All exports derive from the single broad EoF pull (§8):
-- **Category files** (weapons / armor / jewelry-charms): all EoF items, split by slot category — any class.
-- **Max-life cross-cut** (see below): every EoF item with a Max Health stat — any class.
+**The CSV catalog is every EoF-era *gear* item and its stats, all classes.** Non-gear (slot category "other": collectibles, house items, food/ammo) is excluded; **gear of every itemlevel and tier is kept — no itemlevel floor**, because flooring the dataset would blind the model to low-itemlevel/high-quality pieces. The Assassin-usability filter (`typeinfo.classes` contains `assassin`) is applied **only** to the stat-weight / DPS model / BiS analysis (§4, §9) — **never** to the CSV exports. All exports derive from the single broad EoF pull (§8):
+- **Category files** (weapons / armor / jewelry-charms): all EoF *gear*, split by slot category — any class.
+- **Max-life cross-cut** (see below): every EoF *gear* item with a Max Health stat — any class.
 
 One row per item, using the Varsoon-current version.
+
+**Why no scalar floor:** quality is driven by **tier** (Treasured < Legendary < Fabled < Mythical — combat-power medians ≈ 24 / 96 / 166 / 217) far more than itemlevel, and tier × itemlevel compound (a 60 Fabled ≈ a 70 Treasured), so no single cutoff (itemlevel *or* stat-total) separates good from bad — and a stat-total is resist-skewed besides. The **class-weighted DPS model (§4) is the comparator**; `tier` is a CSV column for human sorting. **Optional future trimming (Plan 2 era):** strict-domination dedup (drop an item another strictly beats on every stat — e.g. a low-ilvl piece with an identical-but-smaller stat line) and per-slot/armor-type stat-coverage-gap flags. Neither is an itemlevel floor. A SQLite-backed load (`modernc.org/sqlite`, pure-Go) is a candidate to make this analysis easier.
 
 ### Faithful & untranslated (key rule)
 Item stats are exported **exactly as Census reports them — no TLE translations.** Stats "are what they say they are." The modern-Census↔TLE translation layer (§2.1) applies **only to the DPS model**, never to this CSV. The export is an honest "what the item says" catalog; a reader wanting server-accurate behavior consults §2.1 separately.
