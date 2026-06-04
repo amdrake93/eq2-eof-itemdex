@@ -13,16 +13,7 @@ import (
 	_ "modernc.org/sqlite"
 )
 
-func loadCAs(dbPath string) ([]spell.CombatArt, error) {
-	db, err := sql.Open("sqlite", dbPath)
-	if err != nil {
-		return nil, err
-	}
-	defer func() {
-		if cerr := db.Close(); cerr != nil {
-			fmt.Fprintln(os.Stderr, "close db:", cerr)
-		}
-	}()
+func loadCAs(db *sql.DB) ([]spell.CombatArt, error) {
 	rows, err := db.Query(`SELECT name, min_dmg, max_dmg, recast_secs FROM combat_arts`)
 	if err != nil {
 		return nil, err
@@ -43,26 +34,74 @@ func loadCAs(dbPath string) ([]spell.CombatArt, error) {
 	return cas, rows.Err()
 }
 
+func loadWeapon(db *sql.DB, query string, args ...any) (model.Weapon, string, error) {
+	var name string
+	var mn, mx, delay float64
+	if err := db.QueryRow(query, args...).Scan(&name, &mn, &mx, &delay); err != nil {
+		return model.Weapon{}, "", err
+	}
+	return model.Weapon{AvgDamage: (mn + mx) / 2, DelaySecs: delay}, name, nil
+}
+
 func main() {
 	dbPath := flag.String("db", "bis.db", "sqlite db from builddb")
 	flag.Parse()
 
-	cas, err := loadCAs(*dbPath)
+	db, err := sql.Open("sqlite", *dbPath)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "open db:", err)
+		os.Exit(1)
+	}
+	defer func() {
+		if cerr := db.Close(); cerr != nil {
+			fmt.Fprintln(os.Stderr, "close db:", cerr)
+		}
+	}()
+
+	cas, err := loadCAs(db)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "load combat arts:", err)
 		os.Exit(1)
 	}
 	cas = spell.HighestRanks(cas)
 
-	// Reference weapon: a generic 1H (avg 100, delay 4.0) so weights are comparable.
-	ref := model.Weapon{AvgDamage: 100, DelaySecs: 4.0}
+	mainWeapon, mainName, err := loadWeapon(db,
+		`SELECT name, weapon_min_dmg, weapon_max_dmg, delay FROM items
+		 WHERE name LIKE 'Soulfire%' AND wieldstyle='One-Handed' AND classes LIKE '%assassin%'
+		 ORDER BY weapon_max_dmg DESC LIMIT 1`)
+	if err != nil {
+		// Fallback: relax filters if no exact Soulfire 1H assassin row.
+		mainWeapon, mainName, err = loadWeapon(db,
+			`SELECT name, weapon_min_dmg, weapon_max_dmg, delay FROM items
+			 WHERE name LIKE 'Soulfire%' AND classes LIKE '%assassin%'
+			 ORDER BY weapon_max_dmg DESC LIMIT 1`)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "load main weapon:", err)
+			os.Exit(1)
+		}
+	}
+
+	offWeapon, offName, err := loadWeapon(db,
+		`SELECT name, weapon_min_dmg, weapon_max_dmg, delay FROM items
+		 WHERE tier='FABLED' AND wieldstyle='One-Handed' AND classes LIKE '%assassin%'
+		   AND skill IN ('piercing','slashing') AND delay BETWEEN 3.5 AND 4.5
+		 ORDER BY weapon_max_dmg DESC LIMIT 1`)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "load off weapon:", err)
+		os.Exit(1)
+	}
+
+	fmt.Printf("main-hand: %s (avg %.0f / %.1fs)   off-hand: %s (avg %.0f / %.1fs)\n",
+		mainName, mainWeapon.AvgDamage, mainWeapon.DelaySecs, offName, offWeapon.AvgDamage, offWeapon.DelaySecs)
 
 	for _, b := range []struct {
 		name string
 		sb   model.StatBlock
 	}{{"SOLO", baseline.Solo}, {"RAID", baseline.Raid}} {
-		fmt.Printf("\n== %s baseline weights (marginal DPS per +1 stat; ref 1H weapon, %d combat arts) ==\n", b.name, len(cas))
-		dps := func(sb model.StatBlock) float64 { return model.TotalDPS(sb, ref, cas) }
+		fmt.Printf("\n== %s baseline weights (marginal DPS per +1 stat; dual-wield, %d combat arts) ==\n", b.name, len(cas))
+		dps := func(sb model.StatBlock) float64 {
+			return model.AutoDPSDual(sb, mainWeapon, offWeapon) + model.CADPS(sb, cas)
+		}
 		ws := model.DeriveWeights(b.sb, dps)
 		keys := make([]string, 0, len(ws))
 		for k := range ws {
