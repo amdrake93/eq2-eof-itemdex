@@ -147,7 +147,7 @@ func (d *DB) LoadLoadout() (Loadout, error) {
 	main, mainName, err := d.loadWeapon(
 		`SELECT name, weapon_min_dmg, weapon_max_dmg, delay FROM items
 		 WHERE name LIKE 'Soulfire%' AND classes LIKE '%assassin%'
-		 ORDER BY weapon_max_dmg DESC LIMIT 1`)
+		 ORDER BY (name = 'Soulfire Sabre') DESC, weapon_max_dmg DESC LIMIT 1`)
 	if err != nil {
 		return Loadout{}, err
 	}

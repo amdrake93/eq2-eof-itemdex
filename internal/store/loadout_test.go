@@ -13,7 +13,9 @@ func seedLoadout(t *testing.T, d *DB) {
 		require.NoError(t, err)
 	}
 	exec(`INSERT INTO items (id,name,slot,tier,itemlevel,armor_type,skill,wieldstyle,classes,gamelink,weapon_min_dmg,weapon_max_dmg,delay,damage_rating)
-	      VALUES (1,'Soulfire Gladius','Primary','MYTHICAL',70,'','slashing','One-Handed','assassin','',120,200,4.0,80)`)
+	      VALUES (1,'Soulfire Gladius','Primary','MYTHICAL',70,'','slashing','One-Handed','assassin','',80,239,4.0,80)`)
+	exec(`INSERT INTO items (id,name,slot,tier,itemlevel,armor_type,skill,wieldstyle,classes,gamelink,weapon_min_dmg,weapon_max_dmg,delay,damage_rating)
+	      VALUES (3,'Soulfire Sabre','Primary','MYTHICAL',70,'','piercing','One-Handed','assassin','',80,239,4.0,79.7)`)
 	exec(`INSERT INTO items (id,name,slot,tier,itemlevel,armor_type,skill,wieldstyle,classes,gamelink,weapon_min_dmg,weapon_max_dmg,delay,damage_rating)
 	      VALUES (2,'Enchanted Grove Scimitar','Secondary','FABLED',70,'','piercing','One-Handed','assassin','',118,198,4.4,75)`)
 	exec(`INSERT INTO combat_arts (name,level,min_dmg,max_dmg,recast_secs,cast_secs_hundredths)
@@ -31,8 +33,8 @@ func TestLoadLoadout(t *testing.T) {
 
 	lo, err := d.LoadLoadout()
 	require.NoError(t, err)
-	require.Equal(t, "Soulfire Gladius", lo.MainName)
-	require.InDelta(t, 160.0, lo.Main.AvgDamage, 1e-9)
+	require.Equal(t, "Soulfire Sabre", lo.MainName)
+	require.InDelta(t, 159.5, lo.Main.AvgDamage, 1e-9)
 	require.InDelta(t, 4.0, lo.Main.DelaySecs, 1e-9)
 	require.Len(t, lo.Arts, 1)
 	require.Equal(t, "Assassinate II", lo.Arts[0].Name)
