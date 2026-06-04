@@ -15,26 +15,17 @@ func critFactor(sb StatBlock) float64 {
 	return 1 + (sb.CritChance/100)*(constants.CritMultiplier-1)
 }
 
-// flurryPct = gear flurry + haste overcap converted at 10:1.
-func flurryPct(sb StatBlock) float64 {
-	over := sb.Haste - constants.HasteCapPct
-	if over < 0 {
-		over = 0
-	}
-	return sb.Flurry + over/constants.HasteToFlurry
-}
-
+// flurryFactor is gear flurry only (haste overcap no longer converts to flurry).
 func flurryFactor(sb StatBlock) float64 {
-	return 1 + (flurryPct(sb)/100)*(constants.FlurryMultiplier-1)
+	return 1 + (sb.Flurry/100)*(constants.FlurryMultiplier-1)
 }
 
 func dpsModFactor(sb StatBlock) float64 {
-	d := min(sb.DPSMod, constants.DPSModCap) // overcap wasted
-	return 1 + (d/constants.DPSModCap)*constants.DPSModEffectAtCap
+	return 1 + min(sb.DPSMod, constants.DPSModCap)/100
 }
 
 func effDelay(sb StatBlock, w Weapon) float64 {
-	h := min(sb.Haste, constants.HasteCapPct) // beyond cap → flurry (handled in flurryPct)
+	h := CombatModEffect(min(sb.Haste, constants.HasteStatCap))
 	return w.DelaySecs / (1 + h/100)
 }
 
@@ -44,7 +35,7 @@ func AutoDPS(sb StatBlock, w Weapon) float64 {
 		return 0
 	}
 	swings := w.AvgDamage / effDelay(sb, w)
-	return swings * (1 + sb.MultiAttack/100) * critFactor(sb) * flurryFactor(sb) * dpsModFactor(sb)
+	return swings * (1 + CombatModEffect(sb.MultiAttack)/100) * critFactor(sb) * flurryFactor(sb) * dpsModFactor(sb)
 }
 
 // CADPS is the simulated combat-art DPS over a standard fight (priority rotation).

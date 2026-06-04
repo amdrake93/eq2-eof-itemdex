@@ -12,6 +12,6 @@ func TestProfiles(t *testing.T) {
 	require.Equal(t, 200.0, Raid.DPSMod)
 	require.Equal(t, 1.30, CritMultiplier)
 	require.Equal(t, 4.0, FlurryMultiplier)
-	require.Equal(t, 100.0, HasteCapPct)
+	require.Equal(t, 200.0, HasteStatCap)
 	require.Equal(t, 200.0, DPSModCap)
 }

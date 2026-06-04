@@ -10,10 +10,8 @@ import (
 const (
 	CritMultiplier    = constants.CritMultiplier
 	FlurryMultiplier  = constants.FlurryMultiplier
-	HasteCapPct       = constants.HasteCapPct
-	HasteToFlurry     = constants.HasteToFlurry
+	HasteStatCap      = constants.HasteStatCap
 	DPSModCap         = constants.DPSModCap
-	DPSModEffectAtCap = constants.DPSModEffectAtCap
 	AbilityModCapFrac = constants.AbilityModCapFrac
 	ReuseHalvesAt     = constants.ReuseHalvesAt
 	ReuseHalveCoeff   = constants.ReuseHalveCoeff
