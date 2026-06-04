@@ -52,6 +52,7 @@ func main() {
 		fmt.Fprintln(os.Stderr, "load combat arts:", err)
 		os.Exit(1)
 	}
+	cas = spell.HighestRanks(cas)
 
 	// Reference weapon: a generic 1H (avg 100, delay 4.0) so weights are comparable.
 	ref := model.Weapon{AvgDamage: 100, DelaySecs: 4.0}
