@@ -1,14 +1,16 @@
-# Plan 2e — Item Scoring & BiS Report Implementation Plan
+# Plan 2e — Converging BiS Set-Builder & Report Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Score every Assassin-usable EoF item against the (already-built) DPS model's per-baseline stat weights and emit an explainable, per-slot best-in-slot markdown report (top-3 Fabled + top-3 Legendary per slot) plus a `scores` table in `bis.db`.
+**Goal:** Build the Assassin's best-in-slot gear *set* by iterating to convergence — picking each slot's item by its real in-context ΔDPS at the evolving set baseline — then emit an explainable per-slot report (converged pick + top-3 Fabled / top-3 Legendary alternatives, with breakdowns) plus a `scores` table in `bis.db`.
 
-**Architecture:** The model layer (`internal/model`: weights, DPS, curves) is complete and merged on `main`. This plan adds (1) a linear scoring function with an explainable per-stat breakdown in `internal/model`; (2) `scores` table + loader queries in `internal/store`; (3) a new `internal/bis` package that derives weights per baseline, scores items (with a DPS-aware path for weapons), ranks per slot, supports a locked-items re-model, and renders the report; (4) a `cmd/bis` orchestrator. Scoring is first-order `Σ(weight × itemStat)` per the spec; saturation/caps are handled by deriving weights at the two realistic baselines and by the locked-set re-model.
+**Architecture:** The model layer (`internal/model`: DPS, weights, the haste/MA/dps-mod curves with caps, `TotalDPSDual`, `AutoDPS`, `DeriveWeights`) is complete and merged on `main`. This plan adds: (1) `model.ItemDelta` — the exact ΔDPS of equipping an item into a set state, weapon-aware; (2) `model.ScoreItem` — a linear `Σ weight×stat` breakdown used only for the report's explainable "why"; (3) `scores` table + loaders in `internal/store`; (4) `internal/bis` — a `Set` whose DPS is recomputed from the full set every time, a coordinate-ascent `BuildSet` that fills each slot with the DPS-maximizing pick and repeats passes until convergence, per-slot in-context ranking, the locked-set re-model, and the markdown renderer; (5) `cmd/bis`.
 
-**Tech Stack:** Go 1.26, `modernc.org/sqlite` (pure-Go), `stretchr/testify`. Existing helpers: `model.DeriveWeights`, `model.TotalDPSDual`, `model.AutoDPS`, `model.StatBlock.AddModifiers`, `spell.HighestRanks`, `baseline.Solo`/`baseline.Raid`.
+**Why a converging builder, not per-item greedy:** the auto-attack stats — haste, multi-attack, crit, flurry, dps-mod — combine **multiplicatively** (`AutoDPS = swings(haste) × MA × crit × flurry × dpsMod`), so each one is worth *more* as the set accumulates its partners (raising haste makes flurry worth more, etc.). Meanwhile haste and dps-mod **hard-cap at 200** (the curve is flat past it). Scoring items in isolation against one fixed baseline therefore builds broken sets: it overstacks a capped stat (e.g. 400 haste, 200 wasted) because each item "looks good" alone, and it undervalues partner stats because the baseline starts at haste 0 / flurry 0. Recomputing DPS from the live set at every step fixes both for free: a stat already at its cap in the set contributes ~0 to the next pick, and a partner stat's value rises as the set fills in. This is spec §3's "iterate to convergence so saturation/caps self-correct."
 
-**Spec:** `docs/design-plan2.md` §3 (scoring), §6 (scores table), §7 (report + breakdowns), §8 (locked-set re-model), §9 (validation).
+**Tech Stack:** Go 1.26, `modernc.org/sqlite` (pure-Go), `stretchr/testify`.
+
+**Spec:** `docs/design-plan2.md` §3 (scoring + iterate-to-convergence), §3.1 (curves/caps), §6 (scores table), §7 (report + breakdowns), §8 (locked-set re-model), §9 (validation).
 
 ---
 
@@ -16,22 +18,127 @@
 
 | File | Responsibility |
 |---|---|
-| `internal/model/score.go` *(new)* | `ScoreItem` — linear `Σ weight×stat` + sorted per-stat breakdown (`ScoreTerm`). Pure. |
-| `internal/store/store.go` *(modify)* | add `scores` table to schema; `ScoreRow`+`WriteScores`; `Loadout`+`LoadLoadout`; `ScorableItem`+`LoadScorableItems`. |
-| `internal/bis/engine.go` *(new)* | `ScoredItem`; `Weights` (per-baseline); `ScoreAll` (armor linear + weapon DPS-aware); `LockedRemodel`. |
-| `internal/bis/ranking.go` *(new)* | `SlotGroup`; `TopPerSlot` (group by slot, split by tier, top-N). |
-| `internal/bis/report.go` *(new)* | `Render` — markdown: weight table, per-slot top-3 Fabled/Legendary with breakdowns, Mythical ceiling, assumptions block. |
-| `cmd/bis/main.go` *(new)* | orchestrate: open `bis.db` → load loadout+items → per baseline derive weights, score, write `scores` → render `--out`; `--lock` re-model path. |
+| `internal/model/itemdelta.go` *(new)* | `ItemDelta` — exact ΔDPS of adding an item (stats + optional off-hand weapon) to a set state. Pure. |
+| `internal/model/score.go` *(new)* | `ScoreItem` + `ScoreTerm` — linear `Σ weight×stat` breakdown for the report's "why". Pure. |
+| `internal/store/store.go` *(modify)* | add `scores` table; `ScoreRow`+`WriteScores`; `Loadout`+`LoadLoadout`; `ScorableItem`+`LoadScorableItems`. |
+| `internal/bis/set.go` *(new)* | `Set` (profile + fixed main/arts + equipped-per-slot); full-set `DPS`, `restBase`/`offWeapon`/`restOff`, `CandidateDelta`. |
+| `internal/bis/build.go` *(new)* | `slotCapacity`/`offHandSlot`; `pickBest` (greedy within slot, capacity-aware); `BuildSet` (coordinate ascent + convergence + locked slots). |
+| `internal/bis/report.go` *(new)* | `ScoredItem`/`SlotReport`; `ConvergedWeights`; `SlotCandidatesScored`; `BuildSlotReports`. |
+| `internal/bis/render.go` *(new)* | `Render` — markdown: per baseline, weight table, per-slot converged pick + top-N alternatives with breakdowns, assumptions block. |
+| `cmd/bis/main.go` *(new)* | orchestrate: open `bis.db` → load loadout + items → per baseline build set, score, write `scores`, collect reports → render `--out`; `--lock` path. |
 
-**Note on `cmd/weights`:** it stays as-is (a debug tool). `cmd/bis` is the real deliverable. The weapon/CA/weapon-loadout SQL currently inlined in `cmd/weights` is reimplemented as the tested `store.LoadLoadout` here; do not delete `cmd/weights`.
+**Notes:**
+- `cmd/weights` stays as a debug tool; do not delete it.
+- Known simplification (consistent with `cmd/weights`): the fixed main-hand (Soulfire) contributes its weapon damage/delay but **not** its own gear stats to the baseline — `LoadLoadout` only reads avg/delay. Acceptable for relative ranking; noted in the report assumptions.
 
 ---
 
-### Task 1: `model.ScoreItem` — linear scoring + breakdown
+### Task 1: `model.ItemDelta` — exact ΔDPS of equipping an item
+
+**Files:**
+- Create: `internal/model/itemdelta.go`
+- Test: `internal/model/itemdelta_test.go`
+
+**Why:** This is the honest item-value primitive. It diffs two full `TotalDPSDual` evaluations at the set's live stat totals, so every nonlinearity is respected — a stat already at its cap contributes ~0, and the multiplicative auto cluster makes a stat worth more as its partners accumulate.
+
+- [ ] **Step 1: Write the failing test**
+
+```go
+package model
+
+import (
+	"testing"
+
+	"github.com/amdrake93/eq2-eof-itemdex/internal/spell"
+	"github.com/stretchr/testify/require"
+)
+
+func TestItemDeltaInteractionMultiplicative(t *testing.T) {
+	main := Weapon{AvgDamage: 160, DelaySecs: 4}
+	off := Weapon{AvgDamage: 158, DelaySecs: 4.4}
+	var arts []spell.CombatArt
+	flurry := StatBlock{Flurry: 10}
+
+	// flurry is worth MORE when the set already has dps-mod (auto-attack is bigger),
+	// because flurry multiplies auto-attack.
+	low := ItemDelta(StatBlock{}, main, off, arts, flurry, nil)
+	high := ItemDelta(StatBlock{DPSMod: 200}, main, off, arts, flurry, nil)
+	require.Greater(t, high, low)
+}
+
+func TestItemDeltaCappedStatZero(t *testing.T) {
+	main := Weapon{AvgDamage: 160, DelaySecs: 4}
+	off := Weapon{AvgDamage: 158, DelaySecs: 4.4}
+	var arts []spell.CombatArt
+	// haste already at the 200 cap → more haste does nothing (curve flat past cap)
+	d := ItemDelta(StatBlock{Haste: 200}, main, off, arts, StatBlock{Haste: 50}, nil)
+	require.InDelta(t, 0.0, d, 1e-9)
+}
+
+func TestItemDeltaOffHandWeapon(t *testing.T) {
+	main := Weapon{AvgDamage: 160, DelaySecs: 4}
+	var arts []spell.CombatArt
+	// equipping an off-hand weapon into an empty off-hand adds its auto-attack
+	w := Weapon{AvgDamage: 150, DelaySecs: 4}
+	d := ItemDelta(StatBlock{}, main, Weapon{}, arts, StatBlock{}, &w)
+	require.Greater(t, d, 0.0)
+}
+```
+
+- [ ] **Step 2: Run test to verify it fails**
+
+Run: `go test ./internal/model/ -run TestItemDelta -v`
+Expected: FAIL — `undefined: ItemDelta`.
+
+- [ ] **Step 3: Write minimal implementation**
+
+```go
+package model
+
+import "github.com/amdrake93/eq2-eof-itemdex/internal/spell"
+
+// ItemDelta is the ΔDPS of equipping an item into an otherwise-fixed set.
+// restBase is the set's StatBlock with the target slot empty; restOff is the
+// off-hand weapon when that slot is empty (zero Weapon if the target IS the
+// off-hand slot, or no off-hand is equipped). itemStats is the candidate's
+// stats; for an off-hand weapon candidate pass its weapon as newOff (else nil).
+//
+// It diffs full TotalDPSDual evaluations at the set's live stat totals, so a
+// stat already at its cap in restBase contributes ~0 and the multiplicative
+// auto cluster (haste·MA·crit·flurry·dps-mod) makes a stat worth more as the
+// set accumulates its partners.
+func ItemDelta(restBase StatBlock, main, restOff Weapon, arts []spell.CombatArt, itemStats StatBlock, newOff *Weapon) float64 {
+	before := TotalDPSDual(restBase, main, restOff, arts)
+	off := restOff
+	if newOff != nil {
+		off = *newOff
+	}
+	after := TotalDPSDual(restBase.Add(itemStats), main, off, arts)
+	return after - before
+}
+```
+
+- [ ] **Step 4: Run test to verify it passes**
+
+Run: `go test ./internal/model/ -run TestItemDelta -v`
+Expected: PASS (all three).
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add internal/model/itemdelta.go internal/model/itemdelta_test.go
+git commit -m "Add ItemDelta: exact cap/interaction-aware item ΔDPS"
+```
+
+---
+
+### Task 2: `model.ScoreItem` — linear breakdown (for the report's "why")
 
 **Files:**
 - Create: `internal/model/score.go`
 - Test: `internal/model/score_test.go`
+
+**Why:** The set-builder ranks by `ItemDelta` (Task 1). `ScoreItem` is *only* for the explainable breakdown shown next to each ranked item — it attributes a `weight × stat` line per stat so a reader can see which stats drove an item, judged at the converged-baseline weights.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -46,8 +153,7 @@ import (
 
 func TestScoreItem(t *testing.T) {
 	weights := map[string]float64{
-		"reuse": 16.0, "potency": 7.0, "flurry": 3.0, "critchance": 2.0,
-		"abilitymod": 1.0, "haste": 0.8, "dpsmod": 0.8, "multiattack": 0.7,
+		"reuse": 16.0, "potency": 7.0, "critchance": 2.0,
 	}
 	item := StatBlock{Potency: 35, CritChance: 22, Reuse: 4}
 
@@ -55,14 +161,13 @@ func TestScoreItem(t *testing.T) {
 
 	// 35*7 + 22*2 + 4*16 = 245 + 44 + 64 = 353
 	require.InDelta(t, 353.0, total, 1e-9)
-	// only the three nonzero stats produce terms, sorted by contribution desc
 	require.Len(t, terms, 3)
-	require.Equal(t, "potency", terms[0].Stat)
+	require.Equal(t, "potency", terms[0].Stat) // sorted by contribution desc
 	require.InDelta(t, 245.0, terms[0].Contribution, 1e-9)
 	require.InDelta(t, 35.0, terms[0].ItemValue, 1e-9)
 	require.InDelta(t, 7.0, terms[0].Weight, 1e-9)
-	require.Equal(t, "reuse", terms[1].Stat)   // 64
-	require.Equal(t, "critchance", terms[2].Stat) // 44
+	require.Equal(t, "reuse", terms[1].Stat)
+	require.Equal(t, "critchance", terms[2].Stat)
 }
 
 func TestScoreItemEmpty(t *testing.T) {
@@ -84,7 +189,7 @@ package model
 
 import "sort"
 
-// ScoreTerm is one stat's contribution to an item's score: itemValue × weight.
+// ScoreTerm is one stat's linear contribution: itemValue × weight.
 type ScoreTerm struct {
 	Stat         string
 	ItemValue    float64
@@ -92,9 +197,9 @@ type ScoreTerm struct {
 	Contribution float64
 }
 
-// ScoreItem computes an item's score as Σ(weight × itemStat) over WeightStats,
-// returning the total and the per-stat breakdown sorted by contribution desc.
-// Stats the item does not carry (value 0) are omitted from the breakdown.
+// ScoreItem returns Σ(weight × itemStat) over WeightStats and the per-stat
+// breakdown (nonzero stats only) sorted by contribution descending. Used for
+// the report's explainable breakdown, not for set selection (that uses ItemDelta).
 func ScoreItem(weights map[string]float64, item StatBlock) (total float64, terms []ScoreTerm) {
 	for _, s := range WeightStats {
 		v := getStat(item, s)
@@ -114,18 +219,18 @@ func ScoreItem(weights map[string]float64, item StatBlock) (total float64, terms
 - [ ] **Step 4: Run test to verify it passes**
 
 Run: `go test ./internal/model/ -run TestScoreItem -v`
-Expected: PASS (both subtests).
+Expected: PASS.
 
 - [ ] **Step 5: Commit**
 
 ```bash
 git add internal/model/score.go internal/model/score_test.go
-git commit -m "Add ScoreItem: linear stat scoring with explainable breakdown"
+git commit -m "Add ScoreItem: linear stat breakdown for report explainability"
 ```
 
 ---
 
-### Task 2: `scores` table + `WriteScores`
+### Task 3: `scores` table + `WriteScores`
 
 **Files:**
 - Modify: `internal/store/store.go` (schema const + new method)
@@ -149,9 +254,9 @@ func TestWriteScores(t *testing.T) {
 	require.NoError(t, d.Init())
 
 	rows := []ScoreRow{
-		{ItemID: 1, Baseline: "solo", DPSScore: 100.5, Slot: "chest"},
-		{ItemID: 1, Baseline: "raid", DPSScore: 220.0, Slot: "chest"},
-		{ItemID: 2, Baseline: "solo", DPSScore: 80.0, Slot: "head"},
+		{ItemID: 1, Baseline: "solo", DPSScore: 100.5, Slot: "Chest"},
+		{ItemID: 1, Baseline: "raid", DPSScore: 220.0, Slot: "Chest"},
+		{ItemID: 2, Baseline: "solo", DPSScore: 80.0, Slot: "Head"},
 	}
 	require.NoError(t, d.WriteScores(rows))
 
@@ -164,8 +269,7 @@ func TestWriteScores(t *testing.T) {
 		`SELECT dps_score FROM scores WHERE item_id=1 AND baseline='raid'`).Scan(&score))
 	require.InDelta(t, 220.0, score, 1e-9)
 
-	// idempotent re-write (INSERT OR REPLACE on the composite key)
-	require.NoError(t, d.WriteScores(rows))
+	require.NoError(t, d.WriteScores(rows)) // idempotent (composite PK)
 	require.NoError(t, d.SQL().QueryRow(`SELECT COUNT(*) FROM scores`).Scan(&n))
 	require.Equal(t, 3, n)
 }
@@ -174,11 +278,11 @@ func TestWriteScores(t *testing.T) {
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `go test ./internal/store/ -run TestWriteScores -v`
-Expected: FAIL — `undefined: ScoreRow` / `WriteScores`, and `no such table: scores`.
+Expected: FAIL — `undefined: ScoreRow` / `WriteScores`, `no such table: scores`.
 
 - [ ] **Step 3: Write minimal implementation**
 
-In `internal/store/store.go`, append to the `schema` const string (inside the backtick block, after the `combat_arts` table):
+In `internal/store/store.go`, append to the `schema` const (after the `combat_arts` table, inside the backticks):
 
 ```sql
 CREATE TABLE IF NOT EXISTS scores (
@@ -190,7 +294,7 @@ CREATE TABLE IF NOT EXISTS scores (
 Then add:
 
 ```go
-// ScoreRow is one item's score under one baseline.
+// ScoreRow is one item's in-context ΔDPS under one baseline.
 type ScoreRow struct {
 	ItemID   int
 	Baseline string
@@ -235,13 +339,11 @@ git commit -m "Add scores table and WriteScores"
 
 ---
 
-### Task 3: `store.LoadLoadout` — weapons + collapsed combat arts
+### Task 4: `store.LoadLoadout` — weapons + collapsed combat arts
 
 **Files:**
 - Modify: `internal/store/store.go` (add `model` import, `Loadout`, `LoadLoadout`)
 - Test: `internal/store/loadout_test.go`
-
-**Context:** `cmd/weights` currently inlines this. The main-hand is the best Soulfire 1H Assassin weapon; the off-hand is the best Fabled 1H Assassin piercing/slashing weapon with delay 3.5–4.5. CAs are collapsed to highest rank via `spell.HighestRanks`.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -260,11 +362,10 @@ func seedLoadout(t *testing.T, d *DB) {
 		_, err := d.SQL().Exec(q, a...)
 		require.NoError(t, err)
 	}
-	// main-hand Soulfire + a fabled off-hand piercer + a non-weapon (ignored)
 	exec(`INSERT INTO items (id,name,slot,tier,itemlevel,armor_type,skill,wieldstyle,classes,gamelink,weapon_min_dmg,weapon_max_dmg,delay,damage_rating)
-	      VALUES (1,'Soulfire Gladius','primary','MYTHICAL',70,'',? ,'One-Handed','assassin','',120,200,4.0,80)`, "slashing")
+	      VALUES (1,'Soulfire Gladius','Primary','MYTHICAL',70,'','slashing','One-Handed','assassin','',120,200,4.0,80)`)
 	exec(`INSERT INTO items (id,name,slot,tier,itemlevel,armor_type,skill,wieldstyle,classes,gamelink,weapon_min_dmg,weapon_max_dmg,delay,damage_rating)
-	      VALUES (2,'Enchanted Grove Scimitar','secondary','FABLED',70,'','piercing','One-Handed','assassin','',118,198,4.4,75)`)
+	      VALUES (2,'Enchanted Grove Scimitar','Secondary','FABLED',70,'','piercing','One-Handed','assassin','',118,198,4.4,75)`)
 	exec(`INSERT INTO combat_arts (name,level,min_dmg,max_dmg,recast_secs,cast_secs_hundredths)
 	      VALUES ('Assassinate II',70,7000,12000,300,50)`)
 	exec(`INSERT INTO combat_arts (name,level,min_dmg,max_dmg,recast_secs,cast_secs_hundredths)
@@ -280,14 +381,12 @@ func TestLoadLoadout(t *testing.T) {
 
 	lo, err := d.LoadLoadout()
 	require.NoError(t, err)
-
 	require.Equal(t, "Soulfire Gladius", lo.MainName)
-	require.InDelta(t, 160.0, lo.Main.AvgDamage, 1e-9) // (120+200)/2
+	require.InDelta(t, 160.0, lo.Main.AvgDamage, 1e-9)
 	require.InDelta(t, 4.0, lo.Main.DelaySecs, 1e-9)
 	require.Equal(t, "Enchanted Grove Scimitar", lo.OffName)
-	require.InDelta(t, 158.0, lo.Off.AvgDamage, 1e-9) // (118+198)/2
-	// HighestRanks collapses the two Assassinate ranks to one
-	require.Len(t, lo.Arts, 1)
+	require.InDelta(t, 158.0, lo.Off.AvgDamage, 1e-9)
+	require.Len(t, lo.Arts, 1) // HighestRanks collapses the two Assassinate ranks
 	require.Equal(t, "Assassinate II", lo.Arts[0].Name)
 }
 ```
@@ -299,7 +398,7 @@ Expected: FAIL — `undefined: Loadout` / `LoadLoadout`.
 
 - [ ] **Step 3: Write minimal implementation**
 
-In `internal/store/store.go` add `"github.com/amdrake93/eq2-eof-itemdex/internal/model"` to the import block, then add:
+Add `"github.com/amdrake93/eq2-eof-itemdex/internal/model"` to the `internal/store/store.go` import block, then add:
 
 ```go
 // Loadout is the fixed dual-wield setup + collapsed combat arts the model scores against.
@@ -319,7 +418,7 @@ func (d *DB) loadWeapon(query string, args ...any) (model.Weapon, string, error)
 }
 
 // LoadLoadout reads the Soulfire main-hand, the best Fabled 1H off-hand, and the
-// Assassin combat arts (collapsed to highest rank).
+// Assassin combat arts collapsed to highest rank.
 func (d *DB) LoadLoadout() (Loadout, error) {
 	main, mainName, err := d.loadWeapon(
 		`SELECT name, weapon_min_dmg, weapon_max_dmg, delay FROM items
@@ -336,7 +435,6 @@ func (d *DB) LoadLoadout() (Loadout, error) {
 	if err != nil {
 		return Loadout{}, err
 	}
-
 	rows, err := d.db.Query(`SELECT name, min_dmg, max_dmg, recast_secs FROM combat_arts`)
 	if err != nil {
 		return Loadout{}, err
@@ -353,7 +451,6 @@ func (d *DB) LoadLoadout() (Loadout, error) {
 	if err := rows.Err(); err != nil {
 		return Loadout{}, err
 	}
-
 	return Loadout{Main: main, Off: off, MainName: mainName, OffName: offName, Arts: spell.HighestRanks(arts)}, nil
 }
 ```
@@ -367,12 +464,12 @@ Expected: PASS.
 
 ```bash
 git add internal/store/store.go internal/store/loadout_test.go
-git commit -m "Add LoadLoadout: weapons + collapsed combat arts from the db"
+git commit -m "Add LoadLoadout: weapons + collapsed combat arts"
 ```
 
 ---
 
-### Task 4: `store.ScorableItem` + `LoadScorableItems`
+### Task 5: `store.ScorableItem` + `LoadScorableItems`
 
 **Files:**
 - Modify: `internal/store/store.go`
@@ -398,16 +495,15 @@ func TestLoadScorableItems(t *testing.T) {
 		_, err := d.SQL().Exec(q, a...)
 		require.NoError(t, err)
 	}
-	// assassin chest with potency+crit; an assassin off-hand weapon; a non-assassin item (excluded)
 	exec(`INSERT INTO items (id,name,slot,tier,itemlevel,armor_type,skill,wieldstyle,classes,gamelink,weapon_min_dmg,weapon_max_dmg,delay,damage_rating)
-	      VALUES (10,'Fabled Chest','chest','FABLED',70,'Leather','','','assassin|ranger','link10',0,0,0,0)`)
+	      VALUES (10,'Fabled Chest','Chest','FABLED',70,'Leather','','','assassin|ranger','link10',0,0,0,0)`)
 	exec(`INSERT INTO item_stats (item_id,stat,value) VALUES (10,'basemodifier',35)`)
 	exec(`INSERT INTO item_stats (item_id,stat,value) VALUES (10,'critchance',22)`)
 	exec(`INSERT INTO items (id,name,slot,tier,itemlevel,armor_type,skill,wieldstyle,classes,gamelink,weapon_min_dmg,weapon_max_dmg,delay,damage_rating)
-	      VALUES (11,'Fabled Dirk','secondary','FABLED',70,'','piercing','One-Handed','assassin','link11',118,198,4.4,75)`)
+	      VALUES (11,'Fabled Dirk','Secondary','FABLED',70,'','piercing','One-Handed','assassin','link11',118,198,4.4,75)`)
 	exec(`INSERT INTO item_stats (item_id,stat,value) VALUES (11,'flurry',5)`)
 	exec(`INSERT INTO items (id,name,slot,tier,itemlevel,armor_type,skill,wieldstyle,classes,gamelink,weapon_min_dmg,weapon_max_dmg,delay,damage_rating)
-	      VALUES (12,'Wizard Hat','head','FABLED',70,'Cloth','','','wizard','link12',0,0,0,0)`)
+	      VALUES (12,'Wizard Hat','Head','FABLED',70,'Cloth','','','wizard','link12',0,0,0,0)`)
 
 	items, err := d.LoadScorableItems()
 	require.NoError(t, err)
@@ -418,17 +514,16 @@ func TestLoadScorableItems(t *testing.T) {
 		byID[it.ID] = it
 	}
 	chest := byID[10]
-	require.Equal(t, "Fabled Chest", chest.Name)
-	require.Equal(t, "chest", chest.Slot)
+	require.Equal(t, "Chest", chest.Slot)
 	require.Equal(t, "FABLED", chest.Tier)
 	require.Equal(t, "link10", chest.GameLink)
-	require.InDelta(t, 35.0, chest.Stats.Potency, 1e-9)   // basemodifier -> Potency
-	require.InDelta(t, 22.0, chest.Stats.CritChance, 1e-9) // critchance -> CritChance
+	require.InDelta(t, 35.0, chest.Stats.Potency, 1e-9)
+	require.InDelta(t, 22.0, chest.Stats.CritChance, 1e-9)
 	require.False(t, chest.IsWeapon())
 
 	dirk := byID[11]
 	require.True(t, dirk.IsWeapon())
-	require.InDelta(t, 158.0, dirk.WeaponAvg, 1e-9) // (118+198)/2
+	require.InDelta(t, 158.0, dirk.WeaponAvg, 1e-9)
 	require.InDelta(t, 4.4, dirk.WeaponDelay, 1e-9)
 	require.InDelta(t, 5.0, dirk.Stats.Flurry, 1e-9)
 }
@@ -443,15 +538,15 @@ Expected: FAIL — `undefined: ScorableItem` / `LoadScorableItems` / `IsWeapon`.
 
 ```go
 // ScorableItem is one Assassin-usable item with its DPS-relevant stats resolved
-// into a StatBlock plus the raw modifier map (for display).
+// into a StatBlock plus weapon damage fields (0 for non-weapons).
 type ScorableItem struct {
 	ID          int
 	Name        string
 	Slot        string
 	Tier        string
 	GameLink    string
-	WeaponAvg   float64 // (min+max)/2; 0 for non-weapons
-	WeaponDelay float64 // 0 for non-weapons
+	WeaponAvg   float64
+	WeaponDelay float64
 	Stats       model.StatBlock
 	Mods        map[string]float64
 }
@@ -526,13 +621,13 @@ git commit -m "Add ScorableItem and LoadScorableItems"
 
 ---
 
-### Task 5: `bis` engine — `Weights` + `ScoreAll` (armor + weapon-aware)
+### Task 6: `bis.Set` — full-set DPS + slot context helpers
 
 **Files:**
-- Create: `internal/bis/engine.go`
-- Test: `internal/bis/engine_test.go`
+- Create: `internal/bis/set.go`
+- Test: `internal/bis/set_test.go`
 
-**Context:** Armor/jewelry score = `Σ weight×stat`. Weapons additionally carry their auto-attack value (`model.AutoDPS(baseline, weapon)`), which `Σ weight×stat` misses — so weapon score adds an `auto-attack` breakdown term. The `baseline` is passed so the weapon's auto term reflects the buff context (haste/dps-mod) it's evaluated in.
+**Why:** The set's DPS is always recomputed from the full set (profile baseline + every equipped item's stats + the off-hand weapon), so caps and interactions are exact at every step. `CandidateDelta` gives a candidate's in-context ΔDPS for a slot by diffing against the rest of the set.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -547,330 +642,573 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestScoreAllArmorAndWeapon(t *testing.T) {
-	weights := map[string]float64{"potency": 7.0, "flurry": 3.0}
-	base := model.StatBlock{} // zero baseline keeps weapon auto math simple
+func testLoadout() store.Loadout {
+	return store.Loadout{
+		Main: model.Weapon{AvgDamage: 160, DelaySecs: 4},
+		Off:  model.Weapon{},
+	}
+}
 
-	armor := store.ScorableItem{ID: 1, Name: "Chest", Slot: "chest", Tier: "FABLED",
-		Stats: model.StatBlock{Potency: 10}}
-	weapon := store.ScorableItem{ID: 2, Name: "Dirk", Slot: "secondary", Tier: "FABLED",
-		WeaponAvg: 160, WeaponDelay: 4, Stats: model.StatBlock{Flurry: 5}}
+func TestSetDPSAndCandidateDelta(t *testing.T) {
+	set := NewSet(model.StatBlock{}, testLoadout())
 
-	scored := ScoreAll([]store.ScorableItem{armor, weapon}, weights, base)
-	require.Len(t, scored, 2)
+	// empty set DPS = main-hand auto only (no off-hand, no arts, no stats)
+	require.InDelta(t, 40.0, set.DPS(), 1e-6) // 160/4 swings * 1.0 factors
 
-	// armor: 10 * 7 = 70, no auto term
-	require.InDelta(t, 70.0, scored[0].Score, 1e-9)
-	require.Len(t, scored[0].Terms, 1)
+	// a chest with potency raises CADPS? no arts here, so potency does nothing;
+	// use flurry which multiplies auto-attack
+	chest := store.ScorableItem{ID: 1, Slot: "Chest", Stats: model.StatBlock{Flurry: 10}}
+	d := set.CandidateDelta("Chest", chest)
+	require.Greater(t, d, 0.0)
 
-	// weapon: AutoDPS(zero stats, 160/4) = 160/4 = 40 swings * all-1.0 factors = 40
-	// + flurry 5*3 = 15  => 55
-	require.InDelta(t, 55.0, scored[1].Score, 1e-6)
-	require.Equal(t, "auto-attack", scored[1].Terms[0].Stat) // auto term first (largest)
-	require.InDelta(t, 40.0, scored[1].Terms[0].Contribution, 1e-6)
+	// an off-hand weapon adds its own auto-attack
+	off := store.ScorableItem{ID: 2, Slot: "Secondary", WeaponAvg: 150, WeaponDelay: 4, Stats: model.StatBlock{}}
+	require.True(t, off.IsWeapon())
+	require.Greater(t, set.CandidateDelta("Secondary", off), 0.0)
+}
+
+func TestSetRestBaseExcludesSlot(t *testing.T) {
+	set := NewSet(model.StatBlock{}, testLoadout())
+	set.Equipped["Head"] = []store.ScorableItem{{ID: 1, Slot: "Head", Stats: model.StatBlock{Potency: 10}}}
+	set.Equipped["Chest"] = []store.ScorableItem{{ID: 2, Slot: "Chest", Stats: model.StatBlock{Potency: 25}}}
+
+	require.InDelta(t, 35.0, set.restBase("").Potency, 1e-9)      // both
+	require.InDelta(t, 25.0, set.restBase("Head").Potency, 1e-9)  // Head excluded
 }
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `go test ./internal/bis/ -run TestScoreAll -v`
+Run: `go test ./internal/bis/ -run TestSet -v`
 Expected: FAIL — package/symbols undefined.
 
 - [ ] **Step 3: Write minimal implementation**
 
 ```go
-// Package bis derives per-baseline stat weights, scores Assassin-usable items,
-// ranks them per slot, and renders the best-in-slot report.
+// Package bis builds the Assassin's best-in-slot gear set by iterating to
+// convergence and renders the explainable report.
 package bis
 
 import (
 	"github.com/amdrake93/eq2-eof-itemdex/internal/model"
+	"github.com/amdrake93/eq2-eof-itemdex/internal/spell"
 	"github.com/amdrake93/eq2-eof-itemdex/internal/store"
 )
 
-// ScoredItem is one item with its computed score and explainable breakdown.
+// offHandSlot is the census slot name for the off-hand weapon.
+const offHandSlot = "Secondary"
+
+// Set is a candidate gear set: a profile baseline + fixed main-hand/arts + the
+// items chosen per slot. DPS is always recomputed from the full set so caps and
+// interactions are exact.
+type Set struct {
+	Profile  model.StatBlock
+	Main     model.Weapon
+	Arts     []spell.CombatArt
+	Equipped map[string][]store.ScorableItem
+}
+
+// NewSet returns an empty set seeded with the profile baseline and loadout.
+func NewSet(profile model.StatBlock, lo store.Loadout) *Set {
+	return &Set{Profile: profile, Main: lo.Main, Arts: lo.Arts, Equipped: map[string][]store.ScorableItem{}}
+}
+
+// restBase is the set's StatBlock with one slot's items excluded (exclude=""
+// includes everything).
+func (s *Set) restBase(exclude string) model.StatBlock {
+	b := s.Profile
+	for slot, items := range s.Equipped {
+		if slot == exclude {
+			continue
+		}
+		for _, it := range items {
+			b = b.Add(it.Stats)
+		}
+	}
+	return b
+}
+
+// offWeapon is the equipped off-hand weapon (zero Weapon if none).
+func (s *Set) offWeapon() model.Weapon {
+	for _, it := range s.Equipped[offHandSlot] {
+		if it.IsWeapon() {
+			return model.Weapon{AvgDamage: it.WeaponAvg, DelaySecs: it.WeaponDelay}
+		}
+	}
+	return model.Weapon{}
+}
+
+// restOff is the off-hand weapon excluding a slot (zero if the slot IS the off-hand).
+func (s *Set) restOff(exclude string) model.Weapon {
+	if exclude == offHandSlot {
+		return model.Weapon{}
+	}
+	return s.offWeapon()
+}
+
+// DPS is the full set's modeled TotalDPS.
+func (s *Set) DPS() float64 {
+	return model.TotalDPSDual(s.restBase(""), s.Main, s.offWeapon(), s.Arts)
+}
+
+// CandidateDelta is the in-context ΔDPS of putting a candidate in a slot, given
+// the rest of the (otherwise-fixed) set with that slot emptied.
+func (s *Set) CandidateDelta(slot string, c store.ScorableItem) float64 {
+	rb := s.restBase(slot)
+	ro := s.restOff(slot)
+	if slot == offHandSlot && c.IsWeapon() {
+		w := model.Weapon{AvgDamage: c.WeaponAvg, DelaySecs: c.WeaponDelay}
+		return model.ItemDelta(rb, s.Main, ro, s.Arts, c.Stats, &w)
+	}
+	return model.ItemDelta(rb, s.Main, ro, s.Arts, c.Stats, nil)
+}
+```
+
+- [ ] **Step 4: Run test to verify it passes**
+
+Run: `go test ./internal/bis/ -run TestSet -v`
+Expected: PASS.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add internal/bis/set.go internal/bis/set_test.go
+git commit -m "Add bis.Set: full-set DPS and slot-context deltas"
+```
+
+---
+
+### Task 7: `bis.pickBest` — greedy capacity-aware slot fill
+
+**Files:**
+- Create: `internal/bis/build.go`
+- Test: `internal/bis/build_test.go`
+
+**Why:** A slot may hold more than one item (Ear/Finger/Wrist/Charm = 2). `pickBest` greedily adds the candidate that maximizes the *full set* DPS, in the context of those already chosen for that slot — so a second item that would just overstack a near-capped stat loses to one that adds a fresh multiplier.
+
+- [ ] **Step 1: Write the failing test**
+
+```go
+package bis
+
+import (
+	"testing"
+
+	"github.com/amdrake93/eq2-eof-itemdex/internal/model"
+	"github.com/amdrake93/eq2-eof-itemdex/internal/store"
+	"github.com/stretchr/testify/require"
+)
+
+func TestCapacityOf(t *testing.T) {
+	require.Equal(t, 2, capacityOf("Ear"))
+	require.Equal(t, 2, capacityOf("Finger"))
+	require.Equal(t, 1, capacityOf("Chest"))
+}
+
+func TestPickBestRespectsCapacityAndContext(t *testing.T) {
+	set := NewSet(model.StatBlock{}, testLoadout())
+	// Ear holds 2. One flurry item and one haste item beat two of the same,
+	// because the auto cluster is multiplicative (mixing partners > stacking one).
+	cands := []store.ScorableItem{
+		{ID: 1, Slot: "Ear", Tier: "FABLED", Stats: model.StatBlock{Flurry: 20}},
+		{ID: 2, Slot: "Ear", Tier: "FABLED", Stats: model.StatBlock{Haste: 100}},
+		{ID: 3, Slot: "Ear", Tier: "FABLED", Stats: model.StatBlock{Flurry: 20}},
+	}
+	got := pickBest(set, "Ear", cands)
+	require.Len(t, got, 2)
+	ids := map[int]bool{got[0].ID: true, got[1].ID: true}
+	require.True(t, ids[2], "should include the haste item (a fresh multiplier)")
+}
+```
+
+- [ ] **Step 2: Run test to verify it fails**
+
+Run: `go test ./internal/bis/ -run "TestCapacityOf|TestPickBest" -v`
+Expected: FAIL — `undefined: capacityOf` / `pickBest`.
+
+- [ ] **Step 3: Write minimal implementation**
+
+```go
+package bis
+
+import (
+	"math"
+
+	"github.com/amdrake93/eq2-eof-itemdex/internal/store"
+)
+
+// slotCapacity is how many items a census slot equips; unlisted slots hold 1.
+var slotCapacity = map[string]int{
+	"Ear": 2, "Finger": 2, "Wrist": 2, "Charm": 2,
+}
+
+func capacityOf(slot string) int {
+	if n, ok := slotCapacity[slot]; ok {
+		return n
+	}
+	return 1
+}
+
+// pickBest greedily chooses up to capacityOf(slot) distinct candidates that
+// maximize the full set DPS, each addition evaluated in the context of those
+// already chosen (so within-slot caps/interactions are respected). It restores
+// the slot's original contents before returning.
+func pickBest(set *Set, slot string, cands []store.ScorableItem) []store.ScorableItem {
+	orig := set.Equipped[slot]
+	defer func() { set.Equipped[slot] = orig }()
+
+	capN := capacityOf(slot)
+	chosen := []store.ScorableItem{}
+	used := map[int]bool{}
+	for len(chosen) < capN {
+		bestIdx, bestDPS := -1, math.Inf(-1)
+		for i, c := range cands {
+			if used[c.ID] {
+				continue
+			}
+			set.Equipped[slot] = append(append([]store.ScorableItem{}, chosen...), c)
+			if d := set.DPS(); d > bestDPS {
+				bestDPS, bestIdx = d, i
+			}
+		}
+		if bestIdx < 0 {
+			break
+		}
+		chosen = append(chosen, cands[bestIdx])
+		used[cands[bestIdx].ID] = true
+	}
+	return chosen
+}
+```
+
+- [ ] **Step 4: Run test to verify it passes**
+
+Run: `go test ./internal/bis/ -run "TestCapacityOf|TestPickBest" -v`
+Expected: PASS.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add internal/bis/build.go internal/bis/build_test.go
+git commit -m "Add pickBest: greedy capacity-aware slot fill"
+```
+
+---
+
+### Task 8: `bis.BuildSet` — coordinate-ascent to convergence
+
+**Files:**
+- Modify: `internal/bis/build.go`
+- Test: `internal/bis/buildset_test.go`
+
+**Why:** This is the core. Fill every optimizable slot with its DPS-maximizing pick at the current set state, then repeat passes until no slot changes. Because every evaluation uses the live set totals, a capped stat stops being chosen once the SET hits the cap (no 400-haste sets) and a partner stat gets picked once its companions are present. `Primary` is the fixed Soulfire (not a slot here); locked slots are pinned.
+
+- [ ] **Step 1: Write the failing test**
+
+```go
+package bis
+
+import (
+	"testing"
+
+	"github.com/amdrake93/eq2-eof-itemdex/internal/model"
+	"github.com/amdrake93/eq2-eof-itemdex/internal/store"
+	"github.com/stretchr/testify/require"
+)
+
+func TestBuildSetStopsStackingPastCap(t *testing.T) {
+	lo := testLoadout()
+	haste := func(id int, slot string) store.ScorableItem {
+		return store.ScorableItem{ID: id, Slot: slot, Tier: "FABLED", Stats: model.StatBlock{Haste: 150}}
+	}
+	flurry := func(id int, slot string) store.ScorableItem {
+		return store.ScorableItem{ID: id, Slot: slot, Tier: "FABLED", Stats: model.StatBlock{Flurry: 30}}
+	}
+	bySlot := map[string][]store.ScorableItem{
+		"Head":  {haste(1, "Head"), flurry(2, "Head")},
+		"Chest": {haste(3, "Chest"), flurry(4, "Chest")},
+	}
+	set := BuildSet(model.StatBlock{}, lo, bySlot, nil, 12)
+
+	// One slot toward the haste cap, the other switches to flurry — a SECOND
+	// 150-haste would push 300 (capped at 200, mostly wasted), so flurry wins.
+	picks := []int{set.Equipped["Head"][0].ID, set.Equipped["Chest"][0].ID}
+	hasteCount := 0
+	for _, id := range picks {
+		if id == 1 || id == 3 {
+			hasteCount++
+		}
+	}
+	require.Equal(t, 1, hasteCount, "exactly one haste item; the cap stops the second")
+}
+
+func TestBuildSetRespectsLocked(t *testing.T) {
+	lo := testLoadout()
+	bySlot := map[string][]store.ScorableItem{
+		"Head": {{ID: 1, Slot: "Head", Tier: "FABLED", Stats: model.StatBlock{Potency: 5}}},
+	}
+	locked := map[string][]store.ScorableItem{
+		"Chest": {{ID: 99, Slot: "Chest", Tier: "FABLED", Stats: model.StatBlock{Flurry: 50}}},
+	}
+	set := BuildSet(model.StatBlock{}, lo, bySlot, locked, 12)
+	require.Equal(t, 99, set.Equipped["Chest"][0].ID) // locked stays
+	require.Equal(t, 1, set.Equipped["Head"][0].ID)   // optimized around it
+}
+
+func TestBuildSetConverges(t *testing.T) {
+	lo := testLoadout()
+	bySlot := map[string][]store.ScorableItem{
+		"Head":  {{ID: 1, Slot: "Head", Tier: "FABLED", Stats: model.StatBlock{Flurry: 10}}},
+		"Chest": {{ID: 2, Slot: "Chest", Tier: "FABLED", Stats: model.StatBlock{Haste: 50}}},
+	}
+	a := BuildSet(model.StatBlock{}, lo, bySlot, nil, 12)
+	b := BuildSet(model.StatBlock{}, lo, bySlot, nil, 12)
+	// deterministic / idempotent
+	require.Equal(t, a.Equipped["Head"][0].ID, b.Equipped["Head"][0].ID)
+	require.Equal(t, 1, a.Equipped["Head"][0].ID)
+	require.Equal(t, 2, a.Equipped["Chest"][0].ID)
+}
+```
+
+- [ ] **Step 2: Run test to verify it fails**
+
+Run: `go test ./internal/bis/ -run TestBuildSet -v`
+Expected: FAIL — `undefined: BuildSet`.
+
+- [ ] **Step 3: Write minimal implementation**
+
+Append to `internal/bis/build.go` (add `"sort"` to its imports):
+
+```go
+// mainHandSlot is the fixed main-hand slot (Soulfire); it is not optimized.
+const mainHandSlot = "Primary"
+
+func sameItems(a, b []store.ScorableItem) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i].ID != b[i].ID {
+			return false
+		}
+	}
+	return true
+}
+
+// BuildSet runs coordinate ascent: each pass fills every optimizable slot with
+// the DPS-maximizing pick at the current set state; passes repeat until no slot
+// changes (converged) or maxPasses is hit. Locked slots are pre-filled and never
+// re-optimized; the main-hand slot is fixed to the loadout and excluded.
+func BuildSet(profile model.StatBlock, lo store.Loadout, bySlot, locked map[string][]store.ScorableItem, maxPasses int) *Set {
+	set := NewSet(profile, lo)
+	lockedSlot := map[string]bool{}
+	for slot, items := range locked {
+		set.Equipped[slot] = items
+		lockedSlot[slot] = true
+	}
+	slots := make([]string, 0, len(bySlot))
+	for slot := range bySlot {
+		if slot == mainHandSlot || lockedSlot[slot] {
+			continue
+		}
+		slots = append(slots, slot)
+	}
+	sort.Strings(slots)
+
+	for pass := 0; pass < maxPasses; pass++ {
+		changed := false
+		for _, slot := range slots {
+			best := pickBest(set, slot, bySlot[slot])
+			if !sameItems(best, set.Equipped[slot]) {
+				set.Equipped[slot] = best
+				changed = true
+			}
+		}
+		if !changed {
+			break
+		}
+	}
+	return set
+}
+```
+
+Add `"github.com/amdrake93/eq2-eof-itemdex/internal/model"` to `build.go` imports (used by the signature).
+
+- [ ] **Step 4: Run test to verify it passes**
+
+Run: `go test ./internal/bis/ -run TestBuildSet -v`
+Expected: PASS (all three).
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add internal/bis/build.go internal/bis/buildset_test.go
+git commit -m "Add BuildSet: coordinate-ascent converging set-builder"
+```
+
+---
+
+### Task 9: `bis` report layer — converged weights + per-slot in-context ranking
+
+**Files:**
+- Create: `internal/bis/report.go`
+- Test: `internal/bis/report_test.go`
+
+**Why:** Once the set converges, derive the weights at its full baseline (for explainable breakdowns), then rank each slot's candidates by their in-context ΔDPS (Task 6's `CandidateDelta`) so every alternative is judged in the set it would actually join. Top-3 Fabled + top-3 Legendary + all Mythical per slot (spec §7).
+
+- [ ] **Step 1: Write the failing test**
+
+```go
+package bis
+
+import (
+	"testing"
+
+	"github.com/amdrake93/eq2-eof-itemdex/internal/model"
+	"github.com/amdrake93/eq2-eof-itemdex/internal/store"
+	"github.com/stretchr/testify/require"
+)
+
+func TestBuildSlotReports(t *testing.T) {
+	lo := testLoadout()
+	mk := func(id int, tier string, flurry float64) store.ScorableItem {
+		return store.ScorableItem{ID: id, Name: "i", Slot: "Ear", Tier: tier, Stats: model.StatBlock{Flurry: flurry}}
+	}
+	bySlot := map[string][]store.ScorableItem{
+		"Ear": {mk(1, "FABLED", 5), mk(2, "FABLED", 20), mk(3, "FABLED", 12), mk(4, "FABLED", 1),
+			mk(5, "LEGENDARY", 8), mk(6, "MYTHICAL", 50)},
+	}
+	set := BuildSet(model.StatBlock{}, lo, bySlot, nil, 12)
+	weights := ConvergedWeights(set)
+	reports := BuildSlotReports(set, bySlot, weights, 3)
+
+	require.Len(t, reports, 1)
+	r := reports[0]
+	require.Equal(t, "Ear", r.Slot)
+	require.Len(t, r.Chosen, 2) // Ear capacity 2
+
+	// Fabled alternatives: top 3 by in-context ΔDPS, highest flurry first
+	require.Len(t, r.Fabled, 3)
+	require.Equal(t, 2, r.Fabled[0].Item.ID) // flurry 20 is the strongest
+	require.Greater(t, r.Fabled[0].Delta, r.Fabled[1].Delta)
+	require.NotEmpty(t, r.Fabled[0].Terms) // breakdown attached
+	require.Len(t, r.Legendary, 1)
+	require.Len(t, r.Mythical, 1)
+}
+```
+
+- [ ] **Step 2: Run test to verify it fails**
+
+Run: `go test ./internal/bis/ -run TestBuildSlotReports -v`
+Expected: FAIL — undefined symbols.
+
+- [ ] **Step 3: Write minimal implementation**
+
+```go
+package bis
+
+import (
+	"sort"
+
+	"github.com/amdrake93/eq2-eof-itemdex/internal/model"
+	"github.com/amdrake93/eq2-eof-itemdex/internal/store"
+)
+
+// ScoredItem is one candidate with its in-context ΔDPS and explainable breakdown.
 type ScoredItem struct {
 	Item  store.ScorableItem
-	Score float64
+	Delta float64
 	Terms []model.ScoreTerm
 }
 
-// Weights derives the marginal stat weights for a baseline against the loadout.
-func Weights(lo store.Loadout, baseline model.StatBlock) map[string]float64 {
-	dps := func(sb model.StatBlock) float64 {
-		return model.TotalDPSDual(sb, lo.Main, lo.Off, lo.Arts)
-	}
-	return model.DeriveWeights(baseline, dps)
+// SlotReport is one slot's converged pick plus ranked alternatives by tier.
+type SlotReport struct {
+	Slot      string
+	Chosen    []store.ScorableItem
+	Mythical  []ScoredItem
+	Fabled    []ScoredItem
+	Legendary []ScoredItem
 }
 
-// ScoreAll scores items at the given weights. Weapons add an auto-attack term
-// (their dominant value) evaluated at the baseline's buff context.
-func ScoreAll(items []store.ScorableItem, weights map[string]float64, baseline model.StatBlock) []ScoredItem {
-	out := make([]ScoredItem, 0, len(items))
-	for _, it := range items {
-		total, terms := model.ScoreItem(weights, it.Stats)
-		if it.IsWeapon() {
-			auto := model.AutoDPS(baseline, model.Weapon{AvgDamage: it.WeaponAvg, DelaySecs: it.WeaponDelay})
-			total += auto
-			terms = append([]model.ScoreTerm{{Stat: "auto-attack", ItemValue: it.WeaponAvg, Weight: 0, Contribution: auto}}, terms...)
-		}
-		out = append(out, ScoredItem{Item: it, Score: total, Terms: terms})
+// ConvergedWeights derives the stat weights at the converged set's full baseline,
+// against the converged off-hand — the weights used for explainable breakdowns.
+func ConvergedWeights(set *Set) map[string]float64 {
+	base := set.restBase("")
+	off := set.offWeapon()
+	dps := func(sb model.StatBlock) float64 {
+		return model.TotalDPSDual(sb, set.Main, off, set.Arts)
 	}
+	return model.DeriveWeights(base, dps)
+}
+
+// SlotCandidatesScored ranks a slot's candidates by in-context ΔDPS (against the
+// converged set with that slot emptied), attaching the weight×stat breakdown.
+func SlotCandidatesScored(set *Set, slot string, cands []store.ScorableItem, weights map[string]float64) []ScoredItem {
+	out := make([]ScoredItem, 0, len(cands))
+	for _, c := range cands {
+		_, terms := model.ScoreItem(weights, c.Stats)
+		out = append(out, ScoredItem{Item: c, Delta: set.CandidateDelta(slot, c), Terms: terms})
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].Delta > out[j].Delta })
 	return out
 }
-```
 
-- [ ] **Step 4: Run test to verify it passes**
-
-Run: `go test ./internal/bis/ -run TestScoreAll -v`
-Expected: PASS.
-
-- [ ] **Step 5: Commit**
-
-```bash
-git add internal/bis/engine.go internal/bis/engine_test.go
-git commit -m "Add bis engine: per-baseline Weights and ScoreAll (weapon-aware)"
-```
-
----
-
-### Task 6: `bis.LockedRemodel` — constrained re-model (§8)
-
-**Files:**
-- Modify: `internal/bis/engine.go`
-- Test: `internal/bis/locked_test.go`
-
-**Context:** Locking N items folds their stats into the baseline, re-derives weights at that adjusted baseline, and re-scores only the *unlocked* items. The user supplies locked IDs from game knowledge; the tool needs no set-membership data.
-
-- [ ] **Step 1: Write the failing test**
-
-```go
-package bis
-
-import (
-	"testing"
-
-	"github.com/amdrake93/eq2-eof-itemdex/internal/model"
-	"github.com/amdrake93/eq2-eof-itemdex/internal/store"
-	"github.com/stretchr/testify/require"
-)
-
-func TestLockedRemodel(t *testing.T) {
-	lo := store.Loadout{
-		Main: model.Weapon{AvgDamage: 160, DelaySecs: 4},
-		Off:  model.Weapon{AvgDamage: 158, DelaySecs: 4.4},
-	}
-	base := model.StatBlock{}
-	items := []store.ScorableItem{
-		{ID: 1, Name: "Locked Chest", Slot: "chest", Tier: "FABLED", Stats: model.StatBlock{DPSMod: 200}},
-		{ID: 2, Name: "Open Legs", Slot: "legs", Tier: "FABLED", Stats: model.StatBlock{Flurry: 10}},
-	}
-
-	res := LockedRemodel(lo, base, items, []int{1})
-
-	require.Len(t, res.Locked, 1)
-	require.Equal(t, 1, res.Locked[0].ID)
-	// adjusted baseline absorbs the locked item's DPSMod
-	require.InDelta(t, 200.0, res.AdjustedBaseline.DPSMod, 1e-9)
-	// only the unlocked item is scored
-	require.Len(t, res.Scored, 1)
-	require.Equal(t, 2, res.Scored[0].Item.ID)
-}
-```
-
-- [ ] **Step 2: Run test to verify it fails**
-
-Run: `go test ./internal/bis/ -run TestLockedRemodel -v`
-Expected: FAIL — `undefined: LockedRemodel` / `RemodelResult`.
-
-- [ ] **Step 3: Write minimal implementation**
-
-Append to `internal/bis/engine.go`:
-
-```go
-// RemodelResult is the output of a locked-items constrained re-model.
-type RemodelResult struct {
-	AdjustedBaseline model.StatBlock
-	Weights          map[string]float64
-	Locked           []store.ScorableItem
-	Scored           []ScoredItem // unlocked items, scored at the adjusted weights
-}
-
-// LockedRemodel folds the locked items' stats into the baseline, re-derives the
-// weights there, and re-scores the remaining (unlocked) items.
-func LockedRemodel(lo store.Loadout, baseline model.StatBlock, items []store.ScorableItem, lockedIDs []int) RemodelResult {
-	locked := make(map[int]bool, len(lockedIDs))
-	for _, id := range lockedIDs {
-		locked[id] = true
-	}
-	adj := baseline
-	var lockedItems, unlocked []store.ScorableItem
-	for _, it := range items {
-		if locked[it.ID] {
-			adj = adj.Add(it.Stats)
-			lockedItems = append(lockedItems, it)
-		} else {
-			unlocked = append(unlocked, it)
+func topByTier(scored []ScoredItem, tier string, n int) []ScoredItem {
+	var f []ScoredItem
+	for _, s := range scored {
+		if s.Item.Tier == tier {
+			f = append(f, s)
 		}
 	}
-	weights := Weights(lo, adj)
-	return RemodelResult{
-		AdjustedBaseline: adj,
-		Weights:          weights,
-		Locked:           lockedItems,
-		Scored:           ScoreAll(unlocked, weights, adj),
+	if n >= 0 && len(f) > n {
+		f = f[:n]
 	}
-}
-```
-
-- [ ] **Step 4: Run test to verify it passes**
-
-Run: `go test ./internal/bis/ -run TestLockedRemodel -v`
-Expected: PASS.
-
-- [ ] **Step 5: Commit**
-
-```bash
-git add internal/bis/engine.go internal/bis/locked_test.go
-git commit -m "Add LockedRemodel: constrained re-model around locked items"
-```
-
----
-
-### Task 7: `bis.TopPerSlot` — per-slot tier ranking
-
-**Files:**
-- Create: `internal/bis/ranking.go`
-- Test: `internal/bis/ranking_test.go`
-
-- [ ] **Step 1: Write the failing test**
-
-```go
-package bis
-
-import (
-	"testing"
-
-	"github.com/amdrake93/eq2-eof-itemdex/internal/store"
-	"github.com/stretchr/testify/require"
-)
-
-func si(id int, slot, tier string, score float64) ScoredItem {
-	return ScoredItem{Item: store.ScorableItem{ID: id, Slot: slot, Tier: tier}, Score: score}
+	return f
 }
 
-func TestTopPerSlot(t *testing.T) {
-	scored := []ScoredItem{
-		si(1, "chest", "FABLED", 50), si(2, "chest", "FABLED", 90), si(3, "chest", "FABLED", 70), si(4, "chest", "FABLED", 10),
-		si(5, "chest", "LEGENDARY", 40), si(6, "chest", "LEGENDARY", 60),
-		si(7, "chest", "MYTHICAL", 200),
-		si(8, "head", "FABLED", 30),
-		si(9, "chest", "TREASURED", 999), // ignored tier
-	}
-	groups := TopPerSlot(scored, 3)
-
-	// slots sorted alphabetically: chest, head
-	require.Len(t, groups, 2)
-	require.Equal(t, "chest", groups[0].Slot)
-
-	// top-3 Fabled by score desc: 90,70,50 (the 10 dropped)
-	require.Len(t, groups[0].Fabled, 3)
-	require.Equal(t, []int{2, 3, 1}, []int{groups[0].Fabled[0].Item.ID, groups[0].Fabled[1].Item.ID, groups[0].Fabled[2].Item.ID})
-	// top-3 Legendary (only 2 exist): 60,40
-	require.Len(t, groups[0].Legendary, 2)
-	require.Equal(t, 6, groups[0].Legendary[0].Item.ID)
-	// all Mythical shown
-	require.Len(t, groups[0].Mythical, 1)
-	require.Equal(t, 7, groups[0].Mythical[0].Item.ID)
-
-	require.Equal(t, "head", groups[1].Slot)
-	require.Len(t, groups[1].Fabled, 1)
-}
-```
-
-- [ ] **Step 2: Run test to verify it fails**
-
-Run: `go test ./internal/bis/ -run TestTopPerSlot -v`
-Expected: FAIL — `undefined: TopPerSlot` / `SlotGroup`.
-
-- [ ] **Step 3: Write minimal implementation**
-
-```go
-package bis
-
-import "sort"
-
-// SlotGroup holds the ranked items for one equipment slot, split by tier.
-type SlotGroup struct {
-	Slot      string
-	Mythical  []ScoredItem // all (the ceiling)
-	Fabled    []ScoredItem // top N
-	Legendary []ScoredItem // top N
-}
-
-// TopPerSlot groups scored items by slot and, within each slot, returns all
-// Mythical plus the top-n Fabled and top-n Legendary by score. Other tiers are
-// ignored. Slots are returned in alphabetical order.
-func TopPerSlot(scored []ScoredItem, n int) []SlotGroup {
-	bySlot := map[string][]ScoredItem{}
-	for _, s := range scored {
-		bySlot[s.Item.Slot] = append(bySlot[s.Item.Slot], s)
-	}
+// BuildSlotReports produces one SlotReport per slot (sorted), each with the
+// converged pick and top-n Fabled/Legendary + all Mythical alternatives.
+func BuildSlotReports(set *Set, bySlot map[string][]store.ScorableItem, weights map[string]float64, n int) []SlotReport {
 	slots := make([]string, 0, len(bySlot))
 	for slot := range bySlot {
 		slots = append(slots, slot)
 	}
 	sort.Strings(slots)
 
-	topN := func(items []ScoredItem, tier string, limit int) []ScoredItem {
-		var f []ScoredItem
-		for _, it := range items {
-			if it.Item.Tier == tier {
-				f = append(f, it)
-			}
-		}
-		sort.Slice(f, func(i, j int) bool { return f[i].Score > f[j].Score })
-		if limit >= 0 && len(f) > limit {
-			f = f[:limit]
-		}
-		return f
-	}
-
-	groups := make([]SlotGroup, 0, len(slots))
+	reports := make([]SlotReport, 0, len(slots))
 	for _, slot := range slots {
-		items := bySlot[slot]
-		groups = append(groups, SlotGroup{
+		scored := SlotCandidatesScored(set, slot, bySlot[slot], weights)
+		reports = append(reports, SlotReport{
 			Slot:      slot,
-			Mythical:  topN(items, "MYTHICAL", -1),
-			Fabled:    topN(items, "FABLED", n),
-			Legendary: topN(items, "LEGENDARY", n),
+			Chosen:    set.Equipped[slot],
+			Mythical:  topByTier(scored, "MYTHICAL", -1),
+			Fabled:    topByTier(scored, "FABLED", n),
+			Legendary: topByTier(scored, "LEGENDARY", n),
 		})
 	}
-	return groups
+	return reports
 }
 ```
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `go test ./internal/bis/ -run TestTopPerSlot -v`
+Run: `go test ./internal/bis/ -run TestBuildSlotReports -v`
 Expected: PASS.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add internal/bis/ranking.go internal/bis/ranking_test.go
-git commit -m "Add TopPerSlot: per-slot tier ranking"
+git add internal/bis/report.go internal/bis/report_test.go
+git commit -m "Add report layer: converged weights and per-slot in-context ranking"
 ```
 
 ---
 
-### Task 8: `bis.Render` — markdown report
+### Task 10: `bis.Render` — markdown report
 
 **Files:**
-- Create: `internal/bis/report.go`
-- Test: `internal/bis/report_test.go`
-
-**Context:** One report covers both baselines. For each baseline: a weight table, then per-slot Mythical (ceiling) + top-3 Fabled + top-3 Legendary, each item showing name, score, gamelink, and its top breakdown terms. A trailing assumptions block names the key constants. Tests assert on substrings (markdown exact-match is brittle).
+- Create: `internal/bis/render.go`
+- Test: `internal/bis/render_test.go`
 
 - [ ] **Step 1: Write the failing test**
 
@@ -888,25 +1226,28 @@ import (
 
 func TestRender(t *testing.T) {
 	weights := map[string]float64{"reuse": 16.67, "potency": 7.19}
-	groups := []SlotGroup{{
-		Slot: "chest",
+	reports := []SlotReport{{
+		Slot:   "Chest",
+		Chosen: []store.ScorableItem{{ID: 2, Name: "Fabled Chest", Tier: "FABLED", GameLink: "LINK2"}},
 		Fabled: []ScoredItem{{
 			Item:  store.ScorableItem{ID: 2, Name: "Fabled Chest", Tier: "FABLED", GameLink: "LINK2"},
-			Score: 412.0,
+			Delta: 41.2,
 			Terms: []model.ScoreTerm{{Stat: "potency", ItemValue: 35, Weight: 7.19, Contribution: 251.65}},
 		}},
 	}}
 
-	out := Render([]BaselineReport{{Name: "RAID", Weights: weights, Groups: groups}})
+	out := Render([]BaselineReport{{Name: "RAID", Weights: weights, Reports: reports}})
 
 	require.Contains(t, out, "## RAID")
-	require.Contains(t, out, "### chest")
+	require.Contains(t, out, "### Chest")
+	require.Contains(t, out, "BiS: **Fabled Chest**")
 	require.Contains(t, out, "Fabled Chest")
-	require.Contains(t, out, "412.0")              // score
-	require.Contains(t, out, "LINK2")              // gamelink
-	require.Contains(t, out, "potency 35 × 7.19")  // breakdown term
-	require.Contains(t, out, "reuse")              // weight table
-	require.Contains(t, out, "Assumptions")        // constants block
+	require.Contains(t, out, "+41.2 DPS") // in-context ΔDPS
+	require.Contains(t, out, "LINK2")
+	require.Contains(t, out, "potency 35 × 7.19")
+	require.Contains(t, out, "reuse")       // weight table
+	require.Contains(t, out, "Assumptions") // constants block
+	require.Contains(t, out, "in-context ΔDPS")
 }
 ```
 
@@ -926,14 +1267,13 @@ import (
 	"strings"
 
 	"github.com/amdrake93/eq2-eof-itemdex/internal/constants"
-	"github.com/amdrake93/eq2-eof-itemdex/internal/model"
 )
 
-// BaselineReport is one baseline's fully-ranked result.
+// BaselineReport is one baseline's converged weights + per-slot reports.
 type BaselineReport struct {
 	Name    string
 	Weights map[string]float64
-	Groups  []SlotGroup
+	Reports []SlotReport
 }
 
 func writeWeightTable(b *strings.Builder, weights map[string]float64) {
@@ -949,19 +1289,15 @@ func writeWeightTable(b *strings.Builder, weights map[string]float64) {
 	b.WriteString("\n")
 }
 
-func writeItem(b *strings.Builder, it ScoredItem) {
-	fmt.Fprintf(b, "- **%s** — score %.1f", it.Item.Name, it.Score)
-	if it.Item.GameLink != "" {
-		fmt.Fprintf(b, " ([item](%s))", it.Item.GameLink)
+func writeScored(b *strings.Builder, s ScoredItem) {
+	fmt.Fprintf(b, "- **%s** — +%.1f DPS", s.Item.Name, s.Delta)
+	if s.Item.GameLink != "" {
+		fmt.Fprintf(b, " ([item](%s))", s.Item.GameLink)
 	}
 	b.WriteString("\n")
-	for i, term := range it.Terms {
+	for i, term := range s.Terms {
 		if i >= 4 {
 			break
-		}
-		if term.Stat == "auto-attack" {
-			fmt.Fprintf(b, "  - auto-attack (avg %.0f) = %.1f\n", term.ItemValue, term.Contribution)
-			continue
 		}
 		fmt.Fprintf(b, "  - %s %.0f × %.2f = %.1f\n", term.Stat, term.ItemValue, term.Weight, term.Contribution)
 	}
@@ -971,9 +1307,9 @@ func writeTier(b *strings.Builder, label string, items []ScoredItem) {
 	if len(items) == 0 {
 		return
 	}
-	fmt.Fprintf(b, "**%s**\n\n", label)
-	for _, it := range items {
-		writeItem(b, it)
+	fmt.Fprintf(b, "_%s_\n\n", label)
+	for _, s := range items {
+		writeScored(b, s)
 	}
 	b.WriteString("\n")
 }
@@ -982,15 +1318,23 @@ func writeTier(b *strings.Builder, label string, items []ScoredItem) {
 func Render(reports []BaselineReport) string {
 	var b strings.Builder
 	b.WriteString("# Assassin EoF Best-in-Slot\n\n")
+	b.WriteString("_Per-item numbers are in-context ΔDPS at the converged set; the `stat × weight` lines are the explainable breakdown at the converged-baseline weights._\n\n")
 	for _, r := range reports {
 		fmt.Fprintf(&b, "## %s\n\n", r.Name)
-		b.WriteString("Derived stat weights (marginal DPS per +1 stat):\n\n")
+		b.WriteString("Converged stat weights (marginal DPS per +1 stat):\n\n")
 		writeWeightTable(&b, r.Weights)
-		for _, g := range r.Groups {
-			fmt.Fprintf(&b, "### %s\n\n", g.Slot)
-			writeTier(&b, "Mythical (ceiling)", g.Mythical)
-			writeTier(&b, "Fabled", g.Fabled)
-			writeTier(&b, "Legendary", g.Legendary)
+		for _, sr := range r.Reports {
+			fmt.Fprintf(&b, "### %s\n\n", sr.Slot)
+			if len(sr.Chosen) > 0 {
+				names := make([]string, 0, len(sr.Chosen))
+				for _, c := range sr.Chosen {
+					names = append(names, c.Name)
+				}
+				fmt.Fprintf(&b, "BiS: **%s**\n\n", strings.Join(names, "**, **"))
+			}
+			writeTier(&b, "Mythical (ceiling)", sr.Mythical)
+			writeTier(&b, "Fabled", sr.Fabled)
+			writeTier(&b, "Legendary", sr.Legendary)
 		}
 	}
 	writeAssumptions(&b)
@@ -1004,8 +1348,8 @@ func writeAssumptions(b *strings.Builder) {
 	fmt.Fprintf(b, "- haste & dps-mod: shared diminishing curve, hard cap %.0f stat → 125%%\n", constants.HasteStatCap)
 	fmt.Fprintf(b, "- reuse halves recast at %.0f%%; CA cast+recovery = %.2fs; fight = %.0fs\n",
 		constants.ReuseHalvesAt, constants.CACastTimeSecs+constants.CARecoverySecs, constants.FightDurationSecs)
-	b.WriteString("- Scores are first-order Σ(weight × stat); see docs/design-plan2.md §3.1 for the full model.\n")
-	_ = model.WeightStats // keep model imported for type references above
+	b.WriteString("- Set built by coordinate-ascent to convergence (caps/interactions resolved at the live set baseline).\n")
+	b.WriteString("- Main-hand is fixed (Soulfire); its own gear stats are not folded into the baseline. See docs/design-plan2.md §3.1.\n")
 }
 ```
 
@@ -1017,19 +1361,19 @@ Expected: PASS.
 - [ ] **Step 5: Commit**
 
 ```bash
-git add internal/bis/report.go internal/bis/report_test.go
-git commit -m "Add Render: markdown BiS report with breakdowns and assumptions"
+git add internal/bis/render.go internal/bis/render_test.go
+git commit -m "Add Render: markdown BiS report (converged set + in-context alternatives)"
 ```
 
 ---
 
-### Task 9: `cmd/bis` — orchestrator
+### Task 11: `cmd/bis` — orchestrator
 
 **Files:**
 - Create: `cmd/bis/main.go`
-- Test: manual (CLI integration; the logic is unit-tested in Tasks 1–8)
+- Test: manual (CLI integration; logic unit-tested in Tasks 1–10)
 
-**Context:** Operates on an existing `bis.db` (built by `cmd/builddb`). Derives weights for both baselines, scores items, writes the `scores` table, and renders the report to `--out`. `--lock` (comma-separated item IDs) switches to the locked re-model for the raid baseline.
+**Context:** Operates on an existing `bis.db` (built by `cmd/builddb`). For each baseline it builds the converged set, ranks per slot, writes the `scores` table (in-context ΔDPS), and renders the report. `--lock` (comma-separated item IDs) adds a locked-set raid re-model section.
 
 - [ ] **Step 1: Write the implementation**
 
@@ -1049,6 +1393,8 @@ import (
 	"github.com/amdrake93/eq2-eof-itemdex/internal/store"
 )
 
+const maxBuildPasses = 12
+
 func parseLocks(s string) ([]int, error) {
 	if strings.TrimSpace(s) == "" {
 		return nil, nil
@@ -1064,21 +1410,50 @@ func parseLocks(s string) ([]int, error) {
 	return ids, nil
 }
 
-func scoreRows(scored []bis.ScoredItem, baselineName string) []store.ScoreRow {
-	rows := make([]store.ScoreRow, 0, len(scored))
-	for _, s := range scored {
-		rows = append(rows, store.ScoreRow{
-			ItemID: s.Item.ID, Baseline: baselineName, DPSScore: s.Score, Slot: s.Item.Slot,
-		})
+func groupBySlot(items []store.ScorableItem) map[string][]store.ScorableItem {
+	m := map[string][]store.ScorableItem{}
+	for _, it := range items {
+		m[it.Slot] = append(m[it.Slot], it)
+	}
+	return m
+}
+
+// scoreRows turns every slot report's ranked candidates into score rows.
+func scoreRows(reports []bis.SlotReport, baselineName string) []store.ScoreRow {
+	var rows []store.ScoreRow
+	add := func(items []bis.ScoredItem, slot string) {
+		for _, s := range items {
+			rows = append(rows, store.ScoreRow{ItemID: s.Item.ID, Baseline: baselineName, DPSScore: s.Delta, Slot: slot})
+		}
+	}
+	for _, r := range reports {
+		add(r.Mythical, r.Slot)
+		add(r.Fabled, r.Slot)
+		add(r.Legendary, r.Slot)
 	}
 	return rows
+}
+
+// lockedItems pulls the full ScorableItem for each locked id, grouped by slot.
+func lockedItems(items []store.ScorableItem, ids []int) map[string][]store.ScorableItem {
+	want := map[int]bool{}
+	for _, id := range ids {
+		want[id] = true
+	}
+	m := map[string][]store.ScorableItem{}
+	for _, it := range items {
+		if want[it.ID] {
+			m[it.Slot] = append(m[it.Slot], it)
+		}
+	}
+	return m
 }
 
 func main() {
 	dbPath := flag.String("db", "bis.db", "scored SQLite db (built by builddb)")
 	out := flag.String("out", "bis-report.md", "report output path")
 	lock := flag.String("lock", "", "comma-separated item IDs to lock (raid re-model)")
-	topN := flag.Int("top", 3, "items per tier per slot")
+	topN := flag.Int("top", 3, "alternatives per tier per slot")
 	flag.Parse()
 
 	lockIDs, err := parseLocks(*lock)
@@ -1104,6 +1479,7 @@ func main() {
 		fmt.Fprintln(os.Stderr, "load items:", err)
 		os.Exit(1)
 	}
+	bySlot := groupBySlot(items)
 	fmt.Printf("loadout: %s + %s; %d combat arts; %d assassin items\n",
 		lo.MainName, lo.OffName, len(lo.Arts), len(items))
 
@@ -1115,24 +1491,20 @@ func main() {
 	var reports []bis.BaselineReport
 	var allRows []store.ScoreRow
 	for _, b := range baselines {
-		weights := bis.Weights(lo, b.sb)
-		scored := bis.ScoreAll(items, weights, b.sb)
-		allRows = append(allRows, scoreRows(scored, strings.ToLower(b.name))...)
-		reports = append(reports, bis.BaselineReport{
-			Name: b.name, Weights: weights, Groups: bis.TopPerSlot(scored, *topN),
-		})
+		set := bis.BuildSet(b.sb, lo, bySlot, nil, maxBuildPasses)
+		weights := bis.ConvergedWeights(set)
+		slotReports := bis.BuildSlotReports(set, bySlot, weights, *topN)
+		allRows = append(allRows, scoreRows(slotReports, strings.ToLower(b.name))...)
+		reports = append(reports, bis.BaselineReport{Name: b.name, Weights: weights, Reports: slotReports})
 	}
 
 	if len(lockIDs) > 0 {
-		res := bis.LockedRemodel(lo, baseline.Raid, items, lockIDs)
-		names := make([]string, 0, len(res.Locked))
-		for _, it := range res.Locked {
-			names = append(names, it.Name)
-		}
+		locked := lockedItems(items, lockIDs)
+		set := bis.BuildSet(baseline.Raid, lo, bySlot, locked, maxBuildPasses)
+		weights := bis.ConvergedWeights(set)
+		slotReports := bis.BuildSlotReports(set, bySlot, weights, *topN)
 		reports = append(reports, bis.BaselineReport{
-			Name:    "RAID (locked: " + strings.Join(names, ", ") + ")",
-			Weights: res.Weights,
-			Groups:  bis.TopPerSlot(res.Scored, *topN),
+			Name: fmt.Sprintf("RAID (locked: %s)", *lock), Weights: weights, Reports: slotReports,
 		})
 	}
 
@@ -1155,12 +1527,12 @@ Run:
 go build ./... && go vet ./...
 go run ./cmd/bis --db bis.db --out bis-report.md
 ```
-Expected: prints the loadout line + `wrote bis-report.md and N score rows`. (If `bis.db` is missing, rebuild it first: `go run ./cmd/builddb`.)
+Expected: prints the loadout line + `wrote bis-report.md and N score rows`. (If `bis.db` is missing: `go run ./cmd/builddb` first.)
 
 - [ ] **Step 3: Sanity-check the output**
 
-Run: `head -60 bis-report.md`
-Expected: a `## SOLO` section with a weight table, then `### <slot>` blocks listing Fabled/Legendary items with `stat N × W = C` breakdown lines; the Soulfire weapon appearing under Mythical for its slot.
+Run: `sed -n '1,80p' bis-report.md`
+Expected: `## SOLO` with a weight table, then `### <slot>` blocks each showing `BiS: **<item>**` plus Fabled/Legendary alternatives with `+X DPS` and `stat N × W = C` breakdown lines; the Soulfire weapon under Mythical in its slot. Eyeball that no slot stacks a capped stat absurdly (the whole point of the rebuild).
 
 - [ ] **Step 4: Full suite + lint**
 
@@ -1175,7 +1547,7 @@ Expected: all pass; 0 lint issues.
 
 ```bash
 git add cmd/bis/main.go
-git commit -m "Add cmd/bis: score items, write scores table, render BiS report"
+git commit -m "Add cmd/bis: build converged set, write scores, render report"
 ```
 
 ---
@@ -1183,16 +1555,20 @@ git commit -m "Add cmd/bis: score items, write scores table, render BiS report"
 ## Self-Review
 
 **1. Spec coverage:**
-- §3 scoring `Σ weight×stat` → Task 1 (`ScoreItem`); weapon DPS-awareness → Task 5. ✔
-- §6 `scores (item_id, baseline, dps_score, slot)` table → Task 2; `items`/`item_stats` already exist. ✔
-- §7 report: top-3 Fabled + top-3 Legendary per slot → Task 7; Mythical ceiling → Task 7/8; per-item breakdown → Tasks 1+8; weight table + assumptions → Task 8; `bis.db` scores artifact → Tasks 2+9. ✔
-- §8 locked-items re-model → Task 6 + `--lock` in Task 9. ✔
-- §9 validation: the explainable breakdown is the artifact; loop is human-driven (run → eyeball → adjust constants → re-run). ✔
+- §3 scoring + **iterate to convergence** → Task 1 (`ItemDelta`), Task 8 (`BuildSet` coordinate ascent). ✔
+- §3.1 caps/curves honored → `ItemDelta` diffs full `TotalDPSDual`, so the curve caps and multiplicative interactions apply automatically (Task 1 tests assert cap→0 and partner-amplification). ✔
+- §6 `scores (item_id, baseline, dps_score, slot)` → Task 3; `items`/`item_stats` already exist. ✔
+- §7 top-3 Fabled + top-3 Legendary per slot, Mythical ceiling, per-item breakdown, weight table, assumptions, `bis.db` artifact → Tasks 9, 10, 11. ✔
+- §8 locked-items re-model → Task 8 (`locked` arg) + `--lock` in Task 11. ✔
+- §9 validation: in-context ΔDPS + breakdown is the eyeball artifact; loop is human-driven. ✔
 
-**2. Placeholder scan:** No TBD/TODO; every code step shows complete code; every test has real assertions. ✔
+**2. Placeholder scan:** No TBD/TODO; every code step is complete; every test asserts real values. ✔
 
-**3. Type consistency:** `model.ScoreTerm` (Stat/ItemValue/Weight/Contribution) used identically in Tasks 1, 5, 8. `store.ScorableItem` (with `WeaponAvg`/`WeaponDelay`/`IsWeapon`/`Stats`/`Mods`) consistent across Tasks 4, 5, 6. `store.Loadout` fields (`Main`/`Off`/`MainName`/`OffName`/`Arts`) consistent in Tasks 3, 5, 9. `bis.ScoredItem`/`SlotGroup`/`BaselineReport`/`RemodelResult` consistent across Tasks 5–9. `store.ScoreRow` consistent in Tasks 2, 9. ✔
+**3. Type consistency:** `model.ItemDelta(restBase, main, restOff, arts, itemStats, *newOff)` used identically in Tasks 1 and 6. `store.ScorableItem` (`ID/Name/Slot/Tier/GameLink/WeaponAvg/WeaponDelay/Stats/Mods` + `IsWeapon`) consistent in Tasks 5–9, 11. `store.Loadout` (`Main/Off/MainName/OffName/Arts`) consistent in Tasks 4, 6, 11. `bis.Set` (`Profile/Main/Arts/Equipped`, methods `restBase/offWeapon/restOff/DPS/CandidateDelta`) consistent in Tasks 6–9. `bis.ScoredItem` (`Item/Delta/Terms`), `SlotReport` (`Slot/Chosen/Mythical/Fabled/Legendary`), `BaselineReport` (`Name/Weights/Reports`) consistent in Tasks 9–11. `slotCapacity`/`offHandSlot`/`mainHandSlot` consistent in Tasks 6–8. `store.ScoreRow` consistent in Tasks 3, 11. ✔
 
-**Known first-order limitation (per spec §3, intentional):** the linear `Σ weight×stat` score does not re-evaluate caps/diminishing returns for the item's own stacked stats — it uses the marginal weight at the baseline. This is the spec's chosen explainable model; saturation is addressed by the two realistic baselines and the locked-set re-model (Task 6). Documented in the report's assumptions block.
+**Design notes (intentional):**
+- **Greedy coordinate ascent is a heuristic, not a global optimum.** Slots interact only through the shared baseline (caps + multiplicative scaling), and convergence passes re-optimize each slot against the others, so it lands at a strong local optimum. Full combinatorial optimization is intractable and unnecessary. `BuildSet` is deterministic (slots sorted, candidates in load order) → reproducible reports.
+- **Main-hand stats not folded in** (Soulfire contributes weapon damage/delay only) — consistent with `cmd/weights`; noted in the report. Folding them in later is a localized `LoadLoadout` change.
+- **Ranged slot** is treated as a normal stat slot (its auto-attack isn't modeled); it contributes only stats, so its ΔDPS is small but honest.
 
-**Out of scope (noted, not built):** automatic equip-best-then-re-derive convergence iteration (§3 mentions it; the locked-set provides manual iteration); set-bonus *value* (intentionally the user's subjective call per §8); weapon *main-hand* optimization (Soulfire is given).
+**Performance:** ~17 optimizable slots × ~100–250 candidates × capacity × ~3–6 convergence passes × (a `TotalDPSDual` eval = ~800-step rotation sim) ≈ a few million sim steps — sub-second in Go. No optimization needed.
