@@ -39,6 +39,21 @@ func TestRender(t *testing.T) {
 	require.Contains(t, out, "Assumptions")
 }
 
+func TestRenderFixedSlot(t *testing.T) {
+	reports := []BaselineReport{{
+		Name:    "RAID",
+		Weights: map[string]float64{"potency": 7.0},
+		Reports: []SlotReport{{
+			Slot:   "Primary",
+			Chosen: []store.ScorableItem{{Name: "Soulfire Gladius", Tier: "MYTHICAL"}},
+			Ranked: nil,
+		}},
+	}}
+	out := Render(reports)
+	require.Contains(t, out, "### Primary")
+	require.Contains(t, out, "BiS: **Soulfire Gladius** _(fixed)_")
+}
+
 func TestRenderProgression(t *testing.T) {
 	mk := func(name, tier string, d float64) SlotReport {
 		return SlotReport{

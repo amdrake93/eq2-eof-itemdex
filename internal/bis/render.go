@@ -66,7 +66,11 @@ func Render(reports []BaselineReport) string {
 				for _, c := range sr.Chosen {
 					names = append(names, c.Name)
 				}
-				fmt.Fprintf(&b, "BiS: **%s**\n\n", strings.Join(names, "**, **"))
+				line := fmt.Sprintf("BiS: **%s**", strings.Join(names, "**, **"))
+				if len(sr.Ranked) == 0 {
+					line += " _(fixed)_"
+				}
+				fmt.Fprintf(&b, "%s\n\n", line)
 			}
 			for _, s := range sr.Ranked {
 				writeScored(&b, s)

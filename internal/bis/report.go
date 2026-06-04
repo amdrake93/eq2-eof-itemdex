@@ -62,6 +62,9 @@ func BuildSlotReports(set *Set, bySlot map[string][]store.ScorableItem, weights 
 
 	reports := make([]SlotReport, 0, len(slots))
 	for _, slot := range slots {
+		if slot == mainHandSlot {
+			continue
+		}
 		scored := SlotCandidatesScored(set, slot, bySlot[slot], weights)
 		reports = append(reports, SlotReport{
 			Slot:   slot,

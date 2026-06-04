@@ -34,3 +34,17 @@ func TestBuildSlotReports(t *testing.T) {
 	require.GreaterOrEqual(t, r.Ranked[0].Delta, r.Ranked[1].Delta)
 	require.GreaterOrEqual(t, r.Ranked[1].Delta, r.Ranked[2].Delta)
 }
+
+func TestBuildSlotReportsSkipsPrimary(t *testing.T) {
+	lo := testLoadout()
+	bySlot := map[string][]store.ScorableItem{
+		"Primary": {{ID: 1, Slot: "Primary", Tier: "FABLED", WieldStyle: "One-Handed", WeaponAvg: 160, WeaponDelay: 4}},
+		"Chest":   {{ID: 2, Slot: "Chest", Tier: "FABLED", Stats: model.StatBlock{Potency: 30}}},
+	}
+	set := BuildSet(model.StatBlock{}, lo, bySlot, nil, 12)
+	reports := BuildSlotReports(set, bySlot, ConvergedWeights(set), 3)
+
+	for _, r := range reports {
+		require.NotEqual(t, "Primary", r.Slot, "main-hand slot is fixed; it should not be ranked")
+	}
+}
