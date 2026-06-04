@@ -32,21 +32,26 @@ func effRecast(sb StatBlock, ca spell.CombatArt) float64 {
 	return base * (1 - constants.ReuseHalveCoeff*math.Min(sb.Reuse, constants.ReuseHalvesAt)/100)
 }
 
-// RotationCADPS simulates a priority rotation over durationSecs: at each cast
-// slot (slotSecs = cast time + recovery apart) it fires the highest-effective-
-// damage art that is off cooldown; cooldowns are reuse-reduced; when nothing is
-// castable it jumps to the next availability. Auto-attack runs in parallel and
-// is modeled separately, so casting does not reduce auto throughput.
-func RotationCADPS(sb StatBlock, cas []spell.CombatArt, durationSecs, slotSecs float64) float64 {
-	if durationSecs <= 0 || slotSecs <= 0 || len(cas) == 0 {
+// RotationCADPS simulates the priority rotation. recoverySecs is the post-cast
+// recovery added to each art's own cast time to size its timeline slot; an art
+// with no recorded cast time falls back to constants.CACastTimeSecs. Auto-attack
+// runs in parallel (modeled separately), so casting does not displace it.
+func RotationCADPS(sb StatBlock, cas []spell.CombatArt, durationSecs, recoverySecs float64) float64 {
+	if durationSecs <= 0 || len(cas) == 0 {
 		return 0
 	}
 	eff := make([]float64, len(cas))
 	rec := make([]float64, len(cas))
+	slot := make([]float64, len(cas))
 	avail := make([]float64, len(cas))
 	for i, ca := range cas {
 		eff[i] = CAEffectiveDamage(sb, ca)
 		rec[i] = effRecast(sb, ca)
+		castSecs := float64(ca.CastSecsHundredths) / 100
+		if castSecs <= 0 {
+			castSecs = constants.CACastTimeSecs
+		}
+		slot[i] = castSecs + recoverySecs
 	}
 	var total, t float64
 	for t < durationSecs {
@@ -56,7 +61,7 @@ func RotationCADPS(sb StatBlock, cas []spell.CombatArt, durationSecs, slotSecs f
 				best, bestDmg = i, eff[i]
 			}
 		}
-		if best < 0 { // nothing off cooldown — jump to soonest availability
+		if best < 0 {
 			soonest := math.Inf(1)
 			for i := range cas {
 				if avail[i] < soonest {
@@ -71,7 +76,7 @@ func RotationCADPS(sb StatBlock, cas []spell.CombatArt, durationSecs, slotSecs f
 		}
 		total += bestDmg
 		avail[best] = t + rec[best]
-		t += slotSecs
+		t += slot[best]
 	}
 	return total / durationSecs
 }

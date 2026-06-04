@@ -39,10 +39,9 @@ func AutoDPS(sb StatBlock, w Weapon) float64 {
 }
 
 // CADPS is the simulated combat-art DPS over a standard fight (priority rotation).
-// Each cast occupies cast time + recovery before the next cast.
+// Each cast occupies its own cast time + recovery before the next cast.
 func CADPS(sb StatBlock, cas []spell.CombatArt) float64 {
-	slot := constants.CACastTimeSecs + constants.CARecoverySecs
-	return RotationCADPS(sb, cas, constants.FightDurationSecs, slot)
+	return RotationCADPS(sb, cas, constants.FightDurationSecs, constants.CARecoverySecs)
 }
 
 // AutoDPSDual is dual-wield auto-attack: both weapons swing on their own delay.

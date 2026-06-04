@@ -30,24 +30,24 @@ func TestTotalDPSDual_NoCAsEqualsPureAuto(t *testing.T) {
 }
 
 func TestRotationCADPS_RecoveryPacesThroughput(t *testing.T) {
-	// An always-up CA (small recast). A larger slot (cast+recovery) yields fewer
-	// casts and thus lower CADPS than a slot without recovery.
+	// An always-up CA (small recast) with a 0.5s cast time. Adding recovery enlarges
+	// the per-cast slot (0.5→0.75), yielding fewer casts and thus lower CADPS than
+	// the same art with no recovery (0.5 slot).
 	cas := []spell.CombatArt{
-		{Name: "Test Strike", MinDamage: 1000, MaxDamage: 1000, RecastSecs: 0.1},
+		{Name: "Test Strike", MinDamage: 1000, MaxDamage: 1000, RecastSecs: 0.1, CastSecsHundredths: 50},
 	}
 	sb := StatBlock{}
-	withRecovery := RotationCADPS(sb, cas, 600, 0.75)
-	withoutRecovery := RotationCADPS(sb, cas, 600, 0.5)
+	withRecovery := RotationCADPS(sb, cas, 600, 0.25)   // slot 0.5 + 0.25 = 0.75
+	withoutRecovery := RotationCADPS(sb, cas, 600, 0.0) // slot 0.5 + 0 = 0.5
 	require.Less(t, withRecovery, withoutRecovery)
 	require.InDelta(t, 1.5, withoutRecovery/withRecovery, 0.05)
 }
 
-func TestCADPS_UsesCastPlusRecoverySlot(t *testing.T) {
+func TestCADPS_UsesRecoveryPacedRotation(t *testing.T) {
 	cas := []spell.CombatArt{
-		{Name: "Test Strike", MinDamage: 800, MaxDamage: 1200, RecastSecs: 10},
+		{Name: "Test Strike", MinDamage: 800, MaxDamage: 1200, RecastSecs: 10, CastSecsHundredths: 50},
 	}
 	sb := StatBlock{}
-	slot := constants.CACastTimeSecs + constants.CARecoverySecs
-	want := RotationCADPS(sb, cas, constants.FightDurationSecs, slot)
+	want := RotationCADPS(sb, cas, constants.FightDurationSecs, constants.CARecoverySecs)
 	require.InDelta(t, want, CADPS(sb, cas), 1e-9)
 }
