@@ -15,4 +15,8 @@ const (
 	AbilityModCapFrac = 0.50  // +CA-dmg cap = 50% of the potency-adjusted CA base
 	ReuseHalvesAt     = 100.0 // 100% reuse → recast halved (cap)
 	ReuseHalveCoeff   = 0.50  // recast reduction coefficient at full reuse
+
+	// Rotation-sim parameters.
+	FightDurationSecs = 600.0 // 10-minute fight (long-fight-aware; short enough that one extra big nuke matters)
+	CACastTimeSecs    = 0.5   // combat arts share ~0.5s cast time
 )
