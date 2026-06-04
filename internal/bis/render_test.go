@@ -1,6 +1,7 @@
 package bis
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/amdrake93/eq2-eof-itemdex/internal/model"
@@ -36,4 +37,27 @@ func TestRender(t *testing.T) {
 	require.Contains(t, out, "potency 35 × 7.19")
 	require.Contains(t, out, "reuse")
 	require.Contains(t, out, "Assumptions")
+}
+
+func TestRenderProgression(t *testing.T) {
+	mk := func(name, tier string, d float64) SlotReport {
+		return SlotReport{
+			Slot:   "Chest",
+			Ranked: []ScoredItem{{Item: store.ScorableItem{Name: name, Tier: tier}, Delta: d}},
+		}
+	}
+	reports := []BaselineReport{
+		{Name: "PRE-RAID", Reports: []SlotReport{mk("Dungeon Robe", "LEGENDARY", 30)}},
+		{Name: "RAID", Reports: []SlotReport{mk("Fabled Chest", "FABLED", 50)}},
+		{Name: "BEST-OF-BEST", Reports: []SlotReport{mk("Avatar Robe", "MYTHICAL", 70)}},
+	}
+	out := Render(reports)
+
+	require.Contains(t, out, "## Progression")
+	chest := out[strings.Index(out, "## Progression"):]
+	require.Contains(t, chest, "### Chest")
+	pre := strings.Index(chest, "Dungeon Robe")
+	raid := strings.Index(chest, "Fabled Chest")
+	best := strings.Index(chest, "Avatar Robe")
+	require.True(t, pre >= 0 && raid > pre && best > raid, "progression order pre-raid → raid → best")
 }

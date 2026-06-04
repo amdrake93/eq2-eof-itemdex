@@ -74,8 +74,40 @@ func Render(reports []BaselineReport) string {
 			b.WriteString("\n")
 		}
 	}
+	writeProgression(&b, reports)
 	writeAssumptions(&b)
 	return b.String()
+}
+
+func writeProgression(b *strings.Builder, reports []BaselineReport) {
+	type pick struct {
+		tier string
+		item ScoredItem
+	}
+	bySlot := map[string][]pick{}
+	var slotOrder []string
+	for _, r := range reports {
+		for _, sr := range r.Reports {
+			if len(sr.Ranked) == 0 {
+				continue
+			}
+			if _, seen := bySlot[sr.Slot]; !seen {
+				slotOrder = append(slotOrder, sr.Slot)
+			}
+			bySlot[sr.Slot] = append(bySlot[sr.Slot], pick{tier: r.Name, item: sr.Ranked[0]})
+		}
+	}
+	sort.Strings(slotOrder)
+
+	b.WriteString("---\n\n## Progression (per slot)\n\n")
+	b.WriteString("_Top pick per accessibility tier. ΔDPS is in each tier's own buff context, so values are not directly comparable across tiers._\n\n")
+	for _, slot := range slotOrder {
+		fmt.Fprintf(b, "### %s\n", slot)
+		for _, p := range bySlot[slot] {
+			fmt.Fprintf(b, "- %-12s **%s** [%s] (+%.1f)\n", p.tier, p.item.Item.Name, rarityTag(p.item.Item), p.item.Delta)
+		}
+		b.WriteString("\n")
+	}
 }
 
 func writeAssumptions(b *strings.Builder) {
