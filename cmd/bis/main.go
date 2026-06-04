@@ -54,6 +54,25 @@ func lockedItems(items []store.ScorableItem, ids []int) map[string][]store.Scora
 	return m
 }
 
+func findByName(items []store.ScorableItem, name string) (store.ScorableItem, bool) {
+	for _, it := range items {
+		if it.Name == name {
+			return it, true
+		}
+	}
+	return store.ScorableItem{}, false
+}
+
+// withFixedPrimary prepends the fixed main-hand as a Primary slot report so each
+// list is complete, showing the given Soulfire (not an optimized pick).
+func withFixedPrimary(reports []bis.SlotReport, main store.ScorableItem, ok bool) []bis.SlotReport {
+	if !ok {
+		return reports
+	}
+	primary := bis.SlotReport{Slot: "Primary", Chosen: []store.ScorableItem{main}}
+	return append([]bis.SlotReport{primary}, reports...)
+}
+
 func main() {
 	dbPath := flag.String("db", "bis.db", "scored SQLite db (built by builddb)")
 	out := flag.String("out", "bis-report.md", "report output path")
@@ -84,8 +103,9 @@ func main() {
 		fmt.Fprintln(os.Stderr, "load items:", err)
 		os.Exit(1)
 	}
-	fmt.Printf("loadout: %s + %s; %d combat arts; %d assassin items\n",
-		lo.MainName, lo.OffName, len(lo.Arts), len(items))
+	mainItem, haveMain := findByName(items, lo.MainName)
+	fmt.Printf("loadout: %s (main-hand, fixed); %d combat arts; %d assassin items\n",
+		lo.MainName, len(lo.Arts), len(items))
 
 	notExcluded := func(it store.ScorableItem) bool { return !bis.IsHunters(it) && !bis.Curated(it) }
 	tiers := []struct {
@@ -110,7 +130,7 @@ func main() {
 		bySlot := bis.SlotCandidates(items, t.keep)
 		set := bis.BuildSet(t.baseline, lo, bySlot, nil, maxBuildPasses)
 		weights := bis.ConvergedWeights(set)
-		slotReports := bis.BuildSlotReports(set, bySlot, weights, *topN)
+		slotReports := withFixedPrimary(bis.BuildSlotReports(set, bySlot, weights, *topN), mainItem, haveMain)
 		allRows = append(allRows, scoreRows(slotReports, strings.ToLower(t.name))...)
 		reports = append(reports, bis.BaselineReport{Name: t.name, Weights: weights, Reports: slotReports})
 	}
@@ -120,7 +140,7 @@ func main() {
 		bySlot := bis.SlotCandidates(items, func(it store.ScorableItem) bool { return !bis.IsAvatar(it) && notExcluded(it) })
 		set := bis.BuildSet(baseline.Raid, lo, bySlot, locked, maxBuildPasses)
 		weights := bis.ConvergedWeights(set)
-		slotReports := bis.BuildSlotReports(set, bySlot, weights, *topN)
+		slotReports := withFixedPrimary(bis.BuildSlotReports(set, bySlot, weights, *topN), mainItem, haveMain)
 		reports = append(reports, bis.BaselineReport{
 			Name: fmt.Sprintf("RAID (locked: %s)", *lock), Weights: weights, Reports: slotReports,
 		})

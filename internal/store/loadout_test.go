@@ -34,8 +34,6 @@ func TestLoadLoadout(t *testing.T) {
 	require.Equal(t, "Soulfire Gladius", lo.MainName)
 	require.InDelta(t, 160.0, lo.Main.AvgDamage, 1e-9)
 	require.InDelta(t, 4.0, lo.Main.DelaySecs, 1e-9)
-	require.Equal(t, "Enchanted Grove Scimitar", lo.OffName)
-	require.InDelta(t, 158.0, lo.Off.AvgDamage, 1e-9)
 	require.Len(t, lo.Arts, 1)
 	require.Equal(t, "Assassinate II", lo.Arts[0].Name)
 }

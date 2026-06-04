@@ -11,7 +11,6 @@ import (
 func testLoadout() store.Loadout {
 	return store.Loadout{
 		Main: model.Weapon{AvgDamage: 160, DelaySecs: 4},
-		Off:  model.Weapon{},
 	}
 }
 

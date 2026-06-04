@@ -124,11 +124,12 @@ func (d *DB) WriteScores(rows []ScoreRow) (err error) {
 	return tx.Commit()
 }
 
-// Loadout is the fixed dual-wield setup + collapsed combat arts the model scores against.
+// Loadout is the fixed main-hand + collapsed combat arts the model scores against.
+// The off-hand is chosen from the Secondary candidate pool, not fixed here.
 type Loadout struct {
-	Main, Off         model.Weapon
-	MainName, OffName string
-	Arts              []spell.CombatArt
+	Main     model.Weapon
+	MainName string
+	Arts     []spell.CombatArt
 }
 
 func (d *DB) loadWeapon(query string, args ...any) (model.Weapon, string, error) {
@@ -140,20 +141,12 @@ func (d *DB) loadWeapon(query string, args ...any) (model.Weapon, string, error)
 	return model.Weapon{AvgDamage: (mn + mx) / 2, DelaySecs: delay}, name, nil
 }
 
-// LoadLoadout reads the Soulfire main-hand, the best Fabled 1H off-hand, and the
-// Assassin combat arts collapsed to highest rank.
+// LoadLoadout reads the Soulfire main-hand and the Assassin combat arts collapsed
+// to highest rank.
 func (d *DB) LoadLoadout() (Loadout, error) {
 	main, mainName, err := d.loadWeapon(
 		`SELECT name, weapon_min_dmg, weapon_max_dmg, delay FROM items
 		 WHERE name LIKE 'Soulfire%' AND classes LIKE '%assassin%'
-		 ORDER BY weapon_max_dmg DESC LIMIT 1`)
-	if err != nil {
-		return Loadout{}, err
-	}
-	off, offName, err := d.loadWeapon(
-		`SELECT name, weapon_min_dmg, weapon_max_dmg, delay FROM items
-		 WHERE tier='FABLED' AND wieldstyle='One-Handed' AND classes LIKE '%assassin%'
-		   AND skill IN ('piercing','slashing') AND delay BETWEEN 3.5 AND 4.5
 		 ORDER BY weapon_max_dmg DESC LIMIT 1`)
 	if err != nil {
 		return Loadout{}, err
@@ -174,7 +167,7 @@ func (d *DB) LoadLoadout() (Loadout, error) {
 	if err := rows.Err(); err != nil {
 		return Loadout{}, err
 	}
-	return Loadout{Main: main, Off: off, MainName: mainName, OffName: offName, Arts: spell.HighestRanks(arts)}, nil
+	return Loadout{Main: main, MainName: mainName, Arts: spell.HighestRanks(arts)}, nil
 }
 
 // ScorableItem is one Assassin-usable item with its DPS-relevant stats resolved
