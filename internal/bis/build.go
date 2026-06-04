@@ -2,7 +2,9 @@ package bis
 
 import (
 	"math"
+	"sort"
 
+	"github.com/amdrake93/eq2-eof-itemdex/internal/model"
 	"github.com/amdrake93/eq2-eof-itemdex/internal/store"
 )
 
@@ -47,4 +49,55 @@ func pickBest(set *Set, slot string, cands []store.ScorableItem) []store.Scorabl
 		used[cands[bestIdx].ID] = true
 	}
 	return chosen
+}
+
+// mainHandSlot is the fixed main-hand slot (Soulfire); it is not optimized.
+const mainHandSlot = "Primary"
+
+func sameItems(a, b []store.ScorableItem) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i].ID != b[i].ID {
+			return false
+		}
+	}
+	return true
+}
+
+// BuildSet runs coordinate ascent: each pass fills every optimizable slot with
+// the DPS-maximizing pick at the current set state; passes repeat until no slot
+// changes (converged) or maxPasses is hit. Locked slots are pre-filled and never
+// re-optimized; the main-hand slot is fixed to the loadout and excluded.
+func BuildSet(profile model.StatBlock, lo store.Loadout, bySlot, locked map[string][]store.ScorableItem, maxPasses int) *Set {
+	set := NewSet(profile, lo)
+	lockedSlot := map[string]bool{}
+	for slot, items := range locked {
+		set.Equipped[slot] = items
+		lockedSlot[slot] = true
+	}
+	slots := make([]string, 0, len(bySlot))
+	for slot := range bySlot {
+		if slot == mainHandSlot || lockedSlot[slot] {
+			continue
+		}
+		slots = append(slots, slot)
+	}
+	sort.Strings(slots)
+
+	for pass := 0; pass < maxPasses; pass++ {
+		changed := false
+		for _, slot := range slots {
+			best := pickBest(set, slot, bySlot[slot])
+			if !sameItems(best, set.Equipped[slot]) {
+				set.Equipped[slot] = best
+				changed = true
+			}
+		}
+		if !changed {
+			break
+		}
+	}
+	return set
 }
