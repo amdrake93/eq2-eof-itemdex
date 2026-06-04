@@ -17,8 +17,19 @@ func CAEffectiveDamage(sb StatBlock, ca spell.CombatArt) float64 {
 	return (avgBase + bonus) * critFactor(sb)
 }
 
+// aaCooldownReduction is the AA that halves the base recast of these two arts.
+// Applied to base recast BEFORE the reuse reduction.
+var aaCooldownReduction = map[string]float64{
+	"Assassinate":  0.5,
+	"Mortal Blade": 0.5,
+}
+
 func effRecast(sb StatBlock, ca spell.CombatArt) float64 {
-	return ca.RecastSecs * (1 - constants.ReuseHalveCoeff*math.Min(sb.Reuse, constants.ReuseHalvesAt)/100)
+	base := ca.RecastSecs
+	if cdr, ok := aaCooldownReduction[spell.BaseName(ca.Name)]; ok {
+		base *= cdr
+	}
+	return base * (1 - constants.ReuseHalveCoeff*math.Min(sb.Reuse, constants.ReuseHalvesAt)/100)
 }
 
 // RotationCADPS simulates a priority rotation over durationSecs: at each cast
