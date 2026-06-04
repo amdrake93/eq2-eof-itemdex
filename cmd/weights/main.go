@@ -100,7 +100,7 @@ func main() {
 	}{{"SOLO", baseline.Solo}, {"RAID", baseline.Raid}} {
 		fmt.Printf("\n== %s baseline weights (marginal DPS per +1 stat; dual-wield, %d combat arts) ==\n", b.name, len(cas))
 		dps := func(sb model.StatBlock) float64 {
-			return model.AutoDPSDual(sb, mainWeapon, offWeapon) + model.CADPS(sb, cas)
+			return model.TotalDPSDual(sb, mainWeapon, offWeapon, cas)
 		}
 		ws := model.DeriveWeights(b.sb, dps)
 		keys := make([]string, 0, len(ws))

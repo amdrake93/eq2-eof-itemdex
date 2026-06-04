@@ -16,7 +16,9 @@ const (
 	ReuseHalvesAt     = 100.0 // 100% reuse → recast halved (cap)
 	ReuseHalveCoeff   = 0.50  // recast reduction coefficient at full reuse
 
-	// Rotation-sim parameters.
+	// Rotation-sim parameters. Each cast occupies the timeline for cast +
+	// recovery (CACastTimeSecs + CARecoverySecs = 0.75s).
 	FightDurationSecs = 600.0 // 10-minute fight (long-fight-aware; short enough that one extra big nuke matters)
 	CACastTimeSecs    = 0.5   // combat arts share ~0.5s cast time
+	CARecoverySecs    = 0.25  // post-cast recovery; base 0.5s, halved by AA
 )
