@@ -127,8 +127,12 @@ func main() {
 	var reports []bis.BaselineReport
 	var allRows []store.ScoreRow
 	for _, t := range tiers {
+		profile := t.baseline
+		if haveMain {
+			profile = profile.Add(mainItem.Stats)
+		}
 		bySlot := bis.SlotCandidates(items, t.keep)
-		set := bis.BuildSet(t.baseline, lo, bySlot, nil, maxBuildPasses)
+		set := bis.BuildSet(profile, lo, bySlot, nil, maxBuildPasses)
 		weights := bis.ConvergedWeights(set)
 		slotReports := withFixedPrimary(bis.BuildSlotReports(set, bySlot, weights, *topN), mainItem, haveMain)
 		allRows = append(allRows, scoreRows(slotReports, strings.ToLower(t.name))...)
@@ -138,7 +142,11 @@ func main() {
 	if len(lockIDs) > 0 {
 		locked := lockedItems(items, lockIDs)
 		bySlot := bis.SlotCandidates(items, func(it store.ScorableItem) bool { return !bis.IsAvatar(it) && notExcluded(it) })
-		set := bis.BuildSet(baseline.Raid, lo, bySlot, locked, maxBuildPasses)
+		profile := baseline.Raid
+		if haveMain {
+			profile = profile.Add(mainItem.Stats)
+		}
+		set := bis.BuildSet(profile, lo, bySlot, locked, maxBuildPasses)
 		weights := bis.ConvergedWeights(set)
 		slotReports := withFixedPrimary(bis.BuildSlotReports(set, bySlot, weights, *topN), mainItem, haveMain)
 		reports = append(reports, bis.BaselineReport{

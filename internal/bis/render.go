@@ -122,5 +122,5 @@ func writeAssumptions(b *strings.Builder) {
 	fmt.Fprintf(b, "- reuse halves recast at %.0f%%; CA cast+recovery = %.2fs; fight = %.0fs\n",
 		constants.ReuseHalvesAt, constants.CACastTimeSecs+constants.CARecoverySecs, constants.FightDurationSecs)
 	b.WriteString("- Set built by coordinate-ascent to convergence (caps/interactions resolved at the live set baseline).\n")
-	b.WriteString("- Main-hand is fixed (Soulfire); its own gear stats are not folded into the baseline. See docs/design-plan2.md §3.1.\n")
+	b.WriteString("- Main-hand is fixed (Soulfire Sabre); its weapon damage AND full stat line are included in the baseline.\n")
 }
