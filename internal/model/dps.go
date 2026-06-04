@@ -52,6 +52,14 @@ func CADPS(sb StatBlock, cas []spell.CombatArt) float64 {
 	return RotationCADPS(sb, cas, constants.FightDurationSecs, constants.CACastTimeSecs)
 }
 
+// AutoDPSDual is dual-wield auto-attack: both weapons swing on their own delay.
+// Main and off-hand are treated equally — the off-hand's only EoF penalty is not
+// benefiting from the weapon-multiplier stat, which this model doesn't track, so
+// it nets out the same for relative comparison.
+func AutoDPSDual(sb StatBlock, main, off Weapon) float64 {
+	return AutoDPS(sb, main) + AutoDPS(sb, off)
+}
+
 // TotalDPS = auto-attack + combat arts.
 func TotalDPS(sb StatBlock, w Weapon, cas []spell.CombatArt) float64 {
 	return AutoDPS(sb, w) + CADPS(sb, cas)

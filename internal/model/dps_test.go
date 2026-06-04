@@ -26,3 +26,11 @@ func TestCADPS(t *testing.T) {
 	approx(t, 110.0, CADPS(StatBlock{Potency: 10}, []spell.CombatArt{ca})) // base ×1.1
 	approx(t, 200.0, CADPS(StatBlock{Reuse: 100}, []spell.CombatArt{ca}))  // recast halved
 }
+
+func TestAutoDPSDual(t *testing.T) {
+	main := Weapon{AvgDamage: 100, DelaySecs: 2.0} // 50 dps
+	off := Weapon{AvgDamage: 60, DelaySecs: 3.0}   // 20 dps
+	approx(t, 70.0, AutoDPSDual(StatBlock{}, main, off))
+	approx(t, AutoDPS(StatBlock{Haste: 50}, main)+AutoDPS(StatBlock{Haste: 50}, off),
+		AutoDPSDual(StatBlock{Haste: 50}, main, off))
+}
