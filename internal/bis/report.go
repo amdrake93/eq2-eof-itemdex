@@ -14,10 +14,11 @@ type ScoredItem struct {
 	Terms []model.ScoreTerm
 }
 
-// SlotReport is one slot's converged pick plus ranked alternatives by tier.
+// SlotReport is one slot's converged pick plus ranked alternatives.
 type SlotReport struct {
 	Slot      string
 	Chosen    []store.ScorableItem
+	Ranked    []ScoredItem // top-N across all candidates by in-context ΔDPS
 	Mythical  []ScoredItem
 	Fabled    []ScoredItem
 	Legendary []ScoredItem
@@ -44,6 +45,13 @@ func SlotCandidatesScored(set *Set, slot string, cands []store.ScorableItem, wei
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].Delta > out[j].Delta })
 	return out
+}
+
+func topN(scored []ScoredItem, n int) []ScoredItem {
+	if n >= 0 && len(scored) > n {
+		return scored[:n]
+	}
+	return scored
 }
 
 func topByTier(scored []ScoredItem, tier string, n int) []ScoredItem {
@@ -74,6 +82,7 @@ func BuildSlotReports(set *Set, bySlot map[string][]store.ScorableItem, weights 
 		reports = append(reports, SlotReport{
 			Slot:      slot,
 			Chosen:    set.Equipped[slot],
+			Ranked:    topN(scored, n),
 			Mythical:  topByTier(scored, "MYTHICAL", -1),
 			Fabled:    topByTier(scored, "FABLED", n),
 			Legendary: topByTier(scored, "LEGENDARY", n),

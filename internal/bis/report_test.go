@@ -32,4 +32,11 @@ func TestBuildSlotReports(t *testing.T) {
 	require.NotEmpty(t, r.Fabled[0].Terms)
 	require.Len(t, r.Legendary, 1)
 	require.Len(t, r.Mythical, 1)
+
+	// merged priority list: top-3 across ALL candidates by Delta (regardless of
+	// rarity tier). The mythical flurry-50 item has the highest delta.
+	require.Len(t, r.Ranked, 3)
+	require.Equal(t, 6, r.Ranked[0].Item.ID)
+	require.GreaterOrEqual(t, r.Ranked[0].Delta, r.Ranked[1].Delta)
+	require.GreaterOrEqual(t, r.Ranked[1].Delta, r.Ranked[2].Delta)
 }
