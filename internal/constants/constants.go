@@ -7,7 +7,7 @@ package constants
 // Values tagged "confirm vs guild leader / Varsoon parse" where uncertain.
 const (
 	CritMultiplier    = 1.30  // a crit deals +30%
-	FlurryMultiplier  = 5.0   // flurry applies a 5× burst to the auto-attack
+	FlurryMultiplier  = 4.0   // a flurry proc does +100%–500% more (2×–6×), averaging 4× — use the mean for expected DPS
 	HasteCapPct       = 100.0 // haste effect cap; overcap converts to flurry
 	HasteToFlurry     = 10.0  // 10 points overcap haste → 1% flurry
 	DPSModCap         = 200.0 // dps-mod cap (≈ +125%); overcap wasted
