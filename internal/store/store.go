@@ -7,6 +7,7 @@ import (
 
 	"github.com/amdrake93/eq2-eof-itemdex/internal/catalog"
 	"github.com/amdrake93/eq2-eof-itemdex/internal/census"
+	"github.com/amdrake93/eq2-eof-itemdex/internal/model"
 	"github.com/amdrake93/eq2-eof-itemdex/internal/spell"
 	_ "modernc.org/sqlite" // pure-Go driver, registers "sqlite"
 )
@@ -121,6 +122,59 @@ func (d *DB) WriteScores(rows []ScoreRow) (err error) {
 		}
 	}
 	return tx.Commit()
+}
+
+// Loadout is the fixed dual-wield setup + collapsed combat arts the model scores against.
+type Loadout struct {
+	Main, Off         model.Weapon
+	MainName, OffName string
+	Arts              []spell.CombatArt
+}
+
+func (d *DB) loadWeapon(query string, args ...any) (model.Weapon, string, error) {
+	var name string
+	var mn, mx, delay float64
+	if err := d.db.QueryRow(query, args...).Scan(&name, &mn, &mx, &delay); err != nil {
+		return model.Weapon{}, "", err
+	}
+	return model.Weapon{AvgDamage: (mn + mx) / 2, DelaySecs: delay}, name, nil
+}
+
+// LoadLoadout reads the Soulfire main-hand, the best Fabled 1H off-hand, and the
+// Assassin combat arts collapsed to highest rank.
+func (d *DB) LoadLoadout() (Loadout, error) {
+	main, mainName, err := d.loadWeapon(
+		`SELECT name, weapon_min_dmg, weapon_max_dmg, delay FROM items
+		 WHERE name LIKE 'Soulfire%' AND classes LIKE '%assassin%'
+		 ORDER BY weapon_max_dmg DESC LIMIT 1`)
+	if err != nil {
+		return Loadout{}, err
+	}
+	off, offName, err := d.loadWeapon(
+		`SELECT name, weapon_min_dmg, weapon_max_dmg, delay FROM items
+		 WHERE tier='FABLED' AND wieldstyle='One-Handed' AND classes LIKE '%assassin%'
+		   AND skill IN ('piercing','slashing') AND delay BETWEEN 3.5 AND 4.5
+		 ORDER BY weapon_max_dmg DESC LIMIT 1`)
+	if err != nil {
+		return Loadout{}, err
+	}
+	rows, err := d.db.Query(`SELECT name, min_dmg, max_dmg, recast_secs FROM combat_arts`)
+	if err != nil {
+		return Loadout{}, err
+	}
+	defer func() { _ = rows.Close() }()
+	var arts []spell.CombatArt
+	for rows.Next() {
+		var a spell.CombatArt
+		if err := rows.Scan(&a.Name, &a.MinDamage, &a.MaxDamage, &a.RecastSecs); err != nil {
+			return Loadout{}, err
+		}
+		arts = append(arts, a)
+	}
+	if err := rows.Err(); err != nil {
+		return Loadout{}, err
+	}
+	return Loadout{Main: main, Off: off, MainName: mainName, OffName: offName, Arts: spell.HighestRanks(arts)}, nil
 }
 
 // LoadGear inserts items and their modifier stats in a single transaction.
