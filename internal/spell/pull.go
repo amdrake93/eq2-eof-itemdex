@@ -3,6 +3,7 @@ package spell
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/amdrake93/eq2-eof-itemdex/internal/census"
 )
@@ -37,8 +38,31 @@ func AssassinCombatArts(ctx context.Context, c *census.Client) ([]CombatArt, err
 	if err != nil {
 		return nil, err
 	}
+	return FilterCombatArts(spells), nil
+}
+
+// isRanged reports whether an art requires a ranged weapon (and thus a minimum
+// range that pulls the assassin out of melee, costing auto-attacks).
+func isRanged(effects []Effect) bool {
+	for _, e := range effects {
+		if strings.Contains(e.Description, "If weapon equipped in Ranged") {
+			return true
+		}
+	}
+	return false
+}
+
+// FilterCombatArts keeps only the arts an assassin presses in a melee rotation:
+// damaging (parseable damage line), not a buff (beneficial == 0), and not ranged.
+func FilterCombatArts(spells []Spell) []CombatArt {
 	var arts []CombatArt
 	for _, s := range spells {
+		if s.Beneficial != 0 {
+			continue
+		}
+		if isRanged(s.Effects) {
+			continue
+		}
 		min, max, ok := ParseDamage(effectStrings(s.Effects))
 		if !ok {
 			continue
@@ -52,7 +76,7 @@ func AssassinCombatArts(ctx context.Context, c *census.Client) ([]CombatArt, err
 			CastSecsHundredths: s.CastSecsHundredths,
 		})
 	}
-	return arts, nil
+	return arts
 }
 
 func effectStrings(effs []Effect) []string {
