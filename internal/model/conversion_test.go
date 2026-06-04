@@ -14,11 +14,11 @@ func TestEffDelayHasteCurve(t *testing.T) {
 	require.InDelta(t, 4.0/2.25, effDelay(StatBlock{Haste: 300}, w), 1e-4)
 }
 
-func TestDPSModFactorLinearCapped(t *testing.T) {
+func TestDPSModFactorCurveCapped(t *testing.T) {
 	require.Equal(t, 1.0, dpsModFactor(StatBlock{}))
-	require.Equal(t, 2.0, dpsModFactor(StatBlock{DPSMod: 100}))
-	require.Equal(t, 3.0, dpsModFactor(StatBlock{DPSMod: 200}))
-	require.Equal(t, 3.0, dpsModFactor(StatBlock{DPSMod: 300})) // capped
+	require.InDelta(t, 1.66, dpsModFactor(StatBlock{DPSMod: 100}), 1e-9) // effect 66
+	require.InDelta(t, 2.25, dpsModFactor(StatBlock{DPSMod: 200}), 1e-9) // effect 125
+	require.InDelta(t, 2.25, dpsModFactor(StatBlock{DPSMod: 300}), 1e-9) // capped
 }
 
 func TestFlurryFactorNoHasteContribution(t *testing.T) {

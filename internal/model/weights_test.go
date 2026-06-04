@@ -35,16 +35,31 @@ func TestCurveStatMarginalMultiAttack(t *testing.T) {
 
 func TestCurveStatMarginalHaste(t *testing.T) {
 	dps := func(sb StatBlock) float64 { return AutoDPS(sb, Weapon{AvgDamage: 160, DelaySecs: 4}) }
-	// bracket (0,10): @haste10 effect 12 → swings 160/(4/1.12)=44.8; @haste0=40; (44.8-40)/10=0.48
-	require.InDelta(t, 0.48, curveStatMarginal(StatBlock{}, "haste", dps), 1e-6)
+	// bracket (0,24): @haste24 effect 18 → ×1.18; @haste0=40; (40*1.18-40)/24 = 0.30
+	require.InDelta(t, 0.30, curveStatMarginal(StatBlock{}, "haste", dps), 1e-6)
 }
 
-func TestDPSModWeightLinearViaStandardPath(t *testing.T) {
+func TestCurveStatMarginalHasteAtCap(t *testing.T) {
 	dps := func(sb StatBlock) float64 { return AutoDPS(sb, Weapon{AvgDamage: 160, DelaySecs: 4}) }
-	// +1 forward diff: 40*1.01 - 40 = 0.4
-	require.InDelta(t, 0.4, DeriveWeights(StatBlock{}, dps)["dpsmod"], 1e-9)
-	// at cap: +1 → min(201,200)=200 → no change → ~0
-	require.InDelta(t, 0.0, DeriveWeights(StatBlock{DPSMod: 200}, dps)["dpsmod"], 1e-9)
+	require.InDelta(t, 0.0, curveStatMarginal(StatBlock{Haste: 200}, "haste", dps), 1e-9)
+}
+
+func TestCurveStatMarginalDPSMod(t *testing.T) {
+	dps := func(sb StatBlock) float64 { return AutoDPS(sb, Weapon{AvgDamage: 160, DelaySecs: 4}) }
+	// dps-mod shares the haste curve: bracket (0,24): (40*1.18-40)/24 = 0.30
+	require.InDelta(t, 0.30, curveStatMarginal(StatBlock{}, "dpsmod", dps), 1e-6)
+}
+
+func TestCurveStatMarginalDPSModAtCap(t *testing.T) {
+	dps := func(sb StatBlock) float64 { return AutoDPS(sb, Weapon{AvgDamage: 160, DelaySecs: 4}) }
+	require.InDelta(t, 0.0, curveStatMarginal(StatBlock{DPSMod: 200}, "dpsmod", dps), 1e-9)
+}
+
+func TestDeriveWeightsDPSModIntegration(t *testing.T) {
+	dps := func(sb StatBlock) float64 { return AutoDPS(sb, Weapon{AvgDamage: 160, DelaySecs: 4}) }
+	require.InDelta(t, 0.30, DeriveWeights(StatBlock{}, dps)["dpsmod"], 1e-6)
+	require.InDelta(t, 0.30, DeriveWeights(StatBlock{}, dps)["haste"], 1e-6)
+	require.InDelta(t, 0.0, DeriveWeights(StatBlock{DPSMod: 200}, dps)["dpsmod"], 1e-6)
 }
 
 func TestDeriveWeightsMultiAttackIntegration(t *testing.T) {

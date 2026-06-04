@@ -30,9 +30,10 @@ func bump(sb StatBlock, stat string, delta float64) StatBlock {
 // WeightStats is the fixed ordered set of stats the model derives weights for.
 var WeightStats = []string{"haste", "multiattack", "critchance", "potency", "dpsmod", "reuse", "flurry", "abilitymod"}
 
-// curveStats convert through the shared non-linear curve; their marginal weight
-// is the sample-to-sample slope (a +1 forward diff would read lumpy under the floor).
-var curveStats = map[string]bool{"haste": true, "multiattack": true}
+// curveStats convert through a non-linear curve; their marginal weight is the
+// sample-to-sample slope (a +1 forward diff would read lumpy under the floor).
+// Multi-attack has its own gentle curve; haste and dps-mod share the steeper one.
+var curveStats = map[string]bool{"haste": true, "multiattack": true, "dpsmod": true}
 
 // DeriveWeights returns the marginal DPS per +1 unit of each stat at the given
 // baseline. dps computes total DPS for a stat block; the caller binds the
@@ -79,16 +80,28 @@ func setStat(sb StatBlock, stat string, v float64) StatBlock {
 }
 
 // curveStatMarginal is the per-point value of a curve stat as the slope of the
-// effect curve across the sample interval bracketing the baseline. Haste clamps
-// at its stat cap (no value past it).
+// effect curve across the sample interval bracketing the baseline. Haste and
+// dps-mod clamp at their stat cap (no value past it); multi-attack is uncapped.
 func curveStatMarginal(base StatBlock, stat string, dps func(StatBlock) float64) float64 {
 	v := getStat(base, stat)
-	if stat == "haste" && v >= constants.HasteStatCap {
+
+	var samples []curvePoint
+	var capStat float64 // 0 = no cap
+	switch stat {
+	case "multiattack":
+		samples = multiAttackSamples
+	case "haste":
+		samples, capStat = hasteDpsModSamples, constants.HasteStatCap
+	case "dpsmod":
+		samples, capStat = hasteDpsModSamples, constants.DPSModCap
+	}
+
+	if capStat > 0 && v >= capStat {
 		return 0
 	}
-	lo, hi := combatModBracket(v)
-	if stat == "haste" && hi > constants.HasteStatCap {
-		hi = constants.HasteStatCap
+	lo, hi := curveBracket(samples, v)
+	if capStat > 0 && hi > capStat {
+		hi = capStat
 	}
 	if hi <= lo {
 		return 0

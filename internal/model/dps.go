@@ -21,11 +21,11 @@ func flurryFactor(sb StatBlock) float64 {
 }
 
 func dpsModFactor(sb StatBlock) float64 {
-	return 1 + min(sb.DPSMod, constants.DPSModCap)/100
+	return 1 + HasteDpsModEffect(sb.DPSMod)/100
 }
 
 func effDelay(sb StatBlock, w Weapon) float64 {
-	h := CombatModEffect(min(sb.Haste, constants.HasteStatCap))
+	h := HasteDpsModEffect(sb.Haste)
 	return w.DelaySecs / (1 + h/100)
 }
 
@@ -35,7 +35,7 @@ func AutoDPS(sb StatBlock, w Weapon) float64 {
 		return 0
 	}
 	swings := w.AvgDamage / effDelay(sb, w)
-	return swings * (1 + CombatModEffect(sb.MultiAttack)/100) * critFactor(sb) * flurryFactor(sb) * dpsModFactor(sb)
+	return swings * (1 + MultiAttackEffect(sb.MultiAttack)/100) * critFactor(sb) * flurryFactor(sb) * dpsModFactor(sb)
 }
 
 // CADPS is the simulated combat-art DPS over a standard fight (priority rotation).
