@@ -47,24 +47,9 @@ func AutoDPS(sb StatBlock, w Weapon) float64 {
 	return swings * (1 + sb.MultiAttack/100) * critFactor(sb) * flurryFactor(sb) * dpsModFactor(sb)
 }
 
-// CADPS sums each combat art's damage/recast, applying potency, the ability-mod
-// cap (50% of the potency-adjusted base), reuse, and crit.
+// CADPS is the simulated combat-art DPS over a standard fight (priority rotation).
 func CADPS(sb StatBlock, cas []spell.CombatArt) float64 {
-	cf := critFactor(sb)
-	pot := 1 + sb.Potency/100
-	reuseFactor := 1 - constants.ReuseHalveCoeff*min(sb.Reuse, constants.ReuseHalvesAt)/100
-	var total float64
-	for _, ca := range cas {
-		if ca.RecastSecs <= 0 {
-			continue
-		}
-		avgBase := (ca.MinDamage + ca.MaxDamage) / 2 * pot
-		capBonus := constants.AbilityModCapFrac * ca.MaxDamage * pot
-		bonus := min(sb.AbilityMod, capBonus)
-		hit := (avgBase + bonus) * cf
-		total += hit / (ca.RecastSecs * reuseFactor)
-	}
-	return total
+	return RotationCADPS(sb, cas, constants.FightDurationSecs, constants.CACastTimeSecs)
 }
 
 // TotalDPS = auto-attack + combat arts.
