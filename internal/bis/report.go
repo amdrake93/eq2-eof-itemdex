@@ -16,12 +16,9 @@ type ScoredItem struct {
 
 // SlotReport is one slot's converged pick plus ranked alternatives.
 type SlotReport struct {
-	Slot      string
-	Chosen    []store.ScorableItem
-	Ranked    []ScoredItem // top-N across all candidates by in-context ΔDPS
-	Mythical  []ScoredItem
-	Fabled    []ScoredItem
-	Legendary []ScoredItem
+	Slot   string
+	Chosen []store.ScorableItem
+	Ranked []ScoredItem // top-N across all candidates by in-context ΔDPS
 }
 
 // ConvergedWeights derives the stat weights at the converged set's full baseline,
@@ -54,21 +51,8 @@ func topN(scored []ScoredItem, n int) []ScoredItem {
 	return scored
 }
 
-func topByTier(scored []ScoredItem, tier string, n int) []ScoredItem {
-	var f []ScoredItem
-	for _, s := range scored {
-		if s.Item.Tier == tier {
-			f = append(f, s)
-		}
-	}
-	if n >= 0 && len(f) > n {
-		f = f[:n]
-	}
-	return f
-}
-
 // BuildSlotReports produces one SlotReport per slot (sorted), each with the
-// converged pick and top-n Fabled/Legendary + all Mythical alternatives.
+// converged pick and the top-n merged ranked alternatives by in-context ΔDPS.
 func BuildSlotReports(set *Set, bySlot map[string][]store.ScorableItem, weights map[string]float64, n int) []SlotReport {
 	slots := make([]string, 0, len(bySlot))
 	for slot := range bySlot {
@@ -80,12 +64,9 @@ func BuildSlotReports(set *Set, bySlot map[string][]store.ScorableItem, weights 
 	for _, slot := range slots {
 		scored := SlotCandidatesScored(set, slot, bySlot[slot], weights)
 		reports = append(reports, SlotReport{
-			Slot:      slot,
-			Chosen:    set.Equipped[slot],
-			Ranked:    topN(scored, n),
-			Mythical:  topByTier(scored, "MYTHICAL", -1),
-			Fabled:    topByTier(scored, "FABLED", n),
-			Legendary: topByTier(scored, "LEGENDARY", n),
+			Slot:   slot,
+			Chosen: set.Equipped[slot],
+			Ranked: topN(scored, n),
 		})
 	}
 	return reports

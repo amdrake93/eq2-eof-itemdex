@@ -30,25 +30,12 @@ func parseLocks(s string) ([]int, error) {
 	return ids, nil
 }
 
-func groupBySlot(items []store.ScorableItem) map[string][]store.ScorableItem {
-	m := map[string][]store.ScorableItem{}
-	for _, it := range items {
-		m[it.Slot] = append(m[it.Slot], it)
-	}
-	return m
-}
-
-func scoreRows(reports []bis.SlotReport, baselineName string) []store.ScoreRow {
+func scoreRows(reports []bis.SlotReport, tierName string) []store.ScoreRow {
 	var rows []store.ScoreRow
-	add := func(items []bis.ScoredItem, slot string) {
-		for _, s := range items {
-			rows = append(rows, store.ScoreRow{ItemID: s.Item.ID, Baseline: baselineName, DPSScore: s.Delta, Slot: slot})
-		}
-	}
 	for _, r := range reports {
-		add(r.Mythical, r.Slot)
-		add(r.Fabled, r.Slot)
-		add(r.Legendary, r.Slot)
+		for _, s := range r.Ranked {
+			rows = append(rows, store.ScoreRow{ItemID: s.Item.ID, Baseline: tierName, DPSScore: s.Delta, Slot: r.Slot})
+		}
 	}
 	return rows
 }
@@ -71,7 +58,7 @@ func main() {
 	dbPath := flag.String("db", "bis.db", "scored SQLite db (built by builddb)")
 	out := flag.String("out", "bis-report.md", "report output path")
 	lock := flag.String("lock", "", "comma-separated item IDs to lock (raid re-model)")
-	topN := flag.Int("top", 3, "alternatives per tier per slot")
+	topN := flag.Int("top", 3, "alternatives per slot")
 	flag.Parse()
 
 	lockIDs, err := parseLocks(*lock)
@@ -97,27 +84,40 @@ func main() {
 		fmt.Fprintln(os.Stderr, "load items:", err)
 		os.Exit(1)
 	}
-	bySlot := groupBySlot(items)
 	fmt.Printf("loadout: %s + %s; %d combat arts; %d assassin items\n",
 		lo.MainName, lo.OffName, len(lo.Arts), len(items))
 
-	baselines := []struct {
-		name string
-		sb   model.StatBlock
-	}{{"SOLO", baseline.Solo}, {"RAID", baseline.Raid}}
+	notExcluded := func(it store.ScorableItem) bool { return !bis.IsHunters(it) && !bis.Curated(it) }
+	tiers := []struct {
+		name     string
+		baseline model.StatBlock
+		keep     func(store.ScorableItem) bool
+	}{
+		{"PRE-RAID", baseline.Solo, func(it store.ScorableItem) bool {
+			return (it.Tier == "LEGENDARY" || it.Tier == "TREASURED") && !bis.IsAvatar(it) && notExcluded(it)
+		}},
+		{"RAID", baseline.Raid, func(it store.ScorableItem) bool {
+			return !bis.IsAvatar(it) && notExcluded(it)
+		}},
+		{"BEST-OF-BEST", baseline.Raid, func(it store.ScorableItem) bool {
+			return notExcluded(it)
+		}},
+	}
 
 	var reports []bis.BaselineReport
 	var allRows []store.ScoreRow
-	for _, b := range baselines {
-		set := bis.BuildSet(b.sb, lo, bySlot, nil, maxBuildPasses)
+	for _, t := range tiers {
+		bySlot := bis.SlotCandidates(items, t.keep)
+		set := bis.BuildSet(t.baseline, lo, bySlot, nil, maxBuildPasses)
 		weights := bis.ConvergedWeights(set)
 		slotReports := bis.BuildSlotReports(set, bySlot, weights, *topN)
-		allRows = append(allRows, scoreRows(slotReports, strings.ToLower(b.name))...)
-		reports = append(reports, bis.BaselineReport{Name: b.name, Weights: weights, Reports: slotReports})
+		allRows = append(allRows, scoreRows(slotReports, strings.ToLower(t.name))...)
+		reports = append(reports, bis.BaselineReport{Name: t.name, Weights: weights, Reports: slotReports})
 	}
 
 	if len(lockIDs) > 0 {
 		locked := lockedItems(items, lockIDs)
+		bySlot := bis.SlotCandidates(items, func(it store.ScorableItem) bool { return !bis.IsAvatar(it) && notExcluded(it) })
 		set := bis.BuildSet(baseline.Raid, lo, bySlot, locked, maxBuildPasses)
 		weights := bis.ConvergedWeights(set)
 		slotReports := bis.BuildSlotReports(set, bySlot, weights, *topN)
