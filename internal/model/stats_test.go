@@ -30,3 +30,9 @@ func TestMapModifiers(t *testing.T) {
 	require.Equal(t, 3.0, sb.Flurry)
 	require.Equal(t, 0.0, sb.AbilityMod)
 }
+
+func TestAllMapsToAbilityMod(t *testing.T) {
+	var sb StatBlock
+	sb.AddModifiers(map[string]float64{"all": 62})
+	require.Equal(t, 62.0, sb.AbilityMod)
+}

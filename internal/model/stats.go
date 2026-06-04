@@ -10,7 +10,7 @@ type StatBlock struct {
 	DPSMod      float64 // dps
 	Reuse       float64 // spelltimereusepct
 	Flurry      float64 // flurry
-	AbilityMod  float64 // ability-mod / +combat-art damage (not an itemized stat in EoF dataset; supported as baseline input)
+	AbilityMod  float64 // all (displayname "All") = Ability Modifier
 }
 
 // modifierToField maps a Census modifier key to the StatBlock field it feeds.
@@ -25,7 +25,7 @@ var modifierToField = map[string]func(*StatBlock, float64){
 	"dps":                func(s *StatBlock, v float64) { s.DPSMod += v },
 	"spelltimereusepct":  func(s *StatBlock, v float64) { s.Reuse += v },
 	"flurry":             func(s *StatBlock, v float64) { s.Flurry += v },
-	"abilitymod":         func(s *StatBlock, v float64) { s.AbilityMod += v },
+	"all":                func(s *StatBlock, v float64) { s.AbilityMod += v }, // displayname "All" = Ability Modifier
 }
 
 // AddModifiers folds a set of Census modifiers into the StatBlock (additive).
