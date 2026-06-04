@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/amdrake93/eq2-eof-itemdex/internal/constants"
+	"github.com/amdrake93/eq2-eof-itemdex/internal/store"
 )
 
 // BaselineReport is one baseline's converged weights + per-slot reports.
@@ -28,8 +29,15 @@ func writeWeightTable(b *strings.Builder, weights map[string]float64) {
 	b.WriteString("\n")
 }
 
+func rarityTag(it store.ScorableItem) string {
+	if IsAvatar(it) {
+		return it.Tier + " · avatar"
+	}
+	return it.Tier
+}
+
 func writeScored(b *strings.Builder, s ScoredItem) {
-	fmt.Fprintf(b, "- **%s** — +%.1f DPS", s.Item.Name, s.Delta)
+	fmt.Fprintf(b, "- **%s** [%s] — +%.1f DPS", s.Item.Name, rarityTag(s.Item), s.Delta)
 	if s.Item.GameLink != "" {
 		fmt.Fprintf(b, " ([item](%s))", s.Item.GameLink)
 	}
@@ -40,17 +48,6 @@ func writeScored(b *strings.Builder, s ScoredItem) {
 		}
 		fmt.Fprintf(b, "  - %s %.0f × %.2f = %.1f\n", term.Stat, term.ItemValue, term.Weight, term.Contribution)
 	}
-}
-
-func writeTier(b *strings.Builder, label string, items []ScoredItem) {
-	if len(items) == 0 {
-		return
-	}
-	fmt.Fprintf(b, "_%s_\n\n", label)
-	for _, s := range items {
-		writeScored(b, s)
-	}
-	b.WriteString("\n")
 }
 
 // Render produces the full markdown BiS report across all baselines.
@@ -71,9 +68,10 @@ func Render(reports []BaselineReport) string {
 				}
 				fmt.Fprintf(&b, "BiS: **%s**\n\n", strings.Join(names, "**, **"))
 			}
-			writeTier(&b, "Mythical (ceiling)", sr.Mythical)
-			writeTier(&b, "Fabled", sr.Fabled)
-			writeTier(&b, "Legendary", sr.Legendary)
+			for _, s := range sr.Ranked {
+				writeScored(&b, s)
+			}
+			b.WriteString("\n")
 		}
 	}
 	writeAssumptions(&b)
