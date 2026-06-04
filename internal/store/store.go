@@ -42,6 +42,10 @@ CREATE TABLE IF NOT EXISTS item_stats (
 CREATE TABLE IF NOT EXISTS combat_arts (
   name TEXT PRIMARY KEY, level INTEGER, min_dmg REAL, max_dmg REAL,
   recast_secs REAL, cast_secs_hundredths INTEGER
+);
+CREATE TABLE IF NOT EXISTS scores (
+  item_id INTEGER, baseline TEXT, dps_score REAL, slot TEXT,
+  PRIMARY KEY (item_id, baseline)
 );`
 
 // Init creates the schema tables if they do not already exist.
@@ -82,6 +86,36 @@ func (d *DB) LoadCombatArts(arts []spell.CombatArt) (err error) {
 			`INSERT OR REPLACE INTO combat_arts (name,level,min_dmg,max_dmg,recast_secs,cast_secs_hundredths)
 			 VALUES (?,?,?,?,?,?)`,
 			a.Name, a.Level, a.MinDamage, a.MaxDamage, a.RecastSecs, a.CastSecsHundredths,
+		); err != nil {
+			return err
+		}
+	}
+	return tx.Commit()
+}
+
+// ScoreRow is one item's in-context ΔDPS under one baseline.
+type ScoreRow struct {
+	ItemID   int
+	Baseline string
+	DPSScore float64
+	Slot     string
+}
+
+// WriteScores upserts score rows in a single transaction.
+func (d *DB) WriteScores(rows []ScoreRow) (err error) {
+	tx, err := d.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err != nil {
+			_ = tx.Rollback()
+		}
+	}()
+	for _, r := range rows {
+		if _, err = tx.Exec(
+			`INSERT OR REPLACE INTO scores (item_id, baseline, dps_score, slot) VALUES (?, ?, ?, ?)`,
+			r.ItemID, r.Baseline, r.DPSScore, r.Slot,
 		); err != nil {
 			return err
 		}
