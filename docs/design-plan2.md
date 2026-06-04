@@ -31,7 +31,7 @@ Plan 1's `census.TypeInfo` captured `skilltype` (armor) but **not** the weapon `
 
 ## 3. The DPS Model
 
-`TotalDPS = AutoDPS + CADPS`, computed in **parallel** — auto-attack and combat-art casting run on independent timelines, so casting does **not** displace auto swings (a CA's cast+recovery only paces the *CA* side; see §3.1). Locked combat values: crit ×1.30; **flurry ×4** (a flurry proc does +100%–500%, averaging +300% = ×4); **ability-mod cap = 50% of the potency-adjusted CA base**; reuse halves recast at 100%; **potency applies to CAs only**; `critbonus` ignored. Haste, multi-attack, and dps-mod are **non-linear** (shared conversion curve, §3.1) — *not* `1 + stat/100`. Stat-conversion mechanics, the AA cooldown/recovery effects, and the curve table are in **§3.1** (the authoritative stat-mechanics block, revised from the Varsoon playtest session).
+`TotalDPS = AutoDPS + CADPS`, computed in **parallel** — auto-attack and combat-art casting run on independent timelines, so casting does **not** displace auto swings (a CA's cast+recovery only paces the *CA* side; see §3.1). Locked combat values: crit ×1.30; **flurry ×4** (a flurry proc does +100%–500%, averaging +300% = ×4); **ability-mod cap = 50% of the potency-adjusted CA base**; reuse halves recast at 100%; **potency applies to CAs only**; `critbonus` ignored. Haste and multi-attack are **non-linear** (shared conversion curve, §3.1) — *not* `1 + stat/100`; dps-mod is **linear** (+1%/point, hard cap 200 → ×3). Stat-conversion mechanics, the AA cooldown/recovery effects, and the curve table are in **§3.1** (the authoritative stat-mechanics block, revised from the Varsoon playtest session).
 
 **Why the Assassin CA query is integral (not just additive damage):** the CA term needs each Combat Art's *base* damage to model potency and ability-mod correctly — potency scales the base `×(1+potency)`, and ability-mod caps at **50% of that potency-adjusted base**. Without the per-CA base damages, neither term is computable. So `internal/spell` pulls the Assassin's CAs (Expert tier, level ≤70), regex-parses damage from `effect_list`, and applies the TLE translations (§ Assumptions).
 
@@ -43,11 +43,11 @@ Plan 1's `census.TypeInfo` captured `skilltype` (armor) but **not** the weapon `
 
 ## 3.1 Stat-Conversion Mechanics (authoritative — Varsoon playtest revisions)
 
-Corrections gathered from in-game testing on Varsoon. These **supersede** the simpler assumptions in `docs/design.md` §4. Two values (haste, dps-mod sharing the multi-attack curve) are **inferred** from a shared endpoint and flagged as such — trivially revised if better numbers surface.
+Corrections gathered from in-game testing on Varsoon. These **supersede** the simpler assumptions in `docs/design.md` §4. One value (haste sharing the multi-attack curve) is **inferred** and flagged as such — trivially revised if better numbers surface. (dps-mod was initially assumed to share the curve too, but playtest data showed it is linear — see Linear stats below.)
 
-### Shared "combat-mod" conversion curve — haste, multi-attack, dps-mod
+### Shared "combat-mod" conversion curve — haste, multi-attack
 
-These three stats are **non-linear**: the stat value converts to an effect % via a single diminishing-returns curve. Three independent observations all land on **200 stat → 125% effect**, which is why we treat them as one shared curve. We have only sampled points (no formula), so the model **interpolates piecewise-linearly between the samples, anchored at (0,0), then floors to whole %** (the game evaluates a continuous formula and floors per integer %).
+These two stats are **non-linear**: the stat value converts to an effect % via a single diminishing-returns curve. Both land on **200 stat → 125% effect**, which is why we treat them as one shared curve (multi-attack is measured; haste is *inferred* to share it — flagged above). We have only sampled points (no formula), so the model **interpolates piecewise-linearly between the samples, anchored at (0,0), then floors to whole %** (the game evaluates a continuous formula and floors per integer %).
 
 Sampled stat → effect %:
 
@@ -68,9 +68,9 @@ Sampled stat → effect %:
 Per-stat cap behavior:
 - **Multi-attack** — no hard cap; runs the full curve to `3400 → 200%`. The portion **above 100% is triple-attack chance** (e.g. `120` = 100% double + 2% triple). Auto-attack swing multiplier = `1 + effect/100`. **Auto-attack only** (does not touch CAs). TLE key: `doubleattackchance`.
 - **Haste** — **hard cap at 200 stat (125%)**; over 200 is **wasted** (it does **NOT** convert to flurry — that earlier assumption is removed). `effDelay = baseDelay / (1 + hasteEffect/100)`.
-- **DPS-mod** — **hard cap at 200 stat (125%)**; over 200 wasted. Auto-damage multiplier = `1 + effect/100`. (The curve now *defines* the 125%@200 point; the old linear `DPSModEffectAtCap` is removed.)
 
 ### Linear / direct stats
+- **DPS-mod** — **linear, +1% auto-damage per point** (playtest: 100→×2, 200→×3, 300→×4, 500→×6). Auto-damage multiplier = `1 + min(dpsmod, 200)/100`; **hard cap 200 → ×3 (+200%)**, over 200 wasted. **Auto-attack only.** Supersedes the earlier +125%@cap guess.
 - **Crit chance** — linear, `crit% = stat`. `critFactor = 1 + (crit%/100)·(1.30−1)`.
 - **Potency** — linear, `potency% = stat`; scales CA base `×(1 + potency/100)`.
 - **Flurry** — **gear % only** (no haste contribution); `flurryFactor = 1 + (flurry%/100)·(4−1)`.
@@ -81,12 +81,12 @@ Per-stat cap behavior:
 - **AA cooldown reduction:** a large AA halves the **base** recast of **Assassinate** and **Mortal Blade** by 50% (300→150s, 180→90s). **Reuse applies to the already-halved base** (order: ×0.5 AA, then reuse).
 
 ### Weight derivation under non-linear stats
-For the three curve-stats the marginal weight is taken from the **un-floored** curve slope at the baseline (the floor makes real gains lumpy, but the per-point weight should read as the smooth "going rate"). Linear stats use the standard +1 finite difference.
+For the two curve-stats (haste, multi-attack) the marginal weight is taken from the **sample-to-sample slope** at the baseline — evaluate DPS at the sample points bracketing the baseline and divide by the stat gap. At sample points the floored effect equals the table value exactly, so this yields the true segment slope with no flooring noise (the floor makes real gains lumpy, but the per-point weight should read as the smooth "going rate"). Linear stats — including **dps-mod** — use the standard +1 finite difference (capped stats yield ~0 at the cap by construction).
 
 ### Removed / changed constants
 - **Removed:** `HasteCapPct` (100), `HasteToFlurry` (10:1), `DPSModEffectAtCap` (1.25), and the haste→flurry term.
-- **Added:** the shared curve table + interpolation; `HasteStatCap` / `DPSModCap` = 200 (stat input clamp); `CARecoverySecs` = 0.25; per-art AA cooldown halving for Assassinate/Mortal Blade.
-- **Changed:** flurry ×5 → **×4**.
+- **Added:** the shared curve table + interpolation (haste, MA); `HasteStatCap` = 200; `CARecoverySecs` = 0.25; per-art AA cooldown halving for Assassinate/Mortal Blade. `DPSModCap` = 200 stays (now a linear clamp → ×3).
+- **Changed:** flurry ×5 → **×4**; dps-mod +125%@cap → **+200%@cap** (linear +1%/point).
 
 ---
 
@@ -185,7 +185,7 @@ The **solo-vs-raid diff** is reported as an output and sanity-read — never ass
 
 All from `docs/design.md` §2.1 / §4, reproduced in `internal/baseline` with provenance + validation flags:
 
-- **Combat constants (see §3.1 for the authoritative, revised mechanics):** crit ×1.30; **flurry ×4**; haste/multi-attack/dps-mod via the **shared non-linear curve** (haste & dps-mod cap at 200 stat → 125%, MA runs to 3400 with triple overcap); **haste overcap does NOT convert to flurry**; ability-mod cap = 50% of potency-adjusted CA base; reuse: 100% → half recast (applied *after* the Assassinate/Mortal Blade AA cooldown halving); potency on CAs only; **CA cast+recovery = 0.75s** paces the CA timeline (auto runs in parallel); attributes excluded (track itemlevel).
+- **Combat constants (see §3.1 for the authoritative, revised mechanics):** crit ×1.30; **flurry ×4**; **haste & multi-attack** via the **shared non-linear curve** (haste caps at 200 stat → 125%, MA runs to 3400 with triple overcap); **dps-mod linear** (+1%/point, hard cap 200 → ×3); **haste overcap does NOT convert to flurry**; ability-mod cap = 50% of potency-adjusted CA base; reuse: 100% → half recast (applied *after* the Assassinate/Mortal Blade AA cooldown halving); potency on CAs only; **CA cast+recovery = 0.75s** paces the CA timeline (auto runs in parallel); attributes excluded (track itemlevel).
 - **TLE translations:** `doubleattackchance` → **Multi-Attack** (legacy key; displayname already "Multi Attack"); `critbonus` → **ignored entirely**; Fervor → does not exist.
 - **CA tier:** Expert (classic "Adept III" — the farmable raiding baseline).
 - **Baselines:** Solo (self-buffs only) and Raid (self + group, DPS-mod = 200 capped) — values tagged "confirm vs guild leader / Varsoon parse."
