@@ -47,22 +47,11 @@ func AutoDPS(sb StatBlock, w Weapon) float64 {
 	return swings * (1 + sb.MultiAttack/100) * critFactor(sb) * flurryFactor(sb) * dpsModFactor(sb)
 }
 
-// combinedDPS models a unified timeline: casting CAs occupies cast+recovery
-// slots, displacing auto-attack. Auto runs only during the uncast fraction.
-func combinedDPS(autoDPS float64, sb StatBlock, cas []spell.CombatArt) float64 {
-	slot := constants.CACastTimeSecs + constants.CARecoverySecs
-	r := RotationCA(sb, cas, constants.FightDurationSecs, slot)
-	autoUptime := (constants.FightDurationSecs - r.CastingSecs) / constants.FightDurationSecs
-	if autoUptime < 0 {
-		autoUptime = 0
-	}
-	return autoDPS*autoUptime + r.DamageTotal/constants.FightDurationSecs
-}
-
 // CADPS is the simulated combat-art DPS over a standard fight (priority rotation).
+// Each cast occupies cast time + recovery before the next cast.
 func CADPS(sb StatBlock, cas []spell.CombatArt) float64 {
 	slot := constants.CACastTimeSecs + constants.CARecoverySecs
-	return RotationCA(sb, cas, constants.FightDurationSecs, slot).DamageTotal / constants.FightDurationSecs
+	return RotationCADPS(sb, cas, constants.FightDurationSecs, slot)
 }
 
 // AutoDPSDual is dual-wield auto-attack: both weapons swing on their own delay.
@@ -73,12 +62,12 @@ func AutoDPSDual(sb StatBlock, main, off Weapon) float64 {
 	return AutoDPS(sb, main) + AutoDPS(sb, off)
 }
 
-// TotalDPS combines single-weapon auto-attack and combat arts on one timeline.
+// TotalDPS = auto-attack + combat arts. Auto and CAs run in parallel.
 func TotalDPS(sb StatBlock, w Weapon, cas []spell.CombatArt) float64 {
-	return combinedDPS(AutoDPS(sb, w), sb, cas)
+	return AutoDPS(sb, w) + CADPS(sb, cas)
 }
 
-// TotalDPSDual combines dual-wield auto-attack and combat arts on one timeline.
+// TotalDPSDual = dual-wield auto-attack + combat arts, in parallel.
 func TotalDPSDual(sb StatBlock, main, off Weapon, cas []spell.CombatArt) float64 {
-	return combinedDPS(AutoDPSDual(sb, main, off), sb, cas)
+	return AutoDPSDual(sb, main, off) + CADPS(sb, cas)
 }

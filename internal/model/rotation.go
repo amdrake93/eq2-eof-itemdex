@@ -32,21 +32,14 @@ func effRecast(sb StatBlock, ca spell.CombatArt) float64 {
 	return base * (1 - constants.ReuseHalveCoeff*math.Min(sb.Reuse, constants.ReuseHalvesAt)/100)
 }
 
-// RotationResult is the outcome of simulating the CA priority rotation.
-type RotationResult struct {
-	DamageTotal float64 // total CA damage dealt over the fight
-	CastingSecs float64 // fight-time occupied by casts (numCasts × slotSecs)
-}
-
-// RotationCA simulates a priority rotation over durationSecs: at each cast slot
-// it fires the highest-effective-damage art that is off cooldown; cooldowns are
-// reuse-reduced; when nothing is castable it jumps to the next availability
-// (auto-attack covers idle, modeled separately). slotSecs is the per-cast
-// timeline occupancy (cast time + recovery). Returns total CA damage and the
-// time spent casting, so callers can model auto-attack displacement.
-func RotationCA(sb StatBlock, cas []spell.CombatArt, durationSecs, slotSecs float64) RotationResult {
+// RotationCADPS simulates a priority rotation over durationSecs: at each cast
+// slot (slotSecs = cast time + recovery apart) it fires the highest-effective-
+// damage art that is off cooldown; cooldowns are reuse-reduced; when nothing is
+// castable it jumps to the next availability. Auto-attack runs in parallel and
+// is modeled separately, so casting does not reduce auto throughput.
+func RotationCADPS(sb StatBlock, cas []spell.CombatArt, durationSecs, slotSecs float64) float64 {
 	if durationSecs <= 0 || slotSecs <= 0 || len(cas) == 0 {
-		return RotationResult{}
+		return 0
 	}
 	eff := make([]float64, len(cas))
 	rec := make([]float64, len(cas))
@@ -55,8 +48,7 @@ func RotationCA(sb StatBlock, cas []spell.CombatArt, durationSecs, slotSecs floa
 		eff[i] = CAEffectiveDamage(sb, ca)
 		rec[i] = effRecast(sb, ca)
 	}
-	var res RotationResult
-	var t float64
+	var total, t float64
 	for t < durationSecs {
 		best, bestDmg := -1, -1.0
 		for i := range cas {
@@ -77,19 +69,9 @@ func RotationCA(sb StatBlock, cas []spell.CombatArt, durationSecs, slotSecs floa
 			t = soonest
 			continue
 		}
-		res.DamageTotal += bestDmg
-		res.CastingSecs += slotSecs
+		total += bestDmg
 		avail[best] = t + rec[best]
 		t += slotSecs
 	}
-	return res
-}
-
-// RotationCADPS reports CA DPS only (total CA damage / fight duration), without
-// modeling auto-attack displacement. Retained for callers comparing CAs alone.
-func RotationCADPS(sb StatBlock, cas []spell.CombatArt, durationSecs, slotSecs float64) float64 {
-	if durationSecs <= 0 {
-		return 0
-	}
-	return RotationCA(sb, cas, durationSecs, slotSecs).DamageTotal / durationSecs
+	return total / durationSecs
 }
