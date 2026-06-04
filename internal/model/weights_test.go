@@ -10,8 +10,9 @@ import (
 func TestDeriveWeights(t *testing.T) {
 	w := Weapon{AvgDamage: 100, DelaySecs: 2.0}
 	cas := []spell.CombatArt{{Name: "X", MinDamage: 800, MaxDamage: 1200, RecastSecs: 10}}
-	weights := DeriveWeights(StatBlock{}, w, cas)
-	for _, k := range []string{"haste", "multiattack", "critchance", "potency", "dpsmod", "reuse", "flurry", "abilitymod"} {
+	dps := func(sb StatBlock) float64 { return AutoDPS(sb, w) + CADPS(sb, cas) }
+	weights := DeriveWeights(StatBlock{}, dps)
+	for _, k := range WeightStats {
 		_, ok := weights[k]
 		require.True(t, ok, k)
 	}
@@ -21,6 +22,7 @@ func TestDeriveWeights(t *testing.T) {
 
 func TestDPSModWeightZeroAtCap(t *testing.T) {
 	w := Weapon{AvgDamage: 100, DelaySecs: 2.0}
-	weights := DeriveWeights(StatBlock{DPSMod: 200}, w, nil) // at cap
+	dps := func(sb StatBlock) float64 { return AutoDPS(sb, w) }
+	weights := DeriveWeights(StatBlock{DPSMod: 200}, dps)
 	require.InDelta(t, 0.0, weights["dpsmod"], 1e-6)
 }

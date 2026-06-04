@@ -62,7 +62,8 @@ func main() {
 		sb   model.StatBlock
 	}{{"SOLO", baseline.Solo}, {"RAID", baseline.Raid}} {
 		fmt.Printf("\n== %s baseline weights (marginal DPS per +1 stat; ref 1H weapon, %d combat arts) ==\n", b.name, len(cas))
-		ws := model.DeriveWeights(b.sb, ref, cas)
+		dps := func(sb model.StatBlock) float64 { return model.TotalDPS(sb, ref, cas) }
+		ws := model.DeriveWeights(b.sb, dps)
 		keys := make([]string, 0, len(ws))
 		for k := range ws {
 			keys = append(keys, k)
