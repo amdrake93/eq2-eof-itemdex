@@ -184,6 +184,7 @@ type ScorableItem struct {
 	Name        string
 	Slot        string
 	Tier        string
+	WieldStyle  string
 	GameLink    string
 	WeaponAvg   float64
 	WeaponDelay float64
@@ -197,7 +198,7 @@ func (it ScorableItem) IsWeapon() bool { return it.WeaponDelay > 0 }
 // LoadScorableItems loads every Assassin-usable item with its modifier stats.
 func (d *DB) LoadScorableItems() ([]ScorableItem, error) {
 	rows, err := d.db.Query(
-		`SELECT id, name, slot, tier, gamelink, weapon_min_dmg, weapon_max_dmg, delay
+		`SELECT id, name, slot, tier, wieldstyle, gamelink, weapon_min_dmg, weapon_max_dmg, delay
 		 FROM items WHERE classes LIKE '%assassin%'`)
 	if err != nil {
 		return nil, err
@@ -208,7 +209,7 @@ func (d *DB) LoadScorableItems() ([]ScorableItem, error) {
 	for rows.Next() {
 		var it ScorableItem
 		var mn, mx, delay float64
-		if err := rows.Scan(&it.ID, &it.Name, &it.Slot, &it.Tier, &it.GameLink, &mn, &mx, &delay); err != nil {
+		if err := rows.Scan(&it.ID, &it.Name, &it.Slot, &it.Tier, &it.WieldStyle, &it.GameLink, &mn, &mx, &delay); err != nil {
 			return nil, err
 		}
 		if delay > 0 {

@@ -46,4 +46,6 @@ func TestLoadScorableItems(t *testing.T) {
 	require.InDelta(t, 158.0, dirk.WeaponAvg, 1e-9)
 	require.InDelta(t, 4.4, dirk.WeaponDelay, 1e-9)
 	require.InDelta(t, 5.0, dirk.Stats.Flurry, 1e-9)
+	require.Equal(t, "One-Handed", dirk.WieldStyle)
+	require.Equal(t, "", chest.WieldStyle) // armor has no wield style
 }
