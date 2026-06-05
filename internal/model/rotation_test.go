@@ -50,6 +50,18 @@ func TestRotationPerArtCastTime(t *testing.T) {
 	require.InDelta(t, 100.0/2.25, slowDPS, 100.0/600)
 }
 
+func TestRotationPrioritizesByDPSPerCastTime(t *testing.T) {
+	// Slow art has higher raw damage but worse per-second; fast art is lower raw
+	// but better per-second. With DPS-per-cast-time priority the FAST art wins
+	// every slot, so CADPS is its rate — not the slow art's higher-raw rate.
+	cas := []spell.CombatArt{
+		{Name: "Slow", MinDamage: 1287, MaxDamage: 1287, RecastSecs: 0, CastSecsHundredths: 150}, // slot 1.75 → 735/s
+		{Name: "Fast", MinDamage: 891, MaxDamage: 891, RecastSecs: 0, CastSecsHundredths: 50},    // slot 0.75 → 1188/s
+	}
+	dps := RotationCADPS(StatBlock{}, cas, 600, 0.25)
+	require.InDelta(t, 891.0/0.75, dps, 0.01, "picks higher DPS-per-cast-time (fast), not higher raw damage (slow)")
+}
+
 func TestCAEffectiveDamage_Potency(t *testing.T) {
 	ca := spell.CombatArt{MinDamage: 800, MaxDamage: 1200}
 	require.InDelta(t, 1000.0, CAEffectiveDamage(StatBlock{}, ca), 0.01)            // avg 1000, no stats
