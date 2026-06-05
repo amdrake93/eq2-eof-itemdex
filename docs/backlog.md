@@ -42,3 +42,49 @@ Needs the lore flag, which we don't pull yet — that's the only blocker:
 Scope note: only **lore-equip** matters for our items (equip ≤1, may carry more).
 Plain LORE and lore-group / equipment-set lore are not needed per current
 understanding. The user sanity-checks any doubled pick the model produces.
+
+## 3. Manual supplement for scaling low-level arts
+
+Some damaging arts are **Apprentice-tier, very low level, and scale with caster
+level** — so census files them at their base level with base-level damage, and
+our Expert-tier + level-57 pull misses them entirely. Known ones:
+
+```
+Hilt Strike            Apprentice  L6   recast 20.0  cast 0.5  base 17-21    dmg@70 = ?
+Strike of Consistency  Apprentice  L0   recast 12.0  cast 0.5  base 2        dmg@70 = ?
+```
+
+Recast/cast/beneficial come straight from census and are correct (they don't
+scale); only the **level-70 damage** must be hand-entered (in-game examine at 70,
+since census only has the base value). Implement as a small `manualArts` list
+appended after `FilterCombatArts`. Blocked on the damage numbers.
+
+Impact: fills rotation idle and nudges absolute CADPS. Does **not** change the
+stat-weight ordering — verified that adding 3 ranged arts (a bigger change) left
+the ranking identical and moved magnitudes <10%.
+
+## 4. Stealth-grant rotation modeling
+
+Mechanic (confirmed): **stealth breaks on any CA cast** — so every stealth-required
+art needs its own fresh grant immediately before it (one grant, one attack). Auto-
+attack does not break stealth. The 36s "Shroud" does not survive a CA cast, so it's
+irrelevant to sustained DPS.
+
+Model: stealth arts pair as `[grant -> attack]` (two slots), spending a granter
+from a shared cooldown pool. Granters: **Masked Strike V** (10s, deals 585 —
+preferred, already in pool), **Stalk V** (30s, 0 dmg — would add as a non-damaging
+granter). **Smoke Bomb** (180s) is likely post-EoF (census only has L100/110) and
+negligible as a grant engine — leave out unless confirmed EoF-legal on Varsoon.
+
+Effect: granter cooldowns cap stealth attacks at ~80/fight, spent on the highest-
+value stealth arts (Assassinate, Mortal Blade, Eviscerate, Jugular, Massacre,
+Stealth Assault), which **collapses Ambush from ~61 to ~15** — fixing the current
+rotation's impossible Ambush spam.
+
+Requires: pull `RequiresStealth` ("must be sneaking / in stealth") and
+`GrantsStealth` ("grants stealth to caster") flags from the effect_list; add Stalk;
+add stealth state + granter scheduling to the rotation sim. Tests + DB rebuild.
+
+Realism/cast-log accuracy only — verified it does NOT change the stat-weight
+ordering (roughly damage-neutral reshuffle). Pick up only if we want a believable
+rotation *playthrough*, not for stat weights.
