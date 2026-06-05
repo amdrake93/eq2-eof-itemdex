@@ -3,7 +3,6 @@ package spell
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/amdrake93/eq2-eof-itemdex/internal/census"
 )
@@ -46,20 +45,11 @@ func AssassinCombatArts(ctx context.Context, c *census.Client) ([]CombatArt, err
 	return FilterCombatArts(spells), nil
 }
 
-// isRanged reports whether an art requires a ranged weapon (and thus a minimum
-// range that pulls the assassin out of melee, costing auto-attacks).
-func isRanged(effects []Effect) bool {
-	for _, e := range effects {
-		if strings.Contains(e.Description, "If weapon equipped in Ranged") {
-			return true
-		}
-	}
-	return false
-}
-
 // FilterCombatArts keeps only the arts an assassin presses in a melee rotation:
 // level 57+ (below that is vestigial low-level filler), damaging (parseable
-// damage line), not a buff (beneficial == 0), and not ranged.
+// damage line), and not a buff (beneficial == 0). Ranged bow shots ARE kept —
+// they fire with no minimum range and don't cost melee auto-attacks, so they're
+// free bonus CA damage that fills the rotation's idle time.
 func FilterCombatArts(spells []Spell) []CombatArt {
 	var arts []CombatArt
 	for _, s := range spells {
@@ -67,9 +57,6 @@ func FilterCombatArts(spells []Spell) []CombatArt {
 			continue
 		}
 		if s.Beneficial != 0 {
-			continue
-		}
-		if isRanged(s.Effects) {
 			continue
 		}
 		min, max, ok := ParseDamage(effectStrings(s.Effects))

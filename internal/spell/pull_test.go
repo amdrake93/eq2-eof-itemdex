@@ -67,8 +67,8 @@ func TestFilterCombatArts(t *testing.T) {
 	require.True(t, names["Eviscerate V"], "L66 melee damaging art kept")
 	require.True(t, names["Assassinate II"], "L70 sneaking art kept")
 	require.False(t, names["Whirling Blades IV"], "beneficial buff dropped")
-	require.False(t, names["Spine Shot IV"], "ranged art dropped")
+	require.True(t, names["Spine Shot IV"], "ranged bow shot kept (no min range, no auto-attack loss — free CA damage)")
 	require.False(t, names["Caltrops"], "non-damaging art dropped")
 	require.False(t, names["Pierce"], "low-level (<57) art dropped by the level floor")
-	require.Len(t, arts, 2)
+	require.Len(t, arts, 3)
 }
