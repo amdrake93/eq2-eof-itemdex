@@ -14,6 +14,11 @@ const assassinClassID = 40
 
 const caShowFields = "name,level,tier_name,type,beneficial,cast_secs_hundredths,recast_secs,classes,effect_list"
 
+// minDamageArtLevel is the level floor for a real rotation art — a level-70
+// assassin's damaging abilities are all level 57+; below that is vestigial
+// low-level filler that never scales.
+const minDamageArtLevel = 57
+
 // CombatArt is a damaging Assassin ability with the fields the DPS model needs.
 type CombatArt struct {
 	Name               string
@@ -53,10 +58,14 @@ func isRanged(effects []Effect) bool {
 }
 
 // FilterCombatArts keeps only the arts an assassin presses in a melee rotation:
-// damaging (parseable damage line), not a buff (beneficial == 0), and not ranged.
+// level 57+ (below that is vestigial low-level filler), damaging (parseable
+// damage line), not a buff (beneficial == 0), and not ranged.
 func FilterCombatArts(spells []Spell) []CombatArt {
 	var arts []CombatArt
 	for _, s := range spells {
+		if s.Level < minDamageArtLevel {
+			continue
+		}
 		if s.Beneficial != 0 {
 			continue
 		}
