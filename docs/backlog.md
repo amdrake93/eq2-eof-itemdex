@@ -122,3 +122,15 @@ It **partially** relieves granter scarcity (~12% of the fight), it does NOT remo
 it — the bottleneck and the reuse channel still apply the other ~88%. Model it as a
 periodic 7s/60s window where stealth-required arts don't consume a granter. (Earlier
 mistaken read: it is NOT a maintained permanent-stealth stance.)
+
+## 5. Launch-day checklist (server not out yet)
+
+Both of these wait on the new TLE server going live:
+
+- **Re-export the gear cache.** Gear comes from the local CSV cache
+  (`source.LoadCache` in builddb), NOT a live census pull — only combat arts hit
+  census live. So gear is only as fresh as the last cache export. On launch (and
+  as items get discovered on the new server), re-export the cache to pick up new
+  item versions. Census won't publish a version until it's been discovered in-game,
+  so early-server data will be sparse and fill in over time.
+- **Character-pull seeding** (item #1) — needs a character to exist first.
