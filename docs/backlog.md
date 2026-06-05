@@ -88,3 +88,37 @@ add stealth state + granter scheduling to the rotation sim. Tests + DB rebuild.
 Realism/cast-log accuracy only — verified it does NOT change the stat-weight
 ordering (roughly damage-neutral reshuffle). Pick up only if we want a believable
 rotation *playthrough*, not for stat weights.
+
+### The real optimization target: boundary-cast retention
+
+Grant-delays accumulate. A delayed cast starts its next cooldown later, shifting
+every subsequent cast. So the binding effect isn't the per-cast 10s — it's whether
+the accumulated drift pushes the *last* cast of a long-CD ability past the fight
+window, costing a whole cast. Worst on **Mortal Blade** (7 casts @ 88s — the last
+lands near ~590s with little slack); Assassinate (5 casts @ 147s) is more boundary-
+luck. This is the same discrete cliff as reuse, on the granter timeline.
+
+Consequence: optimal grant scheduling wants **look-ahead** — reserve a granter for
+an incoming big stealth hit instead of burning it on a small one. BUT the payoff is
+small here: Masked Strike (10s) cycles ~10x faster than the hits worth reserving for
+(88-147s), so greedy delays a big hit by at most ~10s and look-ahead recovers <~1
+cast. Not worth building for stat weights. (And the boundary loss is partly an
+artifact of fixing the fight at exactly 600s — over variable lengths it averages to
+a fractional expected cast.)
+
+This is the **third** reason reuse is undervalued by the table: reuse shrinks the
+granter recasts -> less drift -> more likely to fit that last boundary cast.
+
+### Concealment — a periodic burst granter (not a stance)
+
+Concealment (L55 assassin, **EoF-legal** — real Master/Grandmaster tiers, unlike
+Smoke Bomb's modern-only entries): beneficial buff, instant cast, **60s recast,
+7.0s duration**, also drops hate (good for DPS). While active, every combat hit
+re-grants stealth ("On a combat hit -> Combat Stealth -> Shroud 36s -> Grants
+stealth"). So for ~7s every 60s (~12% uptime) you chain stealth arts granter-free;
+align the window with several stealth arts being off cooldown to dump them.
+
+It **partially** relieves granter scarcity (~12% of the fight), it does NOT remove
+it — the bottleneck and the reuse channel still apply the other ~88%. Model it as a
+periodic 7s/60s window where stealth-required arts don't consume a granter. (Earlier
+mistaken read: it is NOT a maintained permanent-stealth stance.)
