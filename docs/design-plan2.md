@@ -82,15 +82,38 @@ Same interpolate-anchored-at-(0,0)-then-floor treatment. This curve is **distinc
 - **Haste** — `effDelay = baseDelay / (1 + hasteEffect/100)` (100% → half delay; 125% cap → /2.25).
 - **DPS-mod** — auto-damage multiplier = `1 + dpsModEffect/100` (200 cap → **×2.25**). **Auto-attack only.** Supersedes *both* the earlier +125% guess and the linear +1%/point reading (that linear set ran past the 200 cap, so it's treated as a different system / misread).
 
+> **⚠ PENDING REVISION (learned 2026-06, NOT yet applied — deferred for data):** the haste and dps-mod hard cap is actually **300 stat**, not 200. The shared curve above tops out at `200 → 125%`; the true cap is higher and the 200→300 segment is un-sampled. When readings above 200 are available: re-fit the curve and bump `HasteStatCap` / `DPSModCap` (both currently `200.0`) to 300. Until then the model uses the 200-cap curve, so any baseline/gear at or above 200 haste or dps-mod is *undervalued* (treated as capped when it isn't yet).
+
 ### Linear / direct stats
 - **Crit chance** — linear, `crit% = stat`. `critFactor = 1 + (crit%/100)·(1.30−1)`.
 - **Potency** — linear, `potency% = stat`; scales CA base `×(1 + potency/100)`.
 - **Flurry** — **gear % only** (no haste contribution); `flurryFactor = 1 + (flurry%/100)·(4−1)`.
-- **Ability-mod** — flat add to each CA, capped at `0.50 × CA_maxDamage × (1+potency/100)` (per-CA; potency floats the cap up, so it binds mainly on small filler arts).
+- **Ability-mod** — flat add to each CA, capped at `0.50 × CA_maxDamage × (1+potency/100)` (per-CA; potency floats the cap up, so it binds mainly on small filler arts). At a fully-geared baseline the *stacked* ability-mod (~700, since every item carries it) caps most small/frequent arts, so its marginal weight reads small even though the big nukes still have headroom — that aggregate, not any one item, is the saturator.
+
+### Reuse (combat-art recast %)
+- `effRecast = baseRecast × (1 − 0.5·min(reuse,100)/100)` — 100% reuse halves recast, capped at 100. Applied **after** the per-art AA cooldown halving (Assassinate/Mortal Blade `×0.5`, *then* reuse). Constants: `ReuseHalveCoeff = 0.50`, `ReuseHalvesAt = 100`. Affects the **CA timeline only** (recast → cast count).
+- **Reuse is the most gear-state-dependent stat.** On a bare character (sparse, idle rotation) it is the single highest weight (~25/pt — every point buys more casts into empty time). Fully geared and cast-saturated it collapses toward 0; its converged-set weight can even read slightly **negative** — a discrete-sim quantization artifact (a +1 reuse step usually can't fit even one more *whole* cast into the fixed 600s window; see weight-derivation note below), NOT a real penalty. Gear reuse is also scarce in the EoF pool (~2/item), so it rarely wins a slot regardless of weight.
+
+### Putting it together (formulas as implemented — `internal/model`)
+```
+critFactor   = 1 + (crit/100)·0.30
+flurryFactor = 1 + (flurry/100)·3.0                  # gear flurry only (no haste→flurry)
+dpsModFactor = 1 + curveHD(dpsMod)/100               # shared haste/dps-mod curve
+effDelay     = weaponDelay / (1 + curveHD(haste)/100)
+AutoDPS(w)   = (w.avgDmg / effDelay) · (1 + curveMA(MA)/100) · critFactor · flurryFactor · dpsModFactor
+AutoDPSDual  = AutoDPS(main) + AutoDPS(off)           # both weapons swing on own delay, treated equally
+CAeffective  = ((min+max)/2 · (1+potency/100) + min(abilityMod, 0.5·max·(1+potency/100))) · critFactor
+CADPS        = RotationSim(arts, fight=600s)          # priority by CAeffective / (cast+recovery)
+TotalDPS     = AutoDPSDual + CADPS                    # PARALLEL — CA casting costs zero auto swings
+```
 
 ### Combat-art rotation / recovery
 - **Recovery time** is real and folded into CA pacing: each cast occupies `cast (0.5s) + recovery (0.25s) = 0.75s` of the **CA** timeline before the next cast (weapon DPS amortizes over full delay; CA throughput must amortize over full cast+recovery). Recovery is a flat per-cast constant for CA-vs-CA ranking, but it is **not** a common factor for CA-vs-auto, because it sizes total CA damage over the fight. The base recovery is 0.5s, **halved to 0.25s by an AA**.
 - **AA cooldown reduction:** a large AA halves the **base** recast of **Assassinate** and **Mortal Blade** by 50% (300→150s, 180→90s). **Reuse applies to the already-halved base** (order: ×0.5 AA, then reuse).
+- **Rotation simulation (CADPS):** a discrete priority sim over the fight. Each slot, fire the off-cooldown art with the highest **damage-per-cast-time** (`CAeffective / slot`), advance time by that art's slot, set its `effRecast`; idle-jump when nothing is up. Priority is by damage-per-**time**, not raw damage, because a slow high-damage art can be worse per second than a fast one. Only fired casts count.
+- **Art pool (`internal/spell`):** Assassin Expert-tier arts, **level ≥ 57** (`minDamageArtLevel` — below is vestigial low-level filler), damaging (parseable `effect_list` damage), **not beneficial** (buffs/stances excluded), **highest rank per base name**. **Ranged bow shots ARE kept** — no minimum range, zero melee-auto cost, so they're free CA damage that fills idle (Head/Spine/Deadly Shot). Low-level *scaling* arts that census files at base level (Hilt Strike, Strike of Consistency) are NOT yet included — see backlog §3.
+- **Idle is structural:** with the real recasts the CA timeline sits idle ~45–50% of a long fight (cooldown-bound, not cast-bound); auto-attack fills the gaps in parallel — correct, not a bug. (Adding the 3 ranged shots cut idle ~52%→46% and raised total DPS ~6.7%.)
+- **Stealth — currently assumed free:** many arts require stealth ("must be sneaking"); the model assumes it's always available. The real economy (stealth breaks on any CA cast; granters = Masked Strike / Stalk / the 7s-burst Concealment) is parked in backlog §4 — it only sharpens reuse's exact weight, it does not change gear picks.
 
 ### Weight derivation under non-linear stats
 For the three curve-stats (haste, multi-attack, dps-mod) the marginal weight is taken from the **sample-to-sample slope** at the baseline — evaluate DPS at the sample points bracketing the baseline and divide by the stat gap. At sample points the floored effect equals the table value exactly, so this yields the true segment slope with no flooring noise (the floor makes real gains lumpy, but the per-point weight should read as the smooth "going rate"). Haste/dps-mod marginals clamp at the 200 cap (→ 0 beyond). Linear stats use the standard +1 finite difference.
@@ -198,6 +221,8 @@ The **solo-vs-raid diff** is reported as an output and sanity-read — never ass
 All from `docs/design.md` §2.1 / §4, reproduced in `internal/baseline` with provenance + validation flags:
 
 - **Combat constants (see §3.1 for the authoritative, revised mechanics):** crit ×1.30; **flurry ×4**; **haste & dps-mod** share a **diminishing curve** (hard cap 200 → 125% = ×2.25, auto-attack only); **multi-attack** has its own gentler diminishing curve (runs to 3400 with triple overcap); **haste overcap does NOT convert to flurry**; ability-mod cap = 50% of potency-adjusted CA base; reuse: 100% → half recast (applied *after* the Assassinate/Mortal Blade AA cooldown halving); potency on CAs only; **CA cast+recovery = 0.75s** paces the CA timeline (auto runs in parallel); attributes excluded (track itemlevel).
+- **⚠ PENDING (deferred for data):** haste & dps-mod hard cap is actually **300**, not 200 — re-fit the shared curve and bump `HasteStatCap`/`DPSModCap` once readings above 200 exist (see §3.1 note).
+- **Rotation (as implemented):** CADPS = priority sim (fire highest **damage-per-cast-time** off-cooldown art; 600s fight; ~45–50% structural idle, auto fills it). Art pool = Expert, **level ≥ 57**, damaging, non-beneficial, highest-rank, **ranged shots included**. Stealth assumed always available (real stealth-grant economy parked — backlog §4).
 - **TLE translations:** `doubleattackchance` → **Multi-Attack** (legacy key; displayname already "Multi Attack"); `critbonus` → **ignored entirely**; Fervor → does not exist.
 - **CA tier:** Expert (classic "Adept III" — the farmable raiding baseline).
 - **Baselines:** Solo (self-buffs only) and Raid (self + group, DPS-mod = 200 capped) — values tagged "confirm vs guild leader / Varsoon parse."
@@ -208,3 +233,6 @@ All from `docs/design.md` §2.1 / §4, reproduced in `internal/baseline` with pr
 
 - Baseline numeric values (confirm with guild leader / Varsoon parse) — parameterized, so refinement is a re-run.
 - Exact crit baseline per context (AAs vs buffs) — feeds the baselines.
+- **Haste & dps-mod cap = 300, not 200** — confirmed in play but un-sampled above 200; needs data points in the 200–300 range to re-fit the shared curve and raise the cap constants (§3.1 pending note). Highest-priority data to gather.
+- **Reuse weight is gear-conditional + discrete** — bare ≈ top stat (~25/pt), geared ≈ 0/slightly-negative (quantization). Only matters precisely for the character-pull case (backlog §1).
+- **Parked rotation-realism** (`docs/backlog.md`): character-pull seeding (§1), lore-equip doubling (§2), manual scaling arts (§3), stealth-grant modeling (§4), launch-day gear-cache re-export (§5).
