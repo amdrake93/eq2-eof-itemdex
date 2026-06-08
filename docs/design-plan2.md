@@ -11,10 +11,10 @@ This is **Plan 2 of 2**. Plan 1 produced the EoF gear catalog; Plan 2 builds the
 
 ## 1. Goal & Deliverables
 
-For a level-70 Echoes of Faydwer **Assassin**, compute **best-in-slot per equipment slot** under **two baselines** — **solo** and **raid** — ranked by a derived-weight relative DPS model.
+For a level-70 Echoes of Faydwer **Assassin**, compute **best-in-slot per equipment slot** across **three accessibility tiers** — **pre-raid**, **raid**, and **best-of-best** — ranked by a derived-weight relative DPS model. (The tiers reuse two underlying stat baselines — solo-buff and raid-buff — combined with gear-accessibility filters; see §4.)
 
 **Deliverables:**
-- A markdown **BiS report**: per-slot best item for *each* baseline, **top-N per slot** (not just #1), the **derived stat weights** per baseline, and the **assumptions/constants block**.
+- A markdown **BiS report**: per-slot pick(s) for *each* of the three accessibility tiers, **top-N alternatives per slot** (not just #1), the **derived stat weights** per tier, a **per-slot progression** summary, and the **assumptions/constants block**.
 - The queryable **SQLite DB** (scored gear) for the user's own exploration.
 
 **Non-goals:** absolute/parse-accurate DPS (relative ordering only); other classes; set-bonus *scoring* (see §8).
@@ -31,7 +31,7 @@ Plan 1's `census.TypeInfo` captured `skilltype` (armor) but **not** the weapon `
 
 ## 3. The DPS Model
 
-`TotalDPS = AutoDPS + CADPS`, computed in **parallel** — auto-attack and combat-art casting run on independent timelines, so casting does **not** displace auto swings (a CA's cast+recovery only paces the *CA* side; see §3.1). Locked combat values: crit ×1.30; **flurry ×4** (a flurry proc does +100%–500%, averaging +300% = ×4); **ability-mod cap = 50% of the potency-adjusted CA base**; reuse halves recast at 100%; **potency applies to CAs only**; `critbonus` ignored. Haste, multi-attack, and dps-mod are **non-linear** (§3.1) — *not* `1 + stat/100`. Haste & dps-mod share one diminishing curve (hard cap 200 → 125% = ×2.25); multi-attack has its own gentler curve (runs to 3400 with triple overcap). Stat-conversion mechanics, the AA cooldown/recovery effects, and the curve table are in **§3.1** (the authoritative stat-mechanics block, revised from the Varsoon playtest session).
+`TotalDPS = AutoDPS + CADPS`, computed in **parallel** — auto-attack and combat-art casting run on independent timelines, so casting does **not** displace auto swings (a CA's cast+recovery only paces the *CA* side; see §3.1). Locked combat values: crit ×1.30; **flurry ×4** (a flurry proc does +100%–500%, averaging +300% = ×4); **ability-mod cap = 50% of the potency-adjusted CA base**; reuse halves recast at 100%; **potency applies to CAs only**; `critbonus` ignored. Haste, multi-attack, and dps-mod are **non-linear** (§3.1) — *not* `1 + stat/100`. Haste & dps-mod share one diminishing curve (hard cap 200 → 125% = ×2.25 — **but see §3.1 pending note: the cap is likely 300, deferred for data**); multi-attack has its own gentler curve (runs to 3400 with triple overcap). Stat-conversion mechanics, the AA cooldown/recovery effects, and the curve table are in **§3.1** (the authoritative stat-mechanics block, revised from the Varsoon playtest session).
 
 **Why the Assassin CA query is integral (not just additive damage):** the CA term needs each Combat Art's *base* damage to model potency and ability-mod correctly — potency scales the base `×(1+potency)`, and ability-mod caps at **50% of that potency-adjusted base**. Without the per-CA base damages, neither term is computable. So `internal/spell` pulls the Assassin's CAs (Expert tier, level ≤70), regex-parses damage from `effect_list`, and applies the TLE translations (§ Assumptions).
 
@@ -132,7 +132,16 @@ A labeled constants block (`internal/baseline`) defines two input stat profiles.
 - **Solo:** the Assassin's self-buffs only (Villainy → +34.2 Multi-Attack; the temporary self-haste/DPS self-buff while active). No group DPS-mod.
 - **Raid:** self-buffs + group package; **DPS-mod = 200 (capped)**; the Velocity-style group contribution; crit elevated by AAs/buffs. Haste from the same comp (no maintained group haste buff).
 
-Each baseline yields its own derived weight set → its own BiS list. The **solo-vs-raid difference is an output** (it shows which stats change between contexts), not an assumption.
+Each baseline yields its own derived weight set → its own BiS list. The **cross-context difference is an output** (it shows which stats change between contexts), not an assumption.
+
+### Accessibility tiers (report structure)
+
+The report segments into **three accessibility tiers**, each = one stat baseline + a gear keep-filter (`internal/bis`):
+- **PRE-RAID** — Solo baseline; only `LEGENDARY`/`TREASURED` items (dungeon-accessible); no avatar/Hunter's.
+- **RAID** — Raid baseline; all items **minus** avatar mythicals and the Hunter's set.
+- **BEST-OF-BEST** — Raid baseline; all items minus the Hunter's set (avatar mythicals **kept**).
+
+Exclusion predicates: **avatar** = `MYTHICAL` except the Soulfire; **Hunter's** set excluded everywhere; plus a small **curated** exclude list. The main-hand is pinned to the **Soulfire Sabre** (its multi-attack beats the Gladius's block) and its full stat line folds into every tier's baseline; the off-hand pool is all 1H weapons **except** Soulfire (the player gets exactly one Soulfire — the fixed main-hand).
 
 Baseline numeric values are documented best-guesses tagged for later confirmation (guild leader / Varsoon parse) per the provenance hierarchy in `docs/design.md` §2.1.
 
@@ -150,7 +159,8 @@ Reuse Plan-1 packages; add:
 | `internal/model` *(new)* | DPS equations, marginal-weight derivation (iterated), item scoring, per-slot ranking, **locked-items** constraint (§8) |
 | `internal/baseline` *(new)* | the two baseline profiles + the labeled combat-constants block |
 | `internal/store` *(new)* | `modernc.org/sqlite` — schema, load gear + per-baseline scores, ranking/coverage queries |
-| `cmd/bis` *(new)* | orchestrate: load gear (from CSV cache) → pull CAs → derive weights ×2 baselines → score → load SQLite → emit report + DB. Flags: `--out`, `--lock` (§8), `--db`. |
+| `internal/bis` *(new)* | accessibility keep-filters + exclusions, converging set-builder (coordinate ascent), per-slot report + progression render |
+| `cmd/bis` *(new)* | orchestrate: load gear (from CSV cache) → pull CAs → build/score per tier (3 accessibility tiers over the 2 stat baselines) → load SQLite → emit report + DB. Flags: `--out`, `--lock` (§8), `--db`, `--top`. |
 
 Data flow: gear (Plan-1 cache) + Assassin CAs → `model` derives weights per baseline and scores each Assassin-usable item → `store` loads gear + scores into SQLite → `cmd/bis` runs ranking SQL and renders the markdown report.
 
@@ -159,9 +169,10 @@ Data flow: gear (Plan-1 cache) + Assassin CAs → `model` derives weights per ba
 ## 6. SQLite Schema (modernc, pure-Go)
 
 **Normalized schema:**
-- `items` — one row per gear item: `id`, `name`, `slot`, `tier`, `itemlevel`, `armor_type`, `skill`, `wieldstyle`, `classes`, `gamelink`.
+- `items` — one row per gear item: `id`, `name`, `slot`, `tier`, `itemlevel`, `armor_type`, `skill`, `wieldstyle`, `classes`, `gamelink`, plus weapon fields `weapon_min_dmg`, `weapon_max_dmg`, `delay`, `damage_rating`.
 - `item_stats` — `(item_id, stat, value)`, one row per modifier (friendly for SQL aggregation / scoring).
-- `scores` — `(item_id, baseline, dps_score, slot)` so a single query ranks per slot per baseline, and the user can sort/filter/explore (coverage gaps, runner-ups, etc.) freely.
+- `combat_arts` — `(name, level, min_dmg, max_dmg, recast_secs, cast_secs_hundredths)`, the pulled Assassin arts that drive CADPS.
+- `scores` — `(item_id, baseline, dps_score, slot)` so a single query ranks per slot per tier (the `baseline` column holds the accessibility-tier name), and the user can sort/filter/explore (coverage gaps, runner-ups, etc.) freely.
 
 The DB is both an analysis engine and a shareable artifact.
 
@@ -169,9 +180,9 @@ The DB is both an analysis engine and a shareable artifact.
 
 ## 7. Outputs
 
-- **`bis-report.md`** — for each baseline (solo, raid), a per-slot listing of the **top 3 Fabled + top 3 Legendary** items (name, tier, DPS score, key stat line, gamelink), plus the **derived stat-weight table** and the **assumptions/constants block**. Rationale: Legendary ≈ dungeon gear, Fabled ≈ raid gear, so the split gives non-raid options alongside raid options — and surfaces the cases where a Legendary out-scores a Fabled (a flat top-N would hide that). Any **Mythical** in a slot (e.g. the Soulfire weapon) is shown at the top as the ceiling. Showing multiple per tier also supports the set-bonus overlay (§8).
-- **Every ranked item shows a score *breakdown*** — its top contributing terms as `stat × weight` (e.g. `crit 1.8 × W_crit = …`, `MA 4.0 × W_ma = …`), not just the total. This makes each ranking **explainable**, which is the point of §9: an expert reading the report can see *why* an item placed where it did and immediately spot a wrong weight/constant.
-- **`bis.db`** — the scored SQLite DB.
+- **`bis-report.md`** — for each of the three accessibility tiers (pre-raid / raid / best-of-best): the **derived stat-weight table**, then per slot the converged **BiS pick(s)** plus the **top-N merged alternatives** ranked by in-context ΔDPS, each tagged with rarity (and `· avatar` where shown). The fixed **Primary** (Soulfire Sabre) renders as `(fixed)`. A **per-slot progression** section then summarizes the top pick per tier. Closes with the **assumptions/constants block**. *(The original design listed top-3-Fabled + top-3-Legendary per slot with Mythical shown as ceiling; superseded by this merged-top-N + 3-tier + progression layout in plans 2f–2i, which also excludes avatar/Hunter's per tier rather than showing every Mythical.)*
+- **Every ranked item shows a score *breakdown*** — its contributing terms as `stat × weight` (e.g. `crit 2 × 5.67 = 11.3`), not just the total. This makes each ranking **explainable**, which is the point of §9: an expert can see *why* an item placed where it did and immediately spot a wrong weight/constant.
+- **`bis.db`** — the scored SQLite DB (the `scores.baseline` column holds the tier name).
 
 ---
 
@@ -203,7 +214,7 @@ No pre-assumed "item X ranks top" anchors — that's the "Grinning Dirk" mis-ste
 - Weight derivation + scoring on synthetic items with known stats.
 - Hand-calc spot-check: recompute a couple of *real* items' DPS by hand, confirm the model matches.
 
-The **solo-vs-raid diff** is reported as an output and sanity-read — never asserted in advance.
+The **cross-tier diff** (how weights and picks shift between pre-raid / raid / best-of-best) is reported as an output and sanity-read — never asserted in advance.
 
 ---
 
