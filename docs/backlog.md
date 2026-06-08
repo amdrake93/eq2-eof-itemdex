@@ -134,3 +134,29 @@ Both of these wait on the new TLE server going live:
   item versions. Census won't publish a version until it's been discovered in-game,
   so early-server data will be sparse and fill in over time.
 - **Character-pull seeding** (item #1) — needs a character to exist first.
+
+## 6. Mid-content item availability (temporal phasing)
+
+Not all EoF items are obtainable at the expansion's start. On the Varsoon TLE
+server (as in original EoF), some items/zones unlock **partway through the
+expansion** via later content patches — so the available item pool *grows* over
+the EoF window; it is not static at launch.
+
+The model currently treats every EoF-era item as available simultaneously, so
+**early-expansion BiS lists will recommend gear that doesn't exist yet** (an item
+that drops from a mid-content zone shows up in a launch-day BiS).
+
+To solve: tag each item with a **content-availability phase** (e.g. launch /
+mid-EoF / late-EoF) and let the report filter or segment by "what's obtainable at
+point X in the timeline." This is a **different axis** from the existing
+rarity/source tiers (pre-raid / raid / best-of-best) — temporal availability, not
+gear quality — and the two compose (e.g. "raid BiS available at launch" vs "raid
+BiS once mid-content unlocks").
+
+Open questions for pick-up:
+- Source of phase data: census discovery timestamps on the live TLE server? a
+  curated zone -> phase mapping? the original EoF content-patch schedule?
+- Granularity: just launch-vs-later, or finer (per content patch / per zone)?
+- Gated on knowing the TLE server's unlock cadence (server not live yet — §5).
+  Discovery timestamps only become meaningful once the server is up and items
+  start being found, so this naturally co-develops with the launch-day re-pull.
