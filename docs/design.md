@@ -166,6 +166,7 @@ Group composition: **Berserker + Dirge + Coercer + Assassin**. Buffs are level-b
 
 **Notes / open items folded into §7:**
 - **Working assumption (resolves the Berserker placeholder):** in a raid setting the **aggregate buff package brings DPS-mod to its ~200 cap with no gear contribution**, so the baseline DPS-mod input = **200**. We do not itemize the Berserker buff. Per the derive-don't-declare principle, the model then computes whatever gear-DPS-mod weight follows from a capped baseline — expected near-zero, but *derived, not asserted*.
+  - **Superseded (2026-06, see `design-plan2.md` §4):** the cap is 300 (not 200), the live comp has no Berserker, and the measured group DPS-mod is **114.2** (Coercer 74 + Inquisitor 30.2 + Dirge 10) — mid-curve, so gear dps-mod is *not* near-zero in raid.
 - This group has **no maintained haste buff** (only temporary), so sustained haste comes from gear/AA — the model will reflect that in the derived haste weight.
 - The buff package is an **explicit input**: changing the comp (e.g. swapping in a Troubadour with maintained haste) changes the baseline and therefore the derived weights. The saturation set is a *function of the comp*, not a constant.
 

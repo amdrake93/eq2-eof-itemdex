@@ -161,7 +161,7 @@ Linear stats use the standard +1 finite difference.
 A labeled constants block (`internal/baseline`) defines two input stat profiles. Each is **only an input stat block**; the model derives the weights from it — this spec asserts nothing about which stats end up mattering under either.
 
 - **Solo:** the Assassin's self-buffs only (Villainy → +34.2 Multi-Attack; the temporary self-haste/DPS self-buff while active). No group DPS-mod.
-- **Raid:** self-buffs + group package; **DPS-mod = 200** (group package value — *not* capped; the cap is 300, so dps-mod keeps real marginal value at this baseline); the Velocity-style group contribution; crit elevated by AAs/buffs. Haste from the same comp (no maintained group haste buff).
+- **Raid:** self-buffs + group package; **group DPS-mod = 114.2** (live comp estimate, 2026-06: Coercer 74 + Inquisitor 30.2 + Dirge 10 — no Berserker in the comp). This supersedes the old "buff package reaches the cap → 200" assumption, whose rationale died twice over: the cap is 300, and the comp lost its Berserker. At 114 the baseline sits mid-curve with ~186 points of headroom, so gear dps-mod retains real marginal value in raid rankings. Crit elevated by AAs/buffs; haste from the same comp (no maintained group haste buff). *Note:* the live Coercer reading (74) exceeds the old census-derived Velocity IV value (57.6) — likely a higher rank/tier on the new server; values are estimates, refine per component as readings firm up.
 
 Each baseline yields its own derived weight set → its own BiS list. The **cross-context difference is an output** (it shows which stats change between contexts), not an assumption.
 
@@ -267,7 +267,7 @@ All from `docs/design.md` §2.1 / §4, reproduced in `internal/baseline` with pr
 - **Rotation (as implemented):** CADPS = priority sim (fire highest **damage-per-cast-time** off-cooldown art; 600s fight; ~45–50% structural idle, auto fills it). Art pool = Expert, **level ≥ 57**, damaging, non-beneficial, highest-rank, **ranged shots included**. Stealth assumed always available (real stealth-grant economy parked — backlog §4).
 - **TLE translations:** `doubleattackchance` → **Multi-Attack** (legacy key; displayname already "Multi Attack"); `critbonus` → **ignored entirely**; Fervor → does not exist.
 - **CA tier:** Expert (classic "Adept III" — the farmable raiding baseline).
-- **Baselines:** Solo (self-buffs only) and Raid (self + group, DPS-mod = 200 — below the 300 cap) — values tagged "confirm vs guild leader / Varsoon parse."
+- **Baselines:** Solo (self-buffs only) and Raid (self + group; group DPS-mod = **114.2** live estimate — Coercer 74 + Inquisitor 30.2 + Dirge 10, mid-curve, well below the 300 cap) — values tagged "confirm vs guild leader / live readings."
 
 ---
 
