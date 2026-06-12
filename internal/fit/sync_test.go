@@ -12,7 +12,7 @@ func TestFittedConstantsMatchReadings(t *testing.T) {
 	require.NoError(t, err)
 
 	q := FitQuad(rs)
-	msg := "model curve constants are stale — run `go run ./cmd/fitcurve` and update internal/model/curve.go"
+	msg := "model curve constants are stale — run `go run ./cmd/fitcurve`, update internal/model/curve.go, and re-pin the dataset-snapshot tests in internal/fit (readings counts, exact fit params) and internal/model (floored effect values)"
 	require.InDelta(t, model.HasteDpsModA, q.A, 1e-6, msg)
 	require.InDelta(t, model.HasteDpsModB, q.B, 1e-8, msg)
 }

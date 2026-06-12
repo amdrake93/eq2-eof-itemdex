@@ -65,11 +65,11 @@ func TestCurveStatMarginalDPSModRaidBaseline(t *testing.T) {
 
 func TestCurveStatMarginalJustBelowCap(t *testing.T) {
 	dps := func(sb StatBlock) float64 { return AutoDPS(sb, Weapon{AvgDamage: 160, DelaySecs: 4}) }
-	// haste=289: f=124.99 → floor 124; bracket (124,125) crossings are reachable.
-	// Was "capped → 0" under the old 200-cap model; curve is nearly flat here.
-	m := curveStatMarginal(StatBlock{Haste: 289}, "haste", dps)
-	require.Greater(t, m, 0.0)
-	require.Less(t, m, 0.1)
+	// 285 → f=124.74: comfortably below the last integer crossing (f=125 at
+	// ≈289), so a small future re-fit won't flip this into the dead zone.
+	m := curveStatMarginal(StatBlock{Haste: 285}, "haste", dps)
+	require.Greater(t, m, 0.0) // 285 was "capped → 0" under the old 200-cap model
+	require.Less(t, m, 0.1)    // but the curve is nearly flat near its peak
 }
 
 func TestCurveStatMarginalDeadZoneBeforeCap(t *testing.T) {

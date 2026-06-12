@@ -23,8 +23,10 @@ var multiAttackSamples = []curvePoint{
 // (RMS 0.29 vs 1.93 for the logarithmic alternative; haste-only and dpsmod-only
 // fits agree within flooring noise → shared curve confirmed). Peak at
 // A/2B ≈ 314, just past the 300 hard cap; f(300) ≈ 125.56 → shows as 125%.
-// Re-derive after appending readings: go run ./cmd/fitcurve
-// (internal/fit's TestFittedConstantsMatchReadings enforces the loop).
+// Re-derive after appending readings: go run ./cmd/fitcurve, record the new
+// constants here, and re-pin the dataset-snapshot tests in internal/fit and
+// internal/model (internal/fit's TestFittedConstantsMatchReadings enforces the
+// constants half of the loop; the snapshot pins fail loudly on their own).
 const (
 	HasteDpsModA = 0.800348
 	HasteDpsModB = 0.00127275

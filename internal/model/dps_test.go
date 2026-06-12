@@ -20,7 +20,7 @@ func TestAutoDPS(t *testing.T) {
 	approx(t, 65.0, AutoDPS(StatBlock{CritChance: 100}, w))      // ×1.30
 }
 
-func TestEffDelayHasteInterpolated(t *testing.T) {
+func TestEffDelayHasteFittedCurve(t *testing.T) {
 	w := Weapon{AvgDamage: 160, DelaySecs: 4.0}
 	approx(t, 4.0/1.67, effDelay(StatBlock{Haste: 100}, w)) // effect 67 → 4/1.67
 }
