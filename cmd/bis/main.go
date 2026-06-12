@@ -133,9 +133,9 @@ func main() {
 
 	notExcluded := func(it store.ScorableItem) bool { return !bis.IsHunters(it) && !bis.Curated(it) }
 	tiers := []struct {
-		name     string
-		baseline model.StatBlock
-		keep     func(store.ScorableItem) bool
+		name    string
+		profile model.StatBlock
+		keep    func(store.ScorableItem) bool
 	}{
 		{"PRE-RAID", solo, func(it store.ScorableItem) bool {
 			return (it.Tier == "LEGENDARY" || it.Tier == "TREASURED") && !bis.IsAvatar(it) && notExcluded(it)
@@ -151,7 +151,7 @@ func main() {
 	var reports []bis.BaselineReport
 	var allRows []store.ScoreRow
 	for _, t := range tiers {
-		profile := t.baseline
+		profile := t.profile
 		if haveMain {
 			profile = profile.Add(mainItem.Stats)
 		}

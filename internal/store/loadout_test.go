@@ -19,7 +19,7 @@ func seedLoadout(t *testing.T, d *DB) {
 	exec(`INSERT INTO items (id,name,slot,tier,itemlevel,armor_type,skill,wieldstyle,classes,gamelink,weapon_min_dmg,weapon_max_dmg,delay,damage_rating)
 	      VALUES (2,'Enchanted Grove Scimitar','Secondary','FABLED',70,'','piercing','One-Handed','assassin','',118,198,4.4,75)`)
 	exec(`INSERT INTO combat_arts (name,level,min_dmg,max_dmg,recast_secs,cast_secs_hundredths)
-	      VALUES ('Assassinate II',70,7000,12000,300,200)`)
+	      VALUES ('Assassinate II',70,7000,12000,300,200)`) // 2.0s cast
 	exec(`INSERT INTO combat_arts (name,level,min_dmg,max_dmg,recast_secs,cast_secs_hundredths)
 	      VALUES ('Assassinate I',60,5000,9000,300,50)`)
 }

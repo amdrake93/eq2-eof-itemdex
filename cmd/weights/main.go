@@ -14,6 +14,7 @@ import (
 	_ "modernc.org/sqlite"
 )
 
+// TODO: consolidate with store.LoadLoadout — same query, different load path.
 func loadCAs(db *sql.DB) ([]spell.CombatArt, error) {
 	rows, err := db.Query(`SELECT name, min_dmg, max_dmg, recast_secs, cast_secs_hundredths FROM combat_arts`)
 	if err != nil {
