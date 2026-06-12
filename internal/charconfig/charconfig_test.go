@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/amdrake93/eq2-eof-itemdex/internal/spell"
 	"github.com/stretchr/testify/require"
 )
 
@@ -108,4 +109,53 @@ art_tier = "expert"
 func TestLoadMissingFile(t *testing.T) {
 	_, err := Load("nope.toml")
 	require.Error(t, err)
+}
+
+// --- Task 4: ApplyArtMods ---
+
+func TestApplyArtMods(t *testing.T) {
+	arts := []spell.CombatArt{
+		{Name: "Assassinate II", RecastSecs: 300},
+		{Name: "Eviscerate V", RecastSecs: 60},
+	}
+	out, err := ApplyArtMods(arts, map[string]ArtMod{"Assassinate": {RecastMult: 0.5}})
+	require.NoError(t, err)
+	require.InDelta(t, 0.5, out[0].RecastReduction, 1e-9) // matched by base name (rank-insensitive)
+	require.InDelta(t, 0.0, out[1].RecastReduction, 1e-9)
+	require.InDelta(t, 0.0, arts[0].RecastReduction, 1e-9) // input not mutated
+}
+
+func TestApplyArtModsTypoFailsLoudly(t *testing.T) {
+	arts := []spell.CombatArt{{Name: "Assassinate II", RecastSecs: 300}}
+	_, err := ApplyArtMods(arts, map[string]ArtMod{"Assasinate": {RecastMult: 0.5}})
+	require.ErrorContains(t, err, "Assasinate") // a typo must not silently un-halve the big hit
+}
+
+// --- Review fix 1: stat-range validation ---
+
+func TestLoadRejectsNegativeCastSpeedInStats(t *testing.T) {
+	_, err := Load(writeConfig(t, `
+[character]
+name = "T"
+class = "assassin"
+art_tier = "expert"
+[stats]
+cast_speed = -150
+[contexts.solo]
+multiattack = 10
+`))
+	require.ErrorContains(t, err, "cast_speed")
+}
+
+func TestLoadRejectsNegativeDPSModInContext(t *testing.T) {
+	_, err := Load(writeConfig(t, `
+[character]
+name = "T"
+class = "assassin"
+art_tier = "expert"
+[contexts.raid]
+dpsmod = -10
+`))
+	require.ErrorContains(t, err, "dpsmod")
+	require.ErrorContains(t, err, "raid")
 }

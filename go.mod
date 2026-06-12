@@ -3,12 +3,13 @@ module github.com/amdrake93/eq2-eof-itemdex
 go 1.26.3
 
 require (
+	github.com/BurntSushi/toml v1.6.0
 	github.com/stretchr/testify v1.11.1
 	golang.org/x/time v0.15.0
+	modernc.org/sqlite v1.51.0
 )
 
 require (
-	github.com/BurntSushi/toml v1.6.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/google/uuid v1.6.0 // indirect
@@ -21,5 +22,4 @@ require (
 	modernc.org/libc v1.72.3 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
 	modernc.org/memory v1.11.0 // indirect
-	modernc.org/sqlite v1.51.0 // indirect
 )

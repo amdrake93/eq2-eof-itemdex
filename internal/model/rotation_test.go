@@ -89,6 +89,10 @@ func TestEffRecastSharedCeiling(t *testing.T) {
 	partial := spell.CombatArt{Name: "Y", RecastSecs: 100, RecastReduction: 0.3}
 	require.InDelta(t, 60.0, effRecast(StatBlock{Reuse: 10}, partial), 1e-9) // 0.3+0.1
 	require.InDelta(t, 50.0, effRecast(StatBlock{Reuse: 30}, partial), 1e-9) // 0.3+0.3 → ceiling
+
+	// An art mod alone can exceed the ceiling — still clamped.
+	deep := spell.CombatArt{Name: "Z", RecastSecs: 100, RecastReduction: 0.75}
+	require.InDelta(t, 50.0, effRecast(StatBlock{}, deep), 1e-9)
 }
 
 func TestSlotTiming(t *testing.T) {

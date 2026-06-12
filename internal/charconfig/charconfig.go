@@ -10,6 +10,7 @@ import (
 
 	"github.com/BurntSushi/toml"
 	"github.com/amdrake93/eq2-eof-itemdex/internal/model"
+	"github.com/amdrake93/eq2-eof-itemdex/internal/spell"
 )
 
 type Character struct {
@@ -30,6 +31,24 @@ type StatGrants struct {
 	AbilityMod    float64 `toml:"abilitymod"`
 	CastSpeed     float64 `toml:"cast_speed"`
 	RecoverySpeed float64 `toml:"recovery_speed"`
+}
+
+// nonNegative reports the first negative field, if any. Config stats are
+// grants — debuffs are not a config concept, and a negative cast_speed at or
+// below -100 would turn the rotation's divisor non-positive.
+func (g StatGrants) nonNegative() error {
+	fields := map[string]float64{
+		"haste": g.Haste, "multiattack": g.MultiAttack, "critchance": g.CritChance,
+		"potency": g.Potency, "dpsmod": g.DPSMod, "reuse": g.Reuse,
+		"flurry": g.Flurry, "abilitymod": g.AbilityMod,
+		"cast_speed": g.CastSpeed, "recovery_speed": g.RecoverySpeed,
+	}
+	for name, v := range fields {
+		if v < 0 {
+			return fmt.Errorf("stat %q is negative (%v) — config stats are grants, not debuffs", name, v)
+		}
+	}
+	return nil
 }
 
 // Block converts the grants to a model.StatBlock.
@@ -88,6 +107,14 @@ func Load(path string) (Config, error) {
 	if cfg.Character.ArtTier != "expert" {
 		return Config{}, fmt.Errorf("%s: unsupported art_tier %q (only expert is implemented)", path, cfg.Character.ArtTier)
 	}
+	if err := cfg.Stats.nonNegative(); err != nil {
+		return Config{}, fmt.Errorf("%s: [stats]: %w", path, err)
+	}
+	for ctxName, ctx := range cfg.Contexts {
+		if err := ctx.nonNegative(); err != nil {
+			return Config{}, fmt.Errorf("%s: [contexts.%s]: %w", path, ctxName, err)
+		}
+	}
 	for name, m := range cfg.ArtMods {
 		if m.RecastMult <= 0 || m.RecastMult > 1 {
 			return Config{}, fmt.Errorf("%s: art_mods[%q]: recast_mult %v out of range (0,1]", path, name, m.RecastMult)
@@ -97,4 +124,27 @@ func Load(path string) (Config, error) {
 		return Config{}, fmt.Errorf("%s: config must define at least one context", path)
 	}
 	return cfg, nil
+}
+
+// ApplyArtMods returns a copy of the art pool with each config art mod applied
+// to the art whose base name (rank-stripped) matches. Every mod must match an
+// art — a typo'd name failing loudly beats silently un-halving Assassinate.
+func ApplyArtMods(arts []spell.CombatArt, mods map[string]ArtMod) ([]spell.CombatArt, error) {
+	out := make([]spell.CombatArt, len(arts))
+	copy(out, arts)
+
+	matched := make(map[string]bool, len(mods))
+	for i := range out {
+		if m, ok := mods[spell.BaseName(out[i].Name)]; ok {
+			out[i].RecastReduction = 1 - m.RecastMult
+			matched[spell.BaseName(out[i].Name)] = true
+		}
+	}
+
+	for name := range mods {
+		if !matched[name] {
+			return nil, fmt.Errorf("art_mods[%q] matches no loaded combat art", name)
+		}
+	}
+	return out, nil
 }
