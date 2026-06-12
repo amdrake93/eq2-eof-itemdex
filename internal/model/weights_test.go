@@ -23,7 +23,7 @@ func TestDeriveWeights(t *testing.T) {
 func TestDPSModWeightZeroAtCap(t *testing.T) {
 	w := Weapon{AvgDamage: 100, DelaySecs: 2.0}
 	dps := func(sb StatBlock) float64 { return AutoDPS(sb, w) }
-	weights := DeriveWeights(StatBlock{DPSMod: 200}, dps)
+	weights := DeriveWeights(StatBlock{DPSMod: 300}, dps)
 	require.InDelta(t, 0.0, weights["dpsmod"], 1e-6)
 }
 
@@ -35,31 +35,48 @@ func TestCurveStatMarginalMultiAttack(t *testing.T) {
 
 func TestCurveStatMarginalHaste(t *testing.T) {
 	dps := func(sb StatBlock) float64 { return AutoDPS(sb, Weapon{AvgDamage: 160, DelaySecs: 4}) }
-	// bracket (0,24): @haste24 effect 18 → ×1.18; @haste0=40; (40*1.18-40)/24 = 0.30
-	require.InDelta(t, 0.30, curveStatMarginal(StatBlock{}, "haste", dps), 1e-6)
+	// At haste 0 the bracket is the curve's (0,1) effect crossings: (0, 1.2520).
+	// dps: 40·1.00 → 40·1.01; marginal = 0.4 / 1.2520 = 0.3195
+	require.InDelta(t, 0.3195, curveStatMarginal(StatBlock{}, "haste", dps), 1e-3)
 }
 
 func TestCurveStatMarginalHasteAtCap(t *testing.T) {
 	dps := func(sb StatBlock) float64 { return AutoDPS(sb, Weapon{AvgDamage: 160, DelaySecs: 4}) }
-	require.InDelta(t, 0.0, curveStatMarginal(StatBlock{Haste: 200}, "haste", dps), 1e-9)
+	require.InDelta(t, 0.0, curveStatMarginal(StatBlock{Haste: 300}, "haste", dps), 1e-9)
 }
 
 func TestCurveStatMarginalDPSMod(t *testing.T) {
 	dps := func(sb StatBlock) float64 { return AutoDPS(sb, Weapon{AvgDamage: 160, DelaySecs: 4}) }
-	// dps-mod shares the haste curve: bracket (0,24): (40*1.18-40)/24 = 0.30
-	require.InDelta(t, 0.30, curveStatMarginal(StatBlock{}, "dpsmod", dps), 1e-6)
+	require.InDelta(t, 0.3195, curveStatMarginal(StatBlock{}, "dpsmod", dps), 1e-3)
 }
 
 func TestCurveStatMarginalDPSModAtCap(t *testing.T) {
 	dps := func(sb StatBlock) float64 { return AutoDPS(sb, Weapon{AvgDamage: 160, DelaySecs: 4}) }
-	require.InDelta(t, 0.0, curveStatMarginal(StatBlock{DPSMod: 200}, "dpsmod", dps), 1e-9)
+	require.InDelta(t, 0.0, curveStatMarginal(StatBlock{DPSMod: 300}, "dpsmod", dps), 1e-9)
+}
+
+func TestCurveStatMarginalDPSModRaidBaseline(t *testing.T) {
+	dps := func(sb StatBlock) float64 { return AutoDPS(sb, Weapon{AvgDamage: 160, DelaySecs: 4}) }
+	// At dps-mod 114.2 (raid baseline): f=74.80 → bracket = the (74,75) effect
+	// crossings (112.63, 114.59); dps: 40·1.74 → 40·1.75; 0.4/1.9561 = 0.2045.
+	// Nonzero — under the old 200-cap model the raid baseline read 0 here.
+	require.InDelta(t, 0.2045, curveStatMarginal(StatBlock{DPSMod: 114.2}, "dpsmod", dps), 1e-3)
+}
+
+func TestCurveStatMarginalJustBelowCap(t *testing.T) {
+	dps := func(sb StatBlock) float64 { return AutoDPS(sb, Weapon{AvgDamage: 160, DelaySecs: 4}) }
+	// haste=289: f=124.99 → floor 124; bracket (124,125) crossings are reachable.
+	// Was "capped → 0" under the old 200-cap model; curve is nearly flat here.
+	m := curveStatMarginal(StatBlock{Haste: 289}, "haste", dps)
+	require.Greater(t, m, 0.0)
+	require.Less(t, m, 0.1)
 }
 
 func TestDeriveWeightsDPSModIntegration(t *testing.T) {
 	dps := func(sb StatBlock) float64 { return AutoDPS(sb, Weapon{AvgDamage: 160, DelaySecs: 4}) }
-	require.InDelta(t, 0.30, DeriveWeights(StatBlock{}, dps)["dpsmod"], 1e-6)
-	require.InDelta(t, 0.30, DeriveWeights(StatBlock{}, dps)["haste"], 1e-6)
-	require.InDelta(t, 0.0, DeriveWeights(StatBlock{DPSMod: 200}, dps)["dpsmod"], 1e-6)
+	require.InDelta(t, 0.3195, DeriveWeights(StatBlock{}, dps)["dpsmod"], 1e-3)
+	require.InDelta(t, 0.3195, DeriveWeights(StatBlock{}, dps)["haste"], 1e-3)
+	require.InDelta(t, 0.0, DeriveWeights(StatBlock{DPSMod: 300}, dps)["dpsmod"], 1e-6)
 }
 
 func TestDeriveWeightsMultiAttackIntegration(t *testing.T) {

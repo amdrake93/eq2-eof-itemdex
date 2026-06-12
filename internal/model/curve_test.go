@@ -20,41 +20,22 @@ func TestMultiAttackEffect(t *testing.T) {
 
 func TestHasteDpsModEffect(t *testing.T) {
 	require.Equal(t, 0.0, HasteDpsModEffect(0))
+	require.Equal(t, 0.0, HasteDpsModEffect(-5))
+	// Committed readings reproduced exactly:
 	require.Equal(t, 18.0, HasteDpsModEffect(24))
 	require.Equal(t, 21.0, HasteDpsModEffect(28.1))
 	require.Equal(t, 35.0, HasteDpsModEffect(48.3))
 	require.Equal(t, 48.0, HasteDpsModEffect(67.5))
-	require.Equal(t, 125.0, HasteDpsModEffect(200))
-	require.Equal(t, 125.0, HasteDpsModEffect(300))  // hard cap
-	require.Equal(t, 125.0, HasteDpsModEffect(5000)) // hard cap
-	require.Equal(t, 66.0, HasteDpsModEffect(100))   // interp 66.88, floor 66
-	require.Equal(t, 36.0, HasteDpsModEffect(50))    // interp 36.15, floor 36
+	require.Equal(t, 124.0, HasteDpsModEffect(281)) // the reading that disproved (200→125)
+	// Fitted values between/beyond readings:
+	require.Equal(t, 67.0, HasteDpsModEffect(100))   // f=67.31 (was 66 on the old piecewise)
+	require.Equal(t, 109.0, HasteDpsModEffect(200))  // mid-curve now — NOT 125
+	require.Equal(t, 125.0, HasteDpsModEffect(300))  // hard cap: f(300)=125.56
+	require.Equal(t, 125.0, HasteDpsModEffect(5000)) // overcap clamps to f(300)
 }
 
 func TestCurveBracketMultiAttack(t *testing.T) {
 	lo, hi := curveBracket(multiAttackSamples, 34.2)
 	require.Equal(t, 30.0, lo)
 	require.Equal(t, 40.0, hi)
-}
-
-func TestCurveBracketHasteDpsMod(t *testing.T) {
-	lo, hi := curveBracket(hasteDpsModSamples, 0)
-	require.Equal(t, 0.0, lo)
-	require.Equal(t, 24.0, hi)
-
-	lo, hi = curveBracket(hasteDpsModSamples, 24)
-	require.Equal(t, 24.0, lo)
-	require.Equal(t, 28.1, hi)
-
-	lo, hi = curveBracket(hasteDpsModSamples, 50)
-	require.Equal(t, 48.3, lo)
-	require.Equal(t, 67.5, hi)
-
-	lo, hi = curveBracket(hasteDpsModSamples, 200)
-	require.Equal(t, 200.0, lo)
-	require.Equal(t, 200.0, hi)
-
-	lo, hi = curveBracket(hasteDpsModSamples, 300)
-	require.Equal(t, 200.0, lo)
-	require.Equal(t, 200.0, hi)
 }

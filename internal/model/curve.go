@@ -1,6 +1,10 @@
 package model
 
-import "math"
+import (
+	"math"
+
+	"github.com/amdrake93/eq2-eof-itemdex/internal/constants"
+)
 
 type curvePoint struct{ stat, effect float64 }
 
@@ -14,11 +18,31 @@ var multiAttackSamples = []curvePoint{
 	{1200, 175}, {3400, 200},
 }
 
-// hasteDpsModSamples: the steeper curve shared by haste and dps-mod (live Varsoon
-// readings), anchored (0,0), hard cap 200→125%.
-var hasteDpsModSamples = []curvePoint{
-	{0, 0}, {24, 18}, {28.1, 21}, {48.3, 35}, {67.5, 48}, {200, 125},
+// Fitted haste/dps-mod curve (2026-06 refit): quadratic f(s) = A·s − B·s²,
+// joint floor-aware fit over the 20 readings in data/curve-readings.csv
+// (RMS 0.29 vs 1.93 for the logarithmic alternative; haste-only and dpsmod-only
+// fits agree within flooring noise → shared curve confirmed). Peak at
+// A/2B ≈ 314, just past the 300 hard cap; f(300) ≈ 125.56 → shows as 125%.
+// Re-derive after appending readings: go run ./cmd/fitcurve
+// (internal/fit's TestFittedConstantsMatchReadings enforces the loop).
+const (
+	HasteDpsModA = 0.800348
+	HasteDpsModB = 0.00127275
+)
+
+// hasteDpsModUnfloored is the fitted curve before UI flooring, clamped at the
+// 300-stat hard cap (constants.HasteStatCap == constants.DPSModCap — one curve).
+func hasteDpsModUnfloored(stat float64) float64 {
+	if stat <= 0 {
+		return 0
+	}
+	s := math.Min(stat, constants.HasteStatCap)
+	return HasteDpsModA*s - HasteDpsModB*s*s
 }
+
+// HasteDpsModEffect is the in-game effect %: the fitted curve, floored to a
+// whole percent (UI behavior).
+func HasteDpsModEffect(stat float64) float64 { return math.Floor(hasteDpsModUnfloored(stat)) }
 
 // curveInterp: continuous piecewise-linear interpolation between samples, anchored
 // at (0,0), clamped to the final sample's effect above the top stat.
@@ -61,4 +85,3 @@ func curveBracket(s []curvePoint, v float64) (lo, hi float64) {
 }
 
 func MultiAttackEffect(stat float64) float64 { return curveEffect(multiAttackSamples, stat) }
-func HasteDpsModEffect(stat float64) float64 { return curveEffect(hasteDpsModSamples, stat) }

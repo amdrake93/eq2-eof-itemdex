@@ -7,18 +7,21 @@ import (
 )
 
 func TestEffDelayHasteCurve(t *testing.T) {
-	w := Weapon{AvgDamage: 160, DelaySecs: 4}
-	// haste 200 → effect 125 → effDelay = 4/2.25 ≈ 1.7778
-	require.InDelta(t, 4.0/2.25, effDelay(StatBlock{Haste: 200}, w), 1e-4)
-	// haste 300 → clamped to stat cap 200 → same effDelay
+	w := Weapon{AvgDamage: 100, DelaySecs: 4.0}
+	// haste 200 → f = 0.800348·200 − 0.00127275·200² = 109.16 → floor 109
+	require.InDelta(t, 4.0/2.09, effDelay(StatBlock{Haste: 200}, w), 1e-4)
+	// haste 300 = hard cap → f(300) = 125.56 → floor 125
 	require.InDelta(t, 4.0/2.25, effDelay(StatBlock{Haste: 300}, w), 1e-4)
+	// haste 400 → clamped to the 300 cap
+	require.InDelta(t, 4.0/2.25, effDelay(StatBlock{Haste: 400}, w), 1e-4)
 }
 
 func TestDPSModFactorCurveCapped(t *testing.T) {
-	require.Equal(t, 1.0, dpsModFactor(StatBlock{}))
-	require.InDelta(t, 1.66, dpsModFactor(StatBlock{DPSMod: 100}), 1e-9) // effect 66
-	require.InDelta(t, 2.25, dpsModFactor(StatBlock{DPSMod: 200}), 1e-9) // effect 125
-	require.InDelta(t, 2.25, dpsModFactor(StatBlock{DPSMod: 300}), 1e-9) // capped
+	require.InDelta(t, 1.0, dpsModFactor(StatBlock{}), 1e-9)
+	require.InDelta(t, 1.67, dpsModFactor(StatBlock{DPSMod: 100}), 1e-9) // f=67.31 → 67
+	require.InDelta(t, 2.09, dpsModFactor(StatBlock{DPSMod: 200}), 1e-9) // f=109.16 → 109
+	require.InDelta(t, 2.25, dpsModFactor(StatBlock{DPSMod: 300}), 1e-9) // hard cap
+	require.InDelta(t, 2.25, dpsModFactor(StatBlock{DPSMod: 500}), 1e-9) // overcap clamps
 }
 
 func TestFlurryFactorNoHasteContribution(t *testing.T) {

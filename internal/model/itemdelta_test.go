@@ -22,7 +22,7 @@ func TestItemDeltaCappedStatZero(t *testing.T) {
 	main := Weapon{AvgDamage: 160, DelaySecs: 4}
 	off := Weapon{AvgDamage: 158, DelaySecs: 4.4}
 	var arts []spell.CombatArt
-	d := ItemDelta(StatBlock{Haste: 200}, main, off, arts, StatBlock{Haste: 50}, nil)
+	d := ItemDelta(StatBlock{Haste: 300}, main, off, arts, StatBlock{Haste: 50}, nil)
 	require.InDelta(t, 0.0, d, 1e-9)
 }
 

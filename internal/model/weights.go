@@ -1,6 +1,10 @@
 package model
 
-import "github.com/amdrake93/eq2-eof-itemdex/internal/constants"
+import (
+	"math"
+
+	"github.com/amdrake93/eq2-eof-itemdex/internal/constants"
+)
 
 // epsilon is the finite-difference step (1 stat point/percent).
 const epsilon = 1.0
@@ -30,9 +34,10 @@ func bump(sb StatBlock, stat string, delta float64) StatBlock {
 // WeightStats is the fixed ordered set of stats the model derives weights for.
 var WeightStats = []string{"haste", "multiattack", "critchance", "potency", "dpsmod", "reuse", "flurry", "abilitymod"}
 
-// curveStats convert through a non-linear curve; their marginal weight is the
-// sample-to-sample slope (a +1 forward diff would read lumpy under the floor).
-// Multi-attack has its own gentle curve; haste and dps-mod share the steeper one.
+// curveStats convert through a non-linear curve; their marginal weight is a
+// bracket slope rather than a +1 forward diff (which reads lumpy under the
+// in-game flooring). Multi-attack brackets between its table samples; haste and
+// dps-mod bracket between the fitted curve's integer-effect crossings.
 var curveStats = map[string]bool{"haste": true, "multiattack": true, "dpsmod": true}
 
 // DeriveWeights returns the marginal DPS per +1 unit of each stat at the given
@@ -79,30 +84,39 @@ func setStat(sb StatBlock, stat string, v float64) StatBlock {
 	return bump(sb, stat, v-getStat(sb, stat))
 }
 
-// curveStatMarginal is the per-point value of a curve stat as the slope of the
-// effect curve across the sample interval bracketing the baseline. Haste and
-// dps-mod clamp at their stat cap (no value past it); multi-attack is uncapped.
+// statAtEffect inverts the unfloored fitted curve: the stat on the rising
+// branch where f(stat) = e. Effects beyond f(cap) resolve to the cap.
+func statAtEffect(e float64) float64 {
+	disc := HasteDpsModA*HasteDpsModA - 4*HasteDpsModB*e
+	if disc <= 0 {
+		return constants.HasteStatCap
+	}
+	s := (HasteDpsModA - math.Sqrt(disc)) / (2 * HasteDpsModB)
+	return math.Min(s, constants.HasteStatCap)
+}
+
+// curveStatMarginal is the per-point value of a curve stat as the DPS slope
+// across an interval whose endpoints land exactly on whole-percent effects, so
+// the in-game flooring contributes no noise. Multi-attack uses its sample
+// table; haste/dps-mod use the fitted equation's integer crossings (available
+// anywhere on the curve) and clamp to 0 at the shared 300 cap.
 func curveStatMarginal(base StatBlock, stat string, dps func(StatBlock) float64) float64 {
 	v := getStat(base, stat)
 
-	var samples []curvePoint
-	var capStat float64 // 0 = no cap
+	var lo, hi float64
 	switch stat {
 	case "multiattack":
-		samples = multiAttackSamples
-	case "haste":
-		samples, capStat = hasteDpsModSamples, constants.HasteStatCap
-	case "dpsmod":
-		samples, capStat = hasteDpsModSamples, constants.DPSModCap
+		lo, hi = curveBracket(multiAttackSamples, v)
+	case "haste", "dpsmod":
+		if v >= constants.HasteStatCap { // == constants.DPSModCap (shared curve)
+			return 0
+		}
+		n := math.Floor(hasteDpsModUnfloored(v))
+		const nudge = 1e-9 // keep floor() on the intended side of each crossing
+		lo = statAtEffect(n + nudge)
+		hi = statAtEffect(n + 1 + nudge)
 	}
 
-	if capStat > 0 && v >= capStat {
-		return 0
-	}
-	lo, hi := curveBracket(samples, v)
-	if capStat > 0 && hi > capStat {
-		hi = capStat
-	}
 	if hi <= lo {
 		return 0
 	}

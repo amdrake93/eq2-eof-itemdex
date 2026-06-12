@@ -8,8 +8,8 @@ package constants
 const (
 	CritMultiplier    = 1.30  // a crit deals +30%
 	FlurryMultiplier  = 4.0   // a flurry proc does +100%–500% more (2×–6×), averaging 4× — use the mean for expected DPS
-	HasteStatCap      = 200.0 // haste stat cap → 125% via the shared curve; overcap wasted (no flurry)
-	DPSModCap         = 200.0 // dps-mod stat cap → 125% via the shared haste/dps-mod curve; overcap wasted
+	HasteStatCap      = 300.0 // haste stat hard cap; fitted curve gives f(300) ≈ 125.56 → shows 125%; overcap wasted (no flurry)
+	DPSModCap         = 300.0 // dps-mod stat hard cap — shares the haste curve and cap
 	AbilityModCapFrac = 0.50  // +CA-dmg cap = 50% of the potency-adjusted CA base
 	ReuseHalvesAt     = 100.0 // 100% reuse → recast halved (cap)
 	ReuseHalveCoeff   = 0.50  // recast reduction coefficient at full reuse
