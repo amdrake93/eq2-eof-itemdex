@@ -53,7 +53,9 @@ func (l LogParams) Eval(s float64) float64 { return l.A * math.Log(1+s/l.B) }
 
 // FitLog scans B over a 1% geometric grid (1 → 20000); for each B the best A is
 // linear least squares over g = ln(1+s/B). Deterministic and plenty precise for
-// a residual bake-off against the quadratic.
+// a residual bake-off against the quadratic. Degenerate input (no readings, or
+// all-zero raw values) yields unusable params (zero-value or NaN) rather than an
+// error, matching FitQuad's convention.
 func FitLog(rs []Reading) LogParams {
 	best := LogParams{}
 	bestRSS := math.Inf(1)

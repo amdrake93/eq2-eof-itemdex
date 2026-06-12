@@ -72,6 +72,13 @@ func TestCurveStatMarginalJustBelowCap(t *testing.T) {
 	require.Less(t, m, 0.1)
 }
 
+func TestCurveStatMarginalDeadZoneBeforeCap(t *testing.T) {
+	dps := func(sb StatBlock) float64 { return AutoDPS(sb, Weapon{AvgDamage: 160, DelaySecs: 4}) }
+	// Past the curve's last integer crossing (f=125 at ≈289) the floored effect
+	// can never reach 126, so the marginal is legitimately zero before the cap.
+	require.InDelta(t, 0.0, curveStatMarginal(StatBlock{Haste: 295}, "haste", dps), 1e-9)
+}
+
 func TestDeriveWeightsDPSModIntegration(t *testing.T) {
 	dps := func(sb StatBlock) float64 { return AutoDPS(sb, Weapon{AvgDamage: 160, DelaySecs: 4}) }
 	require.InDelta(t, 0.3195, DeriveWeights(StatBlock{}, dps)["dpsmod"], 1e-3)

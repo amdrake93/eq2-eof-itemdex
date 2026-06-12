@@ -43,8 +43,9 @@ var curveStats = map[string]bool{"haste": true, "multiattack": true, "dpsmod": t
 // DeriveWeights returns the marginal DPS per +1 unit of each stat at the given
 // baseline. dps computes total DPS for a stat block; the caller binds the
 // loadout (dual-wield weapons + combat arts), enabling per-set re-derivation.
-// Curve stats use the sample-to-sample slope; everything else uses a +1 forward
-// diff. Saturated stats (e.g. dps-mod at cap) yield ~0 by construction.
+// Curve stats use a bracket slope (table samples for multi-attack,
+// fitted-curve integer crossings for haste/dps-mod); everything else uses a +1
+// forward diff. Saturated stats (e.g. dps-mod at cap) yield ~0 by construction.
 func DeriveWeights(base StatBlock, dps func(StatBlock) float64) map[string]float64 {
 	d0 := dps(base)
 	out := make(map[string]float64, len(WeightStats))
@@ -86,6 +87,7 @@ func setStat(sb StatBlock, stat string, v float64) StatBlock {
 
 // statAtEffect inverts the unfloored fitted curve: the stat on the rising
 // branch where f(stat) = e. Effects beyond f(cap) resolve to the cap.
+// Assumes B > 0 (a real diminishing-returns fit).
 func statAtEffect(e float64) float64 {
 	disc := HasteDpsModA*HasteDpsModA - 4*HasteDpsModB*e
 	if disc <= 0 {
