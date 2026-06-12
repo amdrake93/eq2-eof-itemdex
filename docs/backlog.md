@@ -174,10 +174,12 @@ touching cmd/weights. (Surfaced by the 2026-06 curve-refit final review.)
 
 Tooltip calibration (Eviscerate V Expert, potency 57.7%, ability mod 738) shows
 combat-art tooltips carry a base multiplier of ~2.99 where potency alone predicts
-1.577 — an extra **~×1.9 on CA base damage** from primary attributes (STR
-suspected; user confirmed "we skipped stats"). Overturns the spec's "attributes
-excluded — no discriminating power" assumption (design-plan2 §11): STR is on
-3,248 catalog items and varies across same-slot choices.
+1.577 — an extra **~×1.9 on CA base damage** from primary attributes — **AGI specifically**
+(user-confirmed; STR explicitly does NOT affect scout damage per its tooltip).
+Census files items' "+N primary attributes" under the `strength` key (3,248
+items), which grants AGI point-for-point to a scout; ~70 explicit single-stat
+`agility`/`wisdom`/`intelligence` items exist and are data-suspicious (separate
+fixing task). Overturns the spec's "attributes excluded" assumption (§11).
 
 Impact when modeled: CADPS ~2× understated today → CA-stat weights (potency,
 reuse, ability-mod) undervalued relative to auto stats; ability-mod cap binds
