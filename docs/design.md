@@ -124,6 +124,8 @@ CADPS = Σ_CA  CAdmg(CA) / effRecast(CA)
 
 ### 4.2 Mechanics constants & rules (modern engine / TLE)
 
+> **Superseded for stat mechanics** by `design-plan2.md` §3.1 (the authoritative, data-revised block). Known-stale rows here: flurry is ×4 (not ×5), haste does NOT overcap into flurry, and the haste/dps-mod curve is a fitted equation with a **300** hard cap — the "hard cap ≈ 200 (= +125%)" research claim below was disproven by live readings. This table is kept as the original research record.
+
 | Mechanic | Treatment | Provenance |
 |---|---|---|
 | **Critical hit** | Fixed ×1.30 multiplier; `critFactor = 1 + critChance% × 0.30`. Applies to auto-attacks **and** CAs. Crit **Bonus is not a gear stat** (baseline only). | user |
