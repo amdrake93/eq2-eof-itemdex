@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/amdrake93/eq2-eof-itemdex/internal/baseline"
 	"github.com/amdrake93/eq2-eof-itemdex/internal/bis"
+	"github.com/amdrake93/eq2-eof-itemdex/internal/charconfig"
 	"github.com/amdrake93/eq2-eof-itemdex/internal/model"
 	"github.com/amdrake93/eq2-eof-itemdex/internal/store"
 )
@@ -78,7 +78,14 @@ func main() {
 	out := flag.String("out", "bis-report.md", "report output path")
 	lock := flag.String("lock", "", "comma-separated item IDs to lock (raid re-model)")
 	topN := flag.Int("top", 3, "alternatives per slot")
+	character := flag.String("character", "characters/alex.toml", "character config (TOML)")
 	flag.Parse()
+
+	cfg, err := charconfig.Load(*character)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "load character:", err)
+		os.Exit(1)
+	}
 
 	lockIDs, err := parseLocks(*lock)
 	if err != nil {
@@ -98,6 +105,23 @@ func main() {
 		fmt.Fprintln(os.Stderr, "load loadout:", err)
 		os.Exit(1)
 	}
+	lo.Arts, err = charconfig.ApplyArtMods(lo.Arts, cfg.ArtMods)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "apply art mods:", err)
+		os.Exit(1)
+	}
+
+	solo, err := cfg.ContextBlock("solo")
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+	raid, err := cfg.ContextBlock("raid")
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+
 	items, err := db.LoadScorableItems()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "load items:", err)
@@ -113,13 +137,13 @@ func main() {
 		baseline model.StatBlock
 		keep     func(store.ScorableItem) bool
 	}{
-		{"PRE-RAID", baseline.Solo, func(it store.ScorableItem) bool {
+		{"PRE-RAID", solo, func(it store.ScorableItem) bool {
 			return (it.Tier == "LEGENDARY" || it.Tier == "TREASURED") && !bis.IsAvatar(it) && notExcluded(it)
 		}},
-		{"RAID", baseline.Raid, func(it store.ScorableItem) bool {
+		{"RAID", raid, func(it store.ScorableItem) bool {
 			return !bis.IsAvatar(it) && notExcluded(it)
 		}},
-		{"BEST-OF-BEST", baseline.Raid, func(it store.ScorableItem) bool {
+		{"BEST-OF-BEST", raid, func(it store.ScorableItem) bool {
 			return notExcluded(it)
 		}},
 	}
@@ -142,7 +166,7 @@ func main() {
 	if len(lockIDs) > 0 {
 		locked := lockedItems(items, lockIDs)
 		bySlot := bis.SlotCandidates(items, func(it store.ScorableItem) bool { return !bis.IsAvatar(it) && notExcluded(it) })
-		profile := baseline.Raid
+		profile := raid
 		if haveMain {
 			profile = profile.Add(mainItem.Stats)
 		}

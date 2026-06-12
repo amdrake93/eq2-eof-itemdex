@@ -19,7 +19,7 @@ func seedLoadout(t *testing.T, d *DB) {
 	exec(`INSERT INTO items (id,name,slot,tier,itemlevel,armor_type,skill,wieldstyle,classes,gamelink,weapon_min_dmg,weapon_max_dmg,delay,damage_rating)
 	      VALUES (2,'Enchanted Grove Scimitar','Secondary','FABLED',70,'','piercing','One-Handed','assassin','',118,198,4.4,75)`)
 	exec(`INSERT INTO combat_arts (name,level,min_dmg,max_dmg,recast_secs,cast_secs_hundredths)
-	      VALUES ('Assassinate II',70,7000,12000,300,50)`)
+	      VALUES ('Assassinate II',70,7000,12000,300,200)`)
 	exec(`INSERT INTO combat_arts (name,level,min_dmg,max_dmg,recast_secs,cast_secs_hundredths)
 	      VALUES ('Assassinate I',60,5000,9000,300,50)`)
 }
@@ -38,4 +38,5 @@ func TestLoadLoadout(t *testing.T) {
 	require.InDelta(t, 4.0, lo.Main.DelaySecs, 1e-9)
 	require.Len(t, lo.Arts, 1)
 	require.Equal(t, "Assassinate II", lo.Arts[0].Name)
+	require.Equal(t, 200, lo.Arts[0].CastSecsHundredths)
 }

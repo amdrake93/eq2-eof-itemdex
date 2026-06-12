@@ -151,7 +151,7 @@ func (d *DB) LoadLoadout() (Loadout, error) {
 	if err != nil {
 		return Loadout{}, err
 	}
-	rows, err := d.db.Query(`SELECT name, min_dmg, max_dmg, recast_secs FROM combat_arts`)
+	rows, err := d.db.Query(`SELECT name, min_dmg, max_dmg, recast_secs, cast_secs_hundredths FROM combat_arts`)
 	if err != nil {
 		return Loadout{}, err
 	}
@@ -159,7 +159,7 @@ func (d *DB) LoadLoadout() (Loadout, error) {
 	var arts []spell.CombatArt
 	for rows.Next() {
 		var a spell.CombatArt
-		if err := rows.Scan(&a.Name, &a.MinDamage, &a.MaxDamage, &a.RecastSecs); err != nil {
+		if err := rows.Scan(&a.Name, &a.MinDamage, &a.MaxDamage, &a.RecastSecs, &a.CastSecsHundredths); err != nil {
 			return Loadout{}, err
 		}
 		arts = append(arts, a)

@@ -6,15 +6,16 @@ import (
 	"fmt"
 	"os"
 	"sort"
+	"strings"
 
-	"github.com/amdrake93/eq2-eof-itemdex/internal/baseline"
+	"github.com/amdrake93/eq2-eof-itemdex/internal/charconfig"
 	"github.com/amdrake93/eq2-eof-itemdex/internal/model"
 	"github.com/amdrake93/eq2-eof-itemdex/internal/spell"
 	_ "modernc.org/sqlite"
 )
 
 func loadCAs(db *sql.DB) ([]spell.CombatArt, error) {
-	rows, err := db.Query(`SELECT name, min_dmg, max_dmg, recast_secs FROM combat_arts`)
+	rows, err := db.Query(`SELECT name, min_dmg, max_dmg, recast_secs, cast_secs_hundredths FROM combat_arts`)
 	if err != nil {
 		return nil, err
 	}
@@ -26,7 +27,7 @@ func loadCAs(db *sql.DB) ([]spell.CombatArt, error) {
 	var cas []spell.CombatArt
 	for rows.Next() {
 		var ca spell.CombatArt
-		if err := rows.Scan(&ca.Name, &ca.MinDamage, &ca.MaxDamage, &ca.RecastSecs); err != nil {
+		if err := rows.Scan(&ca.Name, &ca.MinDamage, &ca.MaxDamage, &ca.RecastSecs, &ca.CastSecsHundredths); err != nil {
 			return nil, err
 		}
 		cas = append(cas, ca)
@@ -45,7 +46,14 @@ func loadWeapon(db *sql.DB, query string, args ...any) (model.Weapon, string, er
 
 func main() {
 	dbPath := flag.String("db", "bis.db", "sqlite db from builddb")
+	character := flag.String("character", "characters/alex.toml", "character config (TOML)")
 	flag.Parse()
+
+	cfg, err := charconfig.Load(*character)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "load character:", err)
+		os.Exit(1)
+	}
 
 	db, err := sql.Open("sqlite", *dbPath)
 	if err != nil {
@@ -64,6 +72,11 @@ func main() {
 		os.Exit(1)
 	}
 	cas = spell.HighestRanks(cas)
+	cas, err = charconfig.ApplyArtMods(cas, cfg.ArtMods)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "apply art mods:", err)
+		os.Exit(1)
+	}
 
 	mainWeapon, mainName, err := loadWeapon(db,
 		`SELECT name, weapon_min_dmg, weapon_max_dmg, delay FROM items
@@ -94,15 +107,22 @@ func main() {
 	fmt.Printf("main-hand: %s (avg %.0f / %.1fs)   off-hand: %s (avg %.0f / %.1fs)\n",
 		mainName, mainWeapon.AvgDamage, mainWeapon.DelaySecs, offName, offWeapon.AvgDamage, offWeapon.DelaySecs)
 
-	for _, b := range []struct {
-		name string
-		sb   model.StatBlock
-	}{{"SOLO", baseline.Solo}, {"RAID", baseline.Raid}} {
-		fmt.Printf("\n== %s baseline weights (marginal DPS per +1 stat; dual-wield, %d combat arts) ==\n", b.name, len(cas))
+	names := make([]string, 0, len(cfg.Contexts))
+	for n := range cfg.Contexts {
+		names = append(names, n)
+	}
+	sort.Strings(names)
+	for _, name := range names {
+		block, err := cfg.ContextBlock(name)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+		fmt.Printf("\n== %s context weights (marginal DPS per +1 stat; dual-wield, %d combat arts) ==\n", strings.ToUpper(name), len(cas))
 		dps := func(sb model.StatBlock) float64 {
 			return model.TotalDPSDual(sb, mainWeapon, offWeapon, cas)
 		}
-		ws := model.DeriveWeights(b.sb, dps)
+		ws := model.DeriveWeights(block, dps)
 		keys := make([]string, 0, len(ws))
 		for k := range ws {
 			keys = append(keys, k)
