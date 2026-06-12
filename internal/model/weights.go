@@ -9,6 +9,12 @@ import (
 // epsilon is the finite-difference step (1 stat point/percent).
 const epsilon = 1.0
 
+// castSpeedMarginalSpan is the finite-difference width for castspeed. A +1
+// nudge shifts the rotation's decision lattice and can slide one long-cooldown
+// cast across the fight boundary (±a whole cast's DPS of noise, dwarfing the
+// real ~0.1/pt trend); a wide span averages ~10 lattice shifts (spec §3.1).
+const castSpeedMarginalSpan = 10.0
+
 func bump(sb StatBlock, stat string, delta float64) StatBlock {
 	switch stat {
 	case "haste":
@@ -56,6 +62,10 @@ func DeriveWeights(base StatBlock, dps func(StatBlock) float64) map[string]float
 	for _, s := range WeightStats {
 		if curveStats[s] {
 			out[s] = curveStatMarginal(base, s, dps)
+			continue
+		}
+		if s == "castspeed" {
+			out[s] = (dps(bump(base, s, castSpeedMarginalSpan)) - d0) / castSpeedMarginalSpan
 			continue
 		}
 		out[s] = (dps(bump(base, s, epsilon)) - d0) / epsilon

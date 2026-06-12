@@ -1,6 +1,6 @@
-// Package constants holds locked combat constants shared between the model and
-// baseline packages. Keeping them here breaks the import cycle that would arise
-// if model imported baseline (which itself imports model for StatBlock).
+// Package constants holds the server-wide locked combat constants shared across
+// the model and report packages. Per-character values live in the TOML config
+// (internal/charconfig), not here.
 package constants
 
 // Locked combat constants (docs/design-plan2.md §11). Single source of truth.

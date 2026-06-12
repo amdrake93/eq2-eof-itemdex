@@ -91,6 +91,20 @@ func TestDeriveWeightsMultiAttackIntegration(t *testing.T) {
 	require.InDelta(t, 0.4, DeriveWeights(StatBlock{MultiAttack: 34.2}, dps)["multiattack"], 1e-9)
 }
 
+func TestCastSpeedWeightUsesWideSpan(t *testing.T) {
+	// dps deliberately returns a lattice-noise shape: +1 castspeed reads a huge
+	// spurious spike, while the trend over 10 points is gentle. The wide-span
+	// derivation must report the trend, not the spike.
+	dps := func(sb StatBlock) float64 {
+		if sb.CastSpeed > 0 && sb.CastSpeed < 2 {
+			return 100 + 50 // spike a +1 probe would hit
+		}
+		return 100 + sb.CastSpeed // gentle 1/pt trend
+	}
+	w := DeriveWeights(StatBlock{}, dps)
+	require.InDelta(t, 1.0, w["castspeed"], 1e-9) // (110−100)/10, not (150−100)/1
+}
+
 func TestWeightStatsIncludeCastSpeedNotRecovery(t *testing.T) {
 	require.Contains(t, WeightStats, "castspeed")
 	require.NotContains(t, WeightStats, "recoveryspeed") // not a gear stat in the EoF pool
