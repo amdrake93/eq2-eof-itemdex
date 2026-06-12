@@ -160,3 +160,12 @@ Open questions for pick-up:
 - Gated on knowing the TLE server's unlock cadence (server not live yet — §5).
   Discovery timestamps only become meaningful once the server is up and items
   start being found, so this naturally co-develops with the launch-day re-pull.
+
+## 7. cmd/weights main-hand pick diverges from the bis pipeline
+
+`cmd/weights/main.go` selects the main-hand by max weapon damage among
+`Soulfire%` rows, which lands on "Soulfire Gladius"; the bis pipeline (and spec
+§4) pin the Soulfire **Sabre**. The weights printout is therefore computed on a
+slightly different loadout than the report. Cosmetic for weight *ordering*, but
+align the query (or share the loadout-loading code with cmd/bis) when next
+touching cmd/weights. (Surfaced by the 2026-06 curve-refit final review.)

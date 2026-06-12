@@ -101,7 +101,7 @@ Haste and dps-mod share a **single, steeper diminishing curve** — originally c
 - **quadratic:** `f(s) = a·s − b·s²` (naturally peaks; a peak landing near the 300 cap is a plausible dev implementation — the current rough fit peaks ≈340)
 - **logarithmic:** `f(s) = a·ln(1 + s/b)` (never peaks; the cap would be a hard clamp)
 
-The tool fits each form three ways — **haste-only, dpsmod-only, and joint** — and reports per-fit residuals. This is the ongoing shared-curve verification: if the two single-stat fits agree within flooring noise, the joint fit is the curve; if they ever diverge as data accumulates, split into per-stat parameter sets (the model carries per-stat parameters that may alias one shared set). The winning form's parameters are recorded as constants in `internal/model/curve.go`, annotated with the residual and dataset size; appending readings + re-running the tool is the whole refresh loop.
+The tool fits each form three ways — **haste-only, dpsmod-only, and joint** — and reports per-fit residuals. This is the ongoing shared-curve verification: if the two single-stat fits agree within flooring noise, the joint fit is the curve; if they ever diverge as data accumulates, split into per-stat parameter sets (the model today carries **one shared parameter set**; splitting is a small refactor to make when divergence actually appears). The winning form's parameters are recorded as constants in `internal/model/curve.go`, annotated with the residual and dataset size; appending readings + re-running the tool is the whole refresh loop.
 
 **Application (unchanged mechanics, new curve underneath):**
 
@@ -145,7 +145,7 @@ TotalDPS     = AutoDPSDual + CADPS                    # PARALLEL — CA casting 
 ### Weight derivation under non-linear stats
 **Multi-attack** (still a sample table) takes its marginal weight from the **sample-to-sample slope** at the baseline — evaluate DPS at the sample points bracketing the baseline and divide by the stat gap. At sample points the floored effect equals the table value exactly, so this yields the true segment slope with no flooring noise (the floor makes real gains lumpy, but the per-point weight should read as the smooth "going rate").
 
-**Haste/dps-mod** (fitted equation — no sample brackets) get the same smooth-going-rate intent directly: the marginal is a DPS finite difference evaluated on the **unfloored** fitted curve `f(s)` (the flooring was the whole reason for the bracket trick; the equation lets us bypass it). Marginals clamp to 0 at the 300 cap.
+**Haste/dps-mod** (fitted equation — no sample brackets) generalize the same trick to anywhere on the curve: the marginal is the DPS slope between the fitted curve's **adjacent integer-effect crossings** bracketing the baseline — endpoints land exactly on whole-percent effects, so the floor contributes no noise. Marginals clamp to 0 at the 300 cap, and are legitimately 0 in the **dead zone** past the last integer crossing (≈289, where `f` can no longer reach the next whole percent before the cap) — the floored in-game effect genuinely cannot improve there.
 
 Linear stats use the standard +1 finite difference.
 
