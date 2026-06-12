@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/amdrake93/eq2-eof-itemdex/internal/constants"
+	"github.com/amdrake93/eq2-eof-itemdex/internal/model"
 	"github.com/amdrake93/eq2-eof-itemdex/internal/store"
 )
 
@@ -118,7 +119,8 @@ func writeAssumptions(b *strings.Builder) {
 	b.WriteString("---\n\n## Assumptions & Constants\n\n")
 	fmt.Fprintf(b, "- crit ×%.2f; flurry ×%.1f; ability-mod cap = %.0f%% of potency-adjusted CA base\n",
 		constants.CritMultiplier, constants.FlurryMultiplier, constants.AbilityModCapFrac*100)
-	fmt.Fprintf(b, "- haste & dps-mod: shared diminishing curve, hard cap %.0f stat → 125%%\n", constants.HasteStatCap)
+	fmt.Fprintf(b, "- haste & dps-mod: fitted quadratic %.6f·s − %.8f·s², hard cap %.0f stat → %.0f%%\n",
+		model.HasteDpsModA, model.HasteDpsModB, constants.HasteStatCap, model.HasteDpsModEffect(constants.HasteStatCap))
 	fmt.Fprintf(b, "- reuse halves recast at %.0f%%; CA cast+recovery = %.2fs; fight = %.0fs\n",
 		constants.ReuseHalvesAt, constants.CACastTimeSecs+constants.CARecoverySecs, constants.FightDurationSecs)
 	b.WriteString("- Set built by coordinate-ascent to convergence (caps/interactions resolved at the live set baseline).\n")

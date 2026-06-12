@@ -23,10 +23,13 @@ var Solo = model.StatBlock{
 	MultiAttack: 34.2, // Villainy IV
 }
 
-// Raid: self + group package. DPS-mod buff-capped at 200; crit elevated by
-// AAs/buffs. Haste still low (no maintained group haste buff). Confirm vs parse.
+// Raid: self + group package. Group DPS-mod measured live (2026-06): Coercer 74
+// + Inquisitor 30.2 + Dirge 10 = 114.2 — mid-curve, well below the 300 cap (the
+// old "buffs reach the cap → 200" assumption died with the 200 cap and the comp
+// losing its Berserker). Crit elevated by AAs/buffs. Haste still low (no
+// maintained group haste buff). Refine per component as readings firm up.
 var Raid = model.StatBlock{
 	MultiAttack: 34.2,  // Villainy IV
-	DPSMod:      200.0, // buff-capped (guild-leader reported)
+	DPSMod:      114.2, // coercer 74 + inquis 30.2 + dirge 10 (live estimate)
 	CritChance:  31.0,  // ~31% buffed in an MT group (research; confirm)
 }
