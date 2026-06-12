@@ -15,6 +15,8 @@ type Curve interface{ Eval(s float64) float64 }
 //
 //	a·Σs² − b·Σs³ = Σs·y
 //	a·Σs³ − b·Σs⁴ = Σs²·y
+//
+// Requires ≥2 readings with distinct raw values; returns NaN params otherwise.
 func FitQuad(rs []Reading) QuadParams {
 	var s2, s3, s4, sy, s2y float64
 	for _, r := range rs {
@@ -42,4 +44,38 @@ func RMS(c Curve, rs []Reading) float64 {
 		rss += d * d
 	}
 	return math.Sqrt(rss / float64(len(rs)))
+}
+
+// LogParams is the logarithmic diminishing-returns form f(s) = A·ln(1 + s/B).
+type LogParams struct{ A, B float64 }
+
+func (l LogParams) Eval(s float64) float64 { return l.A * math.Log(1+s/l.B) }
+
+// FitLog scans B over a 1% geometric grid (1 → 20000); for each B the best A is
+// linear least squares over g = ln(1+s/B). Deterministic and plenty precise for
+// a residual bake-off against the quadratic.
+func FitLog(rs []Reading) LogParams {
+	best := LogParams{}
+	bestRSS := math.Inf(1)
+
+	for b := 1.0; b < 20000; b *= 1.01 {
+		var gg, gy float64
+		for _, r := range rs {
+			g := math.Log(1 + r.Raw/b)
+			gg += g * g
+			gy += g * r.FitTarget()
+		}
+		a := gy / gg
+
+		var rss float64
+		for _, r := range rs {
+			d := a*math.Log(1+r.Raw/b) - r.FitTarget()
+			rss += d * d
+		}
+		if rss < bestRSS {
+			bestRSS = rss
+			best = LogParams{A: a, B: b}
+		}
+	}
+	return best
 }

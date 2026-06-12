@@ -17,10 +17,11 @@ func syntheticQuad(a, b float64) []Reading {
 }
 
 func TestFitQuadRecoversExactParams(t *testing.T) {
-	q := FitQuad(syntheticQuad(0.8, 0.001))
+	rs := syntheticQuad(0.8, 0.001)
+	q := FitQuad(rs)
 	require.InDelta(t, 0.8, q.A, 1e-9)
 	require.InDelta(t, 0.001, q.B, 1e-9)
-	require.InDelta(t, 0.0, RMS(q, syntheticQuad(0.8, 0.001)), 1e-9)
+	require.InDelta(t, 0.0, RMS(q, rs), 1e-9)
 }
 
 func TestFitQuadOnCommittedReadings(t *testing.T) {
@@ -45,4 +46,25 @@ func TestQuadSubsetFitsAgree(t *testing.T) {
 	d := FitQuad(Filter(rs, "dpsmod"))
 	require.InDelta(t, h.A, d.A, 0.01, "haste/dpsmod fits diverge — shared curve in doubt")
 	require.InDelta(t, h.B, d.B, 5e-5, "haste/dpsmod fits diverge — shared curve in doubt")
+}
+
+func TestFitLogRecoversParams(t *testing.T) {
+	truth := LogParams{A: 100, B: 110}
+	var rs []Reading
+	for s := 10.0; s <= 280; s += 15 {
+		rs = append(rs, Reading{Stat: "dpsmod", Raw: s, Effect: truth.Eval(s) - 0.5, Era: "live"})
+	}
+
+	l := FitLog(rs)
+	require.InEpsilon(t, truth.A, l.A, 0.02) // B scans a 1% grid; A follows
+	require.InEpsilon(t, truth.B, l.B, 0.02)
+}
+
+func TestQuadraticBeatsLogOnCommittedReadings(t *testing.T) {
+	rs, err := LoadReadings(readingsPath)
+	require.NoError(t, err)
+
+	q, l := FitQuad(rs), FitLog(rs)
+	require.Less(t, RMS(q, rs), RMS(l, rs), "spec expects the quadratic to win the bake-off")
+	require.InDelta(t, 1.93, RMS(l, rs), 0.05)
 }
