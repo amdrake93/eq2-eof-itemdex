@@ -90,3 +90,18 @@ func TestDeriveWeightsMultiAttackIntegration(t *testing.T) {
 	dps := func(sb StatBlock) float64 { return AutoDPS(sb, Weapon{AvgDamage: 160, DelaySecs: 4}) }
 	require.InDelta(t, 0.4, DeriveWeights(StatBlock{MultiAttack: 34.2}, dps)["multiattack"], 1e-9)
 }
+
+func TestWeightStatsIncludeCastSpeedNotRecovery(t *testing.T) {
+	require.Contains(t, WeightStats, "castspeed")
+	require.NotContains(t, WeightStats, "recoveryspeed") // not a gear stat in the EoF pool
+
+	w := Weapon{AvgDamage: 100, DelaySecs: 2.0}
+	cas := []spell.CombatArt{{Name: "X", MinDamage: 800, MaxDamage: 1200, RecastSecs: 0}}
+	dps := func(sb StatBlock) float64 { return AutoDPS(sb, w) + CADPS(sb, cas) }
+	weights := DeriveWeights(StatBlock{}, dps)
+	_, ok := weights["castspeed"]
+	require.True(t, ok)
+	// A zero-recast (spammable) art makes the CA timeline cast-bound, so faster
+	// casts must add DPS.
+	require.Greater(t, weights["castspeed"], 0.0)
+}

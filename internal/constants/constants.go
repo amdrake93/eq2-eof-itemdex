@@ -11,12 +11,12 @@ const (
 	HasteStatCap      = 300.0 // haste stat hard cap; fitted curve gives f(300) ≈ 125.56 → shows 125%; overcap wasted (no flurry)
 	DPSModCap         = 300.0 // dps-mod stat hard cap — shares the haste curve and cap
 	AbilityModCapFrac = 0.50  // +CA-dmg cap = 50% of the potency-adjusted CA base
-	ReuseHalvesAt     = 100.0 // 100% reuse → recast halved (cap)
-	ReuseHalveCoeff   = 0.50  // recast reduction coefficient at full reuse
 
-	// Rotation-sim parameters. Each cast occupies the timeline for cast +
-	// recovery (CACastTimeSecs + CARecoverySecs = 0.75s).
+	ReuseCapStat           = 50.0 // reuse converts 1%/pt and the stat caps at 50 (= the 50% ceiling); measured: Eviscerate 60s → 57.8s @ 3.8 reuse
+	RecastReductionCeiling = 0.50 // per-art ceiling shared by ALL recast-reduction sources (AA mods + reuse); measured: Assassinate pinned at 2m30s with reuse gear
+	CARecoveryBaseSecs     = 0.5  // server base post-cast recovery, reduced subtractively by the character's recovery-speed stat (100 → "Recovery: Instant")
+
+	// Rotation-sim parameters. Each cast occupies effCast + effRecovery (both reduced by the character's timing stats).
 	FightDurationSecs = 600.0 // 10-minute fight (long-fight-aware; short enough that one extra big nuke matters)
 	CACastTimeSecs    = 0.5   // combat arts share ~0.5s cast time
-	CARecoverySecs    = 0.25  // post-cast recovery; base 0.5s, halved by AA
 )

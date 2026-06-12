@@ -36,3 +36,17 @@ func TestAllMapsToAbilityMod(t *testing.T) {
 	sb.AddModifiers(map[string]float64{"all": 62})
 	require.Equal(t, 62.0, sb.AbilityMod)
 }
+
+func TestAddModifiersCastSpeed(t *testing.T) {
+	var s StatBlock
+	s.AddModifiers(map[string]float64{"spelltimecastpct": 1.6})
+	require.InDelta(t, 1.6, s.CastSpeed, 1e-9)
+}
+
+func TestAddIncludesTimingStats(t *testing.T) {
+	a := StatBlock{CastSpeed: 1.5, RecoverySpeed: 100}
+	b := StatBlock{CastSpeed: 0.3}
+	sum := a.Add(b)
+	require.InDelta(t, 1.8, sum.CastSpeed, 1e-9)
+	require.InDelta(t, 100.0, sum.RecoverySpeed, 1e-9)
+}

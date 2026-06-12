@@ -36,9 +36,8 @@ func TestRotationCADPS_RecoveryPacesThroughput(t *testing.T) {
 	cas := []spell.CombatArt{
 		{Name: "Test Strike", MinDamage: 1000, MaxDamage: 1000, RecastSecs: 0.1, CastSecsHundredths: 50},
 	}
-	sb := StatBlock{}
-	withRecovery := RotationCADPS(sb, cas, 600, 0.25)   // slot 0.5 + 0.25 = 0.75
-	withoutRecovery := RotationCADPS(sb, cas, 600, 0.0) // slot 0.5 + 0 = 0.5
+	withRecovery := RotationCADPS(StatBlock{RecoverySpeed: 50}, cas, 600)     // slot 0.5 + 0.25 = 0.75
+	withoutRecovery := RotationCADPS(StatBlock{RecoverySpeed: 100}, cas, 600) // slot 0.5 + 0 = 0.5
 	require.Less(t, withRecovery, withoutRecovery)
 	require.InDelta(t, 1.5, withoutRecovery/withRecovery, 0.05)
 }
@@ -48,6 +47,6 @@ func TestCADPS_UsesRecoveryPacedRotation(t *testing.T) {
 		{Name: "Test Strike", MinDamage: 800, MaxDamage: 1200, RecastSecs: 10, CastSecsHundredths: 50},
 	}
 	sb := StatBlock{}
-	want := RotationCADPS(sb, cas, constants.FightDurationSecs, constants.CARecoverySecs)
+	want := RotationCADPS(sb, cas, constants.FightDurationSecs)
 	require.InDelta(t, want, CADPS(sb, cas), 1e-9)
 }

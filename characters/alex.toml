@@ -1,0 +1,26 @@
+# Character config — per-player inputs (docs/design-plan2.md §4).
+# [stats] = AA/innate bonuses; [contexts.X] = the FULL buff package on you in
+# that situation (self-buffs listed in every context they're up); gear is the
+# optimizer's output, never config.
+
+[character]
+name     = "Alex"
+class    = "assassin"
+art_tier = "expert"
+
+[stats]
+cast_speed     = 37.4 # AA total (measured: Head Shot 2.0s -> 1.46s tooltip)
+recovery_speed = 100  # AA total (tooltips read "Recovery: Instant")
+
+[art_mods."Assassinate"]
+recast_mult = 0.5 # AA halving; fills the art's 50% recast-reduction ceiling
+[art_mods."Mortal Blade"]
+recast_mult = 0.5 # AA halving; fills the ceiling
+
+[contexts.solo]
+multiattack = 34.2 # Villainy IV (maintained self-buff)
+
+[contexts.raid]
+multiattack = 34.2  # Villainy IV
+dpsmod      = 114.2 # coercer 74 + inquis 30.2 + dirge 10 (live estimate 2026-06)
+critchance  = 31.0  # buffed estimate; split the AA portion into [stats] when measured

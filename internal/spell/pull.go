@@ -26,6 +26,7 @@ type CombatArt struct {
 	MaxDamage          float64
 	RecastSecs         float64
 	CastSecsHundredths int
+	RecastReduction    float64 // per-art AA recast reduction (1 − recast_mult), set from character config; counts against the shared 50% ceiling
 }
 
 // AssassinCombatArts pulls the Assassin's Expert-tier combat arts usable by

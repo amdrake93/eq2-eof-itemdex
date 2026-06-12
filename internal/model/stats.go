@@ -3,14 +3,16 @@ package model
 // StatBlock holds the DPS-relevant, gear-variable combat stats the model uses.
 // Values are in the units Census reports (percent/points).
 type StatBlock struct {
-	Haste       float64 // attackspeed
-	MultiAttack float64 // doubleattackchance (legacy key; = Multi-Attack)
-	CritChance  float64 // critchance
-	Potency     float64 // basemodifier
-	DPSMod      float64 // dps
-	Reuse       float64 // spelltimereusepct
-	Flurry      float64 // flurry
-	AbilityMod  float64 // all (displayname "All") = Ability Modifier
+	Haste         float64 // attackspeed
+	MultiAttack   float64 // doubleattackchance (legacy key; = Multi-Attack)
+	CritChance    float64 // critchance
+	Potency       float64 // basemodifier
+	DPSMod        float64 // dps
+	Reuse         float64 // spelltimereusepct
+	Flurry        float64 // flurry
+	AbilityMod    float64 // all (displayname "All") = Ability Modifier
+	CastSpeed     float64 // spelltimecastpct — divides CA cast times (gear + AAs)
+	RecoverySpeed float64 // AA-only (no EoF gear carries it) — shrinks the 0.5s post-cast recovery
 }
 
 // modifierToField maps a Census modifier key to the StatBlock field it feeds.
@@ -26,6 +28,7 @@ var modifierToField = map[string]func(*StatBlock, float64){
 	"spelltimereusepct":  func(s *StatBlock, v float64) { s.Reuse += v },
 	"flurry":             func(s *StatBlock, v float64) { s.Flurry += v },
 	"all":                func(s *StatBlock, v float64) { s.AbilityMod += v }, // displayname "All" = Ability Modifier
+	"spelltimecastpct":   func(s *StatBlock, v float64) { s.CastSpeed += v },
 }
 
 // AddModifiers folds a set of Census modifiers into the StatBlock (additive).
@@ -40,13 +43,15 @@ func (s *StatBlock) AddModifiers(mods map[string]float64) {
 // Add returns the sum of two StatBlocks (baseline + an item's stats).
 func (s StatBlock) Add(o StatBlock) StatBlock {
 	return StatBlock{
-		Haste:       s.Haste + o.Haste,
-		MultiAttack: s.MultiAttack + o.MultiAttack,
-		CritChance:  s.CritChance + o.CritChance,
-		Potency:     s.Potency + o.Potency,
-		DPSMod:      s.DPSMod + o.DPSMod,
-		Reuse:       s.Reuse + o.Reuse,
-		Flurry:      s.Flurry + o.Flurry,
-		AbilityMod:  s.AbilityMod + o.AbilityMod,
+		Haste:         s.Haste + o.Haste,
+		MultiAttack:   s.MultiAttack + o.MultiAttack,
+		CritChance:    s.CritChance + o.CritChance,
+		Potency:       s.Potency + o.Potency,
+		DPSMod:        s.DPSMod + o.DPSMod,
+		Reuse:         s.Reuse + o.Reuse,
+		Flurry:        s.Flurry + o.Flurry,
+		AbilityMod:    s.AbilityMod + o.AbilityMod,
+		CastSpeed:     s.CastSpeed + o.CastSpeed,
+		RecoverySpeed: s.RecoverySpeed + o.RecoverySpeed,
 	}
 }

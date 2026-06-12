@@ -27,12 +27,16 @@ func bump(sb StatBlock, stat string, delta float64) StatBlock {
 		sb.Flurry += delta
 	case "abilitymod":
 		sb.AbilityMod += delta
+	case "castspeed":
+		sb.CastSpeed += delta
+	case "recoveryspeed":
+		sb.RecoverySpeed += delta
 	}
 	return sb
 }
 
 // WeightStats is the fixed ordered set of stats the model derives weights for.
-var WeightStats = []string{"haste", "multiattack", "critchance", "potency", "dpsmod", "reuse", "flurry", "abilitymod"}
+var WeightStats = []string{"haste", "multiattack", "critchance", "potency", "dpsmod", "reuse", "flurry", "abilitymod", "castspeed"}
 
 // curveStats convert through a non-linear curve; their marginal weight is a
 // bracket slope rather than a +1 forward diff (which reads lumpy under the
@@ -77,6 +81,10 @@ func getStat(sb StatBlock, stat string) float64 {
 		return sb.Flurry
 	case "abilitymod":
 		return sb.AbilityMod
+	case "castspeed":
+		return sb.CastSpeed
+	case "recoveryspeed":
+		return sb.RecoverySpeed
 	}
 	return 0
 }

@@ -13,8 +13,6 @@ const (
 	HasteStatCap      = constants.HasteStatCap
 	DPSModCap         = constants.DPSModCap
 	AbilityModCapFrac = constants.AbilityModCapFrac
-	ReuseHalvesAt     = constants.ReuseHalvesAt
-	ReuseHalveCoeff   = constants.ReuseHalveCoeff
 )
 
 // Solo: the Assassin's self-buffs only (no group buffs). The self-haste buff is
