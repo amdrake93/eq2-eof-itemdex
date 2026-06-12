@@ -169,3 +169,30 @@ Open questions for pick-up:
 slightly different loadout than the report. Cosmetic for weight *ordering*, but
 align the query (or share the loadout-loading code with cmd/bis) when next
 touching cmd/weights. (Surfaced by the 2026-06 curve-refit final review.)
+
+## 8. Primary-attribute CA damage scaling (spec assumption overturned 2026-06-12)
+
+Tooltip calibration (Eviscerate V Expert, potency 57.7%, ability mod 738) shows
+combat-art tooltips carry a base multiplier of ~2.99 where potency alone predicts
+1.577 — an extra **~×1.9 on CA base damage** from primary attributes (STR
+suspected; user confirmed "we skipped stats"). Overturns the spec's "attributes
+excluded — no discriminating power" assumption (design-plan2 §11): STR is on
+3,248 catalog items and varies across same-slot choices.
+
+Impact when modeled: CADPS ~2× understated today → CA-stat weights (potency,
+reuse, ability-mod) undervalued relative to auto stats; ability-mod cap binds
+later on bigger bases; STR becomes rankable.
+
+Data protocol (haste-curve playbook): confirm the driving attribute by gear
+swap, then sweep (attribute value → Eviscerate tooltip max) over a wide range,
+potency/ability-mod held or re-read per point; fit attribute → multiplier curve
+(form/cap unknown). Then spec amendment → plan.
+
+## 9. Manual scaling arts — recovered level-70 bases (unblocks §3)
+
+Via the same calibration: **Hilt Strike base ≈ 262–315**, **Strike of
+Consistency ≈ 199 flat** at level 70 (census files 17–21 / 2 at their base
+levels). Attribute-independent (modifiers divided out), so valid as
+census-equivalent bases under the current model. Implement per §3: manualArts
+appended after the census pull; recast/cast from census are correct (20s/0.5s
+and 12s/0.5s).
