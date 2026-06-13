@@ -252,6 +252,23 @@ incomplete without them):
   uniform); fine as a default when bringing up new classes, refine if one proves
   otherwise.
 
-Open question for import: the mainstat (AGI) curve and the ~23.4 potency-pool
-innate (§12) were measured for the Assassin — if they turn out class/archetype-
-specific, they move into the class file too.
+### Candidate class-intrinsic "magical multipliers" — compare across classes
+
+Two innate multipliers were measured for the Assassin and have no explanation
+beyond "it's intrinsic." Both are prime suspects for being **class-specific** —
+when we bring up a second class, measure its equivalents and compare; if they
+differ by class, they belong in the class file:
+
+- **Auto-attack innate ×2.0** — RESOLVED and housed: it's `auto_attack_multiplier`
+  in `classes/assassin.toml` (this is the model for the others).
+- **⚠ CA-side potency-pool innate (~23.4 points)** — the §12 "potency-pool
+  mystery": ~23.4 hidden potency-pool points that survive naked/AA-less/buff-less
+  (≈ +15% to CA damage at raid gear). Currently parked in the per-character config
+  as `potency_bonus` (calibrated), NOT yet proven class-intrinsic — but it smells
+  exactly like the auto ×2.0's CA-side twin. **Do not lose this.** When a second
+  class is measured, check whether its naked CA potency-pool innate differs; if so,
+  move it from `[stats]` into the class file. (User flagged 2026-06-13 as a likely
+  "magical Assassin multiplier" worth tracking.)
+
+Also watch: the mainstat (AGI) curve itself was measured for the Assassin — if a
+different class's primary-stat→damage curve differs, it too becomes class data.
