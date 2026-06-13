@@ -128,6 +128,24 @@ func TestCurveStatMarginalMainStatAtCap(t *testing.T) {
 	require.InDelta(t, 0.0, curveStatMarginal(StatBlock{MainStat: 1100, RecoverySpeed: 100}, "mainstat", dps), 1e-9)
 }
 
+func TestReuseWeightUsesCenteredClampedSpan(t *testing.T) {
+	// dps returns a lattice-noise shape: a +1 probe from 40 would hit a spike at
+	// 41; the centered span (36..44) must report the gentle trend instead.
+	dps := func(sb StatBlock) float64 {
+		if sb.Reuse > 40.5 && sb.Reuse < 41.5 {
+			return 1000 + 500
+		}
+		return 1000 + 2*sb.Reuse // gentle 2/pt trend
+	}
+	w := DeriveWeights(StatBlock{Reuse: 40}, dps)
+	require.InDelta(t, 2.0, w["reuse"], 1e-9) // (1088−1072)/8, not (1500−1080)/1
+
+	// At the 50 cap the span clamps above: [44, 50], width 6 — and at/above cap
+	// entirely, weight is whatever the clamped window says (here trend 2/pt).
+	w = DeriveWeights(StatBlock{Reuse: 48}, dps)
+	require.InDelta(t, 2.0, w["reuse"], 1e-9) // (1100−1088)/(50−44)
+}
+
 func TestWeightStatsIncludeCastSpeedNotRecovery(t *testing.T) {
 	require.Contains(t, WeightStats, "castspeed")
 	require.NotContains(t, WeightStats, "recoveryspeed") // not a gear stat in the EoF pool
