@@ -25,12 +25,14 @@ type StatGrants struct {
 	MultiAttack   float64 `toml:"multiattack"`
 	CritChance    float64 `toml:"critchance"`
 	Potency       float64 `toml:"potency"`
+	PotencyBonus  float64 `toml:"potency_bonus"`
 	DPSMod        float64 `toml:"dpsmod"`
 	Reuse         float64 `toml:"reuse"`
 	Flurry        float64 `toml:"flurry"`
 	AbilityMod    float64 `toml:"abilitymod"`
 	CastSpeed     float64 `toml:"cast_speed"`
 	RecoverySpeed float64 `toml:"recovery_speed"`
+	MainStat      float64 `toml:"mainstat"`
 }
 
 // nonNegative reports the first negative field, if any. Config stats are
@@ -39,9 +41,10 @@ type StatGrants struct {
 func (g StatGrants) nonNegative() error {
 	fields := map[string]float64{
 		"haste": g.Haste, "multiattack": g.MultiAttack, "critchance": g.CritChance,
-		"potency": g.Potency, "dpsmod": g.DPSMod, "reuse": g.Reuse,
-		"flurry": g.Flurry, "abilitymod": g.AbilityMod,
+		"potency": g.Potency, "potency_bonus": g.PotencyBonus, "dpsmod": g.DPSMod,
+		"reuse": g.Reuse, "flurry": g.Flurry, "abilitymod": g.AbilityMod,
 		"cast_speed": g.CastSpeed, "recovery_speed": g.RecoverySpeed,
+		"mainstat": g.MainStat,
 	}
 	for name, v := range fields {
 		if v < 0 {
@@ -58,20 +61,24 @@ func (g StatGrants) Block() model.StatBlock {
 		MultiAttack:   g.MultiAttack,
 		CritChance:    g.CritChance,
 		Potency:       g.Potency,
+		PotencyBonus:  g.PotencyBonus,
 		DPSMod:        g.DPSMod,
 		Reuse:         g.Reuse,
 		Flurry:        g.Flurry,
 		AbilityMod:    g.AbilityMod,
 		CastSpeed:     g.CastSpeed,
 		RecoverySpeed: g.RecoverySpeed,
+		MainStat:      g.MainStat,
 	}
 }
 
 // ArtMod is a per-art AA effect ([art_mods."Name"]). RecastMult multiplies the
 // art's base recast (0.5 = the AA halving); it counts against the art's shared
-// 50% recast-reduction ceiling.
+// 50% recast-reduction ceiling. PotencyAdd is an additive potency rider pooled
+// with the character's displayed potency (e.g. the cooldown AA's +15).
 type ArtMod struct {
 	RecastMult float64 `toml:"recast_mult"`
+	PotencyAdd float64 `toml:"potency_add"`
 }
 
 type Config struct {
@@ -119,6 +126,9 @@ func Load(path string) (Config, error) {
 		if m.RecastMult <= 0 || m.RecastMult > 1 {
 			return Config{}, fmt.Errorf("%s: art_mods[%q]: recast_mult %v out of range (0,1]", path, name, m.RecastMult)
 		}
+		if m.PotencyAdd < 0 {
+			return Config{}, fmt.Errorf("%s: art_mods[%q]: potency_add %v is negative", path, name, m.PotencyAdd)
+		}
 	}
 	if len(cfg.Contexts) == 0 {
 		return Config{}, fmt.Errorf("%s: config must define at least one context", path)
@@ -137,6 +147,7 @@ func ApplyArtMods(arts []spell.CombatArt, mods map[string]ArtMod) ([]spell.Comba
 	for i := range out {
 		if m, ok := mods[spell.BaseName(out[i].Name)]; ok {
 			out[i].RecastReduction = 1 - m.RecastMult
+			out[i].PotencyAdd = m.PotencyAdd
 			matched[spell.BaseName(out[i].Name)] = true
 		}
 	}

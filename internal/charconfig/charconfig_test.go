@@ -159,3 +159,41 @@ dpsmod = -10
 	require.ErrorContains(t, err, "dpsmod")
 	require.ErrorContains(t, err, "raid")
 }
+
+func TestLoadMainStatAndPotencyFields(t *testing.T) {
+	cfg, err := Load("../../characters/alex.toml")
+	require.NoError(t, err)
+	require.InDelta(t, 156.0, cfg.Stats.MainStat, 1e-9)
+	require.InDelta(t, 5.0, cfg.Stats.Potency, 1e-9)
+	require.InDelta(t, 24.6, cfg.Stats.PotencyBonus, 1e-9)
+	require.InDelta(t, 15.0, cfg.ArtMods["Assassinate"].PotencyAdd, 1e-9)
+	require.InDelta(t, 15.0, cfg.ArtMods["Mortal Blade"].PotencyAdd, 1e-9)
+
+	raid, err := cfg.ContextBlock("raid")
+	require.NoError(t, err)
+	require.InDelta(t, 156.0, raid.MainStat, 1e-9) // [stats] folds into contexts
+	require.InDelta(t, 24.6, raid.PotencyBonus, 1e-9)
+}
+
+func TestApplyArtModsPotencyRider(t *testing.T) {
+	arts := []spell.CombatArt{{Name: "Assassinate II", RecastSecs: 300}}
+	out, err := ApplyArtMods(arts, map[string]ArtMod{"Assassinate": {RecastMult: 0.5, PotencyAdd: 15}})
+	require.NoError(t, err)
+	require.InDelta(t, 0.5, out[0].RecastReduction, 1e-9)
+	require.InDelta(t, 15.0, out[0].PotencyAdd, 1e-9)
+}
+
+func TestLoadRejectsNegativePotencyAdd(t *testing.T) {
+	_, err := Load(writeConfig(t, `
+[character]
+name = "T"
+class = "assassin"
+art_tier = "expert"
+[art_mods."X"]
+recast_mult = 0.5
+potency_add = -5
+[contexts.solo]
+multiattack = 10
+`))
+	require.ErrorContains(t, err, "potency_add")
+}

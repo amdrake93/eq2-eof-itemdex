@@ -9,11 +9,13 @@ import (
 
 // CAEffectiveDamage is one cast's damage under the measured equation (spec
 // §3.1, tooltip-calibrated 2026-06-12 across 4 gear/AA states × 3 probe arts):
-// the potency pool (displayed potency + the calibrated PotencyBonus — ⚠ spec
-// §12 open mystery — + the art's AA rider) and the main-stat curve each
-// multiply the base; ability mod adds IN FULL (the old 50%-of-adjusted-base
-// cap is disproven — Quick Strike at AM 738 tooltips the whole add). A small
-// measured per-art enhancer (≈ AM × base_max/3400) is documented, not modeled.
+// the potency pool (displayed potency + the calibrated PotencyBonus + the
+// art's AA rider) and the main-stat curve each multiply the base; ability mod
+// adds IN FULL (the old 50%-of-adjusted-base cap is disproven — Quick Strike
+// at AM 738 tooltips the whole add). A small measured per-art enhancer
+// (≈ AM × base_max/3400) is documented, not modeled. The PotencyBonus
+// component is calibrated, its source unexplained — spec §12 'potency-pool
+// mystery'.
 func CAEffectiveDamage(sb StatBlock, ca spell.CombatArt) float64 {
 	potPool := 1 + (sb.Potency+sb.PotencyBonus+ca.PotencyAdd)/100
 	mainStat := 1 + MainStatEffect(sb.MainStat)/100

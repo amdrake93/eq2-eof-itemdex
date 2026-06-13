@@ -50,8 +50,11 @@ var WeightStats = []string{"haste", "multiattack", "critchance", "potency", "dps
 
 // curveStats convert through a non-linear curve; their marginal weight is a
 // bracket slope rather than a +1 forward diff (which reads lumpy under the
-// in-game flooring). Multi-attack brackets between its table samples; haste and
-// dps-mod bracket between the fitted curve's integer-effect crossings.
+// in-game flooring). Multi-attack and main stat use their sample tables; haste
+// and dps-mod bracket between the fitted curve's integer-effect crossings. Main
+// stat uses the multi-attack treatment (sample table — its readings are
+// unfloored, so the bracket slope is simply the exact local slope of the
+// piecewise model).
 var curveStats = map[string]bool{"haste": true, "multiattack": true, "dpsmod": true, "mainstat": true}
 
 // DeriveWeights returns the marginal DPS per +1 unit of each stat at the given
@@ -125,9 +128,10 @@ func statAtEffect(e float64) float64 {
 
 // curveStatMarginal is the per-point value of a curve stat as the DPS slope
 // across an interval whose endpoints land exactly on whole-percent effects, so
-// the in-game flooring contributes no noise. Multi-attack uses its sample
-// table; haste/dps-mod use the fitted equation's integer crossings (available
-// anywhere on the curve) and clamp to 0 at the shared 300 cap.
+// the in-game flooring contributes no noise. Multi-attack and main stat use
+// their sample tables; haste/dps-mod use the fitted equation's integer
+// crossings (available anywhere on the curve) and clamp to 0 at the shared
+// 300 cap.
 func curveStatMarginal(base StatBlock, stat string, dps func(StatBlock) float64) float64 {
 	v := getStat(base, stat)
 

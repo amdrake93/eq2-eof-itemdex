@@ -11,11 +11,16 @@ art_tier = "expert"
 [stats]
 cast_speed     = 37.4 # AA total (measured: Head Shot 2.0s -> 1.46s tooltip)
 recovery_speed = 100  # AA total (tooltips read "Recovery: Instant")
+mainstat       = 156  # innate + AA agility (naked-with-AAs reading)
+potency        = 5    # AA potency (displayed in the character window)
+potency_bonus  = 24.6 # calibrated hidden potency-pool points (⚠ spec §12 OPEN MYSTERY — naked-tooltip procedure)
 
 [art_mods."Assassinate"]
 recast_mult = 0.5 # AA halving; fills the art's 50% recast-reduction ceiling
+potency_add = 15  # the same AA's potency rider, per its own text
 [art_mods."Mortal Blade"]
 recast_mult = 0.5 # AA halving; fills the ceiling
+potency_add = 15  # the same AA's potency rider, per its own text
 
 [contexts.solo]
 multiattack = 34.2 # Villainy IV (maintained self-buff)

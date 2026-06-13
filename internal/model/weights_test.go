@@ -115,8 +115,11 @@ func TestCurveStatMarginalMainStat(t *testing.T) {
 	dps := func(sb StatBlock) float64 { return CADPS(sb, cas) }
 	// At mainstat 700 the bracket is the (695, 738) samples; positive marginal
 	// on a CA-only dps closure (mainstat multiplies CA damage).
+	// Derivation: slot = 0.5s (recovery-bound, RecoverySpeed 100 → instant cast);
+	// CADPS@695 = 1000×1.5522/0.5 = 3104.4; @738 = 1000×1.5710/0.5 = 3142.0;
+	// marginal = (3142.0−3104.4)/(738−695) = 37.6/43 = 0.87442.
 	m := curveStatMarginal(StatBlock{MainStat: 700, RecoverySpeed: 100}, "mainstat", dps)
-	require.Greater(t, m, 0.0)
+	require.InDelta(t, 0.8744, m, 1e-3)
 }
 
 func TestCurveStatMarginalMainStatAtCap(t *testing.T) {
