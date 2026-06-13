@@ -272,3 +272,32 @@ differ by class, they belong in the class file:
 
 Also watch: the mainstat (AGI) curve itself was measured for the Assassin — if a
 different class's primary-stat→damage curve differs, it too becomes class data.
+
+## 11. Residual rotation non-monotonicity (dominance inversions in scoring)
+
+Fight-length smoothing (plan 2p) reduced the discrete-sim cast-boundary
+quantization (~18% variance drop; fixed the Wrist "reuse-stick ranked #1 but not
+picked" case) but did NOT eliminate it. The priority sim's CADPS is still
+**non-monotone in reuse/cast-speed at fine resolution** — increasing reuse can
+locally lower CADPS by ~one mid-art cast, because shifting cast availability
+re-orders the greedy lattice and can push a cast just past a sample length.
+Increasing the smoothing sample count K does NOT fix it (intrinsic to the
+discrete sim, not a sampling-resolution issue).
+
+Consequence: **strict-dominance inversions in the ΔDPS scores** — an item that is
+≥ another on every weighted stat can score lower. Found 2026-06-13 at the default
+fight=600: pre-raid Hands *Blood Drenched Wraps* (171.0) out-scores the
+strictly-dominant *Carmine Gloves* (142.2) by ~29; raid Wrist *Butler's Cuffs*
+(161.0) over *Unholy Manacle* (159.5) by 1.5. ~37 such inversions across
+slot/baseline groups, magnitudes ~1.5–29 DPS (≈ one cast of a mid-size art).
+
+These are display/ranking artifacts on near-tied items; the converged BiS picks
+(via full resim in pickBest) are a local optimum regardless. But it violates the
+dominance invariant and should be decided at spec level. Options to weigh:
+- **Accept + document** (cheapest; inversions are small, only flip near-ties).
+- **Smoother CADPS** — model expected *fractional* casts analytically instead of
+  the discrete greedy sim (removes quantization at the source; bigger rewrite).
+- **Re-add weight-side band-aids** — note these only smoothed the *displayed
+  weights*, NOT the resim ΔDPS scores where the inversions live, so they would
+  NOT fix this; the fix has to be in CADPS/the sim itself.
+Route through brainstorm before implementing.

@@ -121,7 +121,7 @@ func writeAssumptions(b *strings.Builder, fightLen float64) {
 		constants.CritMultiplier, constants.FlurryMultiplier)
 	fmt.Fprintf(b, "- haste & dps-mod: fitted quadratic %.6f·s − %.8f·s², hard cap %.0f stat → %.0f%%\n",
 		model.HasteDpsModA, model.HasteDpsModB, constants.HasteStatCap, model.HasteDpsModEffect(constants.HasteStatCap))
-	fmt.Fprintf(b, "- main stat (AGI): interpolated 13-reading curve, hard cap 1100 → %.0f%%; multiplies CA damage (auto-attack scaling unverified — not modeled)\n",
+	fmt.Fprintf(b, "- main stat (AGI): interpolated 13-reading curve, hard cap 1100 → %.0f%%; multiplies BOTH CA and auto-attack damage (same curve)\n",
 		model.MainStatEffect(1100))
 	b.WriteString("- ⚠ CA potency pool includes a per-character calibrated `potency_bonus` whose source is UNEXPLAINED (~23.4 pts survive naked/AA-less/buff-less — spec §12 'potency-pool mystery', actively hunted)\n")
 	fmt.Fprintf(b, "- reuse: 1%%/pt to the %.0f-stat cap, sharing each art's %.0f%%-of-base recast ceiling with AA art mods; cast speed divides cast times; recovery base %.2fs (reduced by recovery speed); fight target = %.0fs (smoothed)\n",
