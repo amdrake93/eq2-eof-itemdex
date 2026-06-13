@@ -13,6 +13,8 @@ type StatBlock struct {
 	AbilityMod    float64 // all (displayname "All") = Ability Modifier
 	CastSpeed     float64 // spelltimecastpct — divides CA cast times (gear + AAs)
 	RecoverySpeed float64 // AA-only (no EoF gear carries it) — shrinks the 0.5s post-cast recovery
+	MainStat      float64 // strength key = "+N primary attributes" → AGI for a scout; multiplies CA damage via its curve
+	PotencyBonus  float64 // calibrated hidden potency-pool points (config-only; ⚠ spec §12 open mystery)
 }
 
 // modifierToField maps a Census modifier key to the StatBlock field it feeds.
@@ -29,6 +31,7 @@ var modifierToField = map[string]func(*StatBlock, float64){
 	"flurry":             func(s *StatBlock, v float64) { s.Flurry += v },
 	"all":                func(s *StatBlock, v float64) { s.AbilityMod += v }, // displayname "All" = Ability Modifier
 	"spelltimecastpct":   func(s *StatBlock, v float64) { s.CastSpeed += v },
+	"strength":           func(s *StatBlock, v float64) { s.MainStat += v }, // "+N primary attributes" (explicit agility/wisdom/intelligence keys excluded — data-suspicious, spec §11)
 }
 
 // AddModifiers folds a set of Census modifiers into the StatBlock (additive).
@@ -53,5 +56,7 @@ func (s StatBlock) Add(o StatBlock) StatBlock {
 		AbilityMod:    s.AbilityMod + o.AbilityMod,
 		CastSpeed:     s.CastSpeed + o.CastSpeed,
 		RecoverySpeed: s.RecoverySpeed + o.RecoverySpeed,
+		MainStat:      s.MainStat + o.MainStat,
+		PotencyBonus:  s.PotencyBonus + o.PotencyBonus,
 	}
 }

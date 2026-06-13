@@ -7,14 +7,18 @@ import (
 	"github.com/amdrake93/eq2-eof-itemdex/internal/spell"
 )
 
-// CAEffectiveDamage is one cast's damage: potency-scaled base + capped ability
-// mod, times crit. (Ability-mod cap = 50% of the potency-adjusted MAX damage.)
+// CAEffectiveDamage is one cast's damage under the measured equation (spec
+// §3.1, tooltip-calibrated 2026-06-12 across 4 gear/AA states × 3 probe arts):
+// the potency pool (displayed potency + the calibrated PotencyBonus — ⚠ spec
+// §12 open mystery — + the art's AA rider) and the main-stat curve each
+// multiply the base; ability mod adds IN FULL (the old 50%-of-adjusted-base
+// cap is disproven — Quick Strike at AM 738 tooltips the whole add). A small
+// measured per-art enhancer (≈ AM × base_max/3400) is documented, not modeled.
 func CAEffectiveDamage(sb StatBlock, ca spell.CombatArt) float64 {
-	pot := 1 + sb.Potency/100
-	avgBase := (ca.MinDamage + ca.MaxDamage) / 2 * pot
-	capBonus := constants.AbilityModCapFrac * ca.MaxDamage * pot
-	bonus := math.Min(sb.AbilityMod, capBonus)
-	return (avgBase + bonus) * critFactor(sb)
+	potPool := 1 + (sb.Potency+sb.PotencyBonus+ca.PotencyAdd)/100
+	mainStat := 1 + MainStatEffect(sb.MainStat)/100
+	avgBase := (ca.MinDamage + ca.MaxDamage) / 2 * potPool * mainStat
+	return (avgBase + sb.AbilityMod) * critFactor(sb)
 }
 
 // effRecast applies the measured recast rules: every reduction source (per-art

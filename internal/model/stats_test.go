@@ -50,3 +50,16 @@ func TestAddIncludesTimingStats(t *testing.T) {
 	require.InDelta(t, 1.8, sum.CastSpeed, 1e-9)
 	require.InDelta(t, 100.0, sum.RecoverySpeed, 1e-9)
 }
+
+func TestAddModifiersMainStat(t *testing.T) {
+	var s StatBlock
+	// census "strength" = "+N primary attributes" → AGI point-for-point for a scout
+	s.AddModifiers(map[string]float64{"strength": 46})
+	require.InDelta(t, 46.0, s.MainStat, 1e-9)
+}
+
+func TestAddIncludesMainStatAndPotencyBonus(t *testing.T) {
+	sum := StatBlock{MainStat: 156, PotencyBonus: 24.6}.Add(StatBlock{MainStat: 40})
+	require.InDelta(t, 196.0, sum.MainStat, 1e-9)
+	require.InDelta(t, 24.6, sum.PotencyBonus, 1e-9)
+}

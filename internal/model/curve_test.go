@@ -39,3 +39,17 @@ func TestCurveBracketMultiAttack(t *testing.T) {
 	require.Equal(t, 30.0, lo)
 	require.Equal(t, 40.0, hi)
 }
+
+func TestMainStatEffect(t *testing.T) {
+	require.Equal(t, 0.0, MainStatEffect(0))
+	// Committed readings reproduced exactly (unfloored — AGI tooltips show 2dp):
+	require.InDelta(t, 6.08, MainStatEffect(73), 1e-9)
+	require.InDelta(t, 15.01, MainStatEffect(156), 1e-9)
+	require.InDelta(t, 51.74, MainStatEffect(625), 1e-9)
+	require.InDelta(t, 64.06, MainStatEffect(983), 1e-9)
+	// Interpolated between samples: (738,57.10)-(780,58.74) midpoint
+	require.InDelta(t, 57.92, MainStatEffect(759), 1e-9)
+	// Hard cap 1100 → 65, overcap clamps:
+	require.InDelta(t, 65.0, MainStatEffect(1100), 1e-9)
+	require.InDelta(t, 65.0, MainStatEffect(5000), 1e-9)
+}

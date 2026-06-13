@@ -105,6 +105,26 @@ func TestCastSpeedWeightUsesWideSpan(t *testing.T) {
 	require.InDelta(t, 1.0, w["castspeed"], 1e-9) // (110−100)/10, not (150−100)/1
 }
 
+func TestWeightStatsIncludeMainStat(t *testing.T) {
+	require.Contains(t, WeightStats, "mainstat")
+	require.NotContains(t, WeightStats, "potencybonus") // calibrated config value, not a gear stat
+}
+
+func TestCurveStatMarginalMainStat(t *testing.T) {
+	cas := []spell.CombatArt{{Name: "X", MinDamage: 800, MaxDamage: 1200, RecastSecs: 0}}
+	dps := func(sb StatBlock) float64 { return CADPS(sb, cas) }
+	// At mainstat 700 the bracket is the (695, 738) samples; positive marginal
+	// on a CA-only dps closure (mainstat multiplies CA damage).
+	m := curveStatMarginal(StatBlock{MainStat: 700, RecoverySpeed: 100}, "mainstat", dps)
+	require.Greater(t, m, 0.0)
+}
+
+func TestCurveStatMarginalMainStatAtCap(t *testing.T) {
+	cas := []spell.CombatArt{{Name: "X", MinDamage: 800, MaxDamage: 1200, RecastSecs: 0}}
+	dps := func(sb StatBlock) float64 { return CADPS(sb, cas) }
+	require.InDelta(t, 0.0, curveStatMarginal(StatBlock{MainStat: 1100, RecoverySpeed: 100}, "mainstat", dps), 1e-9)
+}
+
 func TestWeightStatsIncludeCastSpeedNotRecovery(t *testing.T) {
 	require.Contains(t, WeightStats, "castspeed")
 	require.NotContains(t, WeightStats, "recoveryspeed") // not a gear stat in the EoF pool

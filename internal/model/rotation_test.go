@@ -63,10 +63,29 @@ func TestRotationPrioritizesByDPSPerCastTime(t *testing.T) {
 	require.InDelta(t, 891.0/0.75, dps, 0.01, "picks higher DPS-per-cast-time (fast), not higher raw damage (slow)")
 }
 
-func TestCAEffectiveDamage_Potency(t *testing.T) {
-	ca := spell.CombatArt{MinDamage: 800, MaxDamage: 1200}
+func TestCAEffectiveDamageMeasuredEquation(t *testing.T) {
+	ca := spell.CombatArt{Name: "X", MinDamage: 800, MaxDamage: 1200}
 	require.InDelta(t, 1000.0, CAEffectiveDamage(StatBlock{}, ca), 0.01)            // avg 1000, no stats
 	require.InDelta(t, 1100.0, CAEffectiveDamage(StatBlock{Potency: 10}, ca), 0.01) // ×1.1
+
+	// PotencyBonus pools additively with potency (⚠ §12: includes the unexplained innate).
+	require.InDelta(t, 1300.0, CAEffectiveDamage(StatBlock{Potency: 10, PotencyBonus: 20}, ca), 0.01)
+
+	// Per-art potency rider pools too (the cooldown AA's +15 to Assassinate/Mortal Blade).
+	rider := spell.CombatArt{Name: "Y", MinDamage: 800, MaxDamage: 1200, PotencyAdd: 15}
+	require.InDelta(t, 1450.0, CAEffectiveDamage(StatBlock{Potency: 10, PotencyBonus: 20}, rider), 0.01)
+
+	// Main stat multiplies on top: mainstat 625 → 51.74% → ×1.5174.
+	require.InDelta(t, 1517.4, CAEffectiveDamage(StatBlock{MainStat: 625}, ca), 0.01)
+
+	// Ability mod adds IN FULL — the old 50%-of-adjusted-base cap is disproven.
+	// Old rule would cap 738 at 0.5×1200=600; measured tooltips show the full add.
+	require.InDelta(t, 1738.0, CAEffectiveDamage(StatBlock{AbilityMod: 738}, ca), 0.01)
+
+	// Full stack, hand-computed: avg 1000 × (1+(57.7+24.6)/100) × (1+0.6406) + 738
+	// = 1000 × 1.823 × 1.6406 + 738 = 2990.81 + 738 = 3728.81
+	full := StatBlock{Potency: 57.7, PotencyBonus: 24.6, MainStat: 983, AbilityMod: 738}
+	require.InDelta(t, 3728.81, CAEffectiveDamage(full, ca), 0.05)
 }
 
 func TestEffRecastMeasuredRules(t *testing.T) {

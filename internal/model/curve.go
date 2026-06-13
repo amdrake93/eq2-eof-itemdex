@@ -87,3 +87,20 @@ func curveBracket(s []curvePoint, v float64) (lo, hi float64) {
 }
 
 func MultiAttackEffect(stat float64) float64 { return curveEffect(multiAttackSamples, stat) }
+
+// mainStatSamples: AGI → CA-damage % (13 live readings, data/mainstat-readings.csv;
+// the sync test in internal/fit pins this table to the CSV). UNFLOORED — AGI
+// tooltips display two decimals ("Agility increases your damage by 64.06%").
+// The curve flattens below ~600 (73→6.08 sits under the high-range trend), so
+// no equation is assumed — interpolation only. Hard cap 1100 → 65% (confirmed).
+// High range fits a quadratic peaking ≈1142 — the third "peak just past the
+// cap" dev signature — commentary only, not modeled.
+var mainStatSamples = []curvePoint{
+	{0, 0}, {73, 6.08}, {156, 15.01}, {625, 51.74}, {664, 53.74}, {695, 55.22},
+	{738, 57.10}, {780, 58.74}, {819, 60.10}, {859, 61.33}, {899, 62.39},
+	{941, 63.32}, {983, 64.06}, {1100, 65},
+}
+
+// MainStatEffect is the CA-damage % for a main-stat value: interpolated,
+// unfloored, clamped at the 1100 cap (curveInterp clamps past the top sample).
+func MainStatEffect(stat float64) float64 { return curveInterp(mainStatSamples, stat) }

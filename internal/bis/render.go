@@ -117,8 +117,8 @@ func writeProgression(b *strings.Builder, reports []BaselineReport) {
 
 func writeAssumptions(b *strings.Builder) {
 	b.WriteString("---\n\n## Assumptions & Constants\n\n")
-	fmt.Fprintf(b, "- crit ×%.2f; flurry ×%.1f; ability-mod cap = %.0f%% of potency-adjusted CA base\n",
-		constants.CritMultiplier, constants.FlurryMultiplier, constants.AbilityModCapFrac*100)
+	fmt.Fprintf(b, "- crit ×%.2f; flurry ×%.1f; ability-mod adds in full (50%% cap disproven by tooltip probes)\n",
+		constants.CritMultiplier, constants.FlurryMultiplier)
 	fmt.Fprintf(b, "- haste & dps-mod: fitted quadratic %.6f·s − %.8f·s², hard cap %.0f stat → %.0f%%\n",
 		model.HasteDpsModA, model.HasteDpsModB, constants.HasteStatCap, model.HasteDpsModEffect(constants.HasteStatCap))
 	fmt.Fprintf(b, "- reuse: 1%%/pt to the %.0f-stat cap, sharing each art's %.0f%%-of-base recast ceiling with AA art mods; cast speed divides cast times; recovery base %.2fs (reduced by recovery speed); fight = %.0fs\n",

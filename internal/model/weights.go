@@ -37,18 +37,22 @@ func bump(sb StatBlock, stat string, delta float64) StatBlock {
 		sb.CastSpeed += delta
 	case "recoveryspeed":
 		sb.RecoverySpeed += delta
+	case "mainstat":
+		sb.MainStat += delta
+	case "potencybonus":
+		sb.PotencyBonus += delta
 	}
 	return sb
 }
 
 // WeightStats is the fixed ordered set of stats the model derives weights for.
-var WeightStats = []string{"haste", "multiattack", "critchance", "potency", "dpsmod", "reuse", "flurry", "abilitymod", "castspeed"}
+var WeightStats = []string{"haste", "multiattack", "critchance", "potency", "dpsmod", "reuse", "flurry", "abilitymod", "castspeed", "mainstat"}
 
 // curveStats convert through a non-linear curve; their marginal weight is a
 // bracket slope rather than a +1 forward diff (which reads lumpy under the
 // in-game flooring). Multi-attack brackets between its table samples; haste and
 // dps-mod bracket between the fitted curve's integer-effect crossings.
-var curveStats = map[string]bool{"haste": true, "multiattack": true, "dpsmod": true}
+var curveStats = map[string]bool{"haste": true, "multiattack": true, "dpsmod": true, "mainstat": true}
 
 // DeriveWeights returns the marginal DPS per +1 unit of each stat at the given
 // baseline. dps computes total DPS for a stat block; the caller binds the
@@ -95,6 +99,10 @@ func getStat(sb StatBlock, stat string) float64 {
 		return sb.CastSpeed
 	case "recoveryspeed":
 		return sb.RecoverySpeed
+	case "mainstat":
+		return sb.MainStat
+	case "potencybonus":
+		return sb.PotencyBonus
 	}
 	return 0
 }
@@ -135,6 +143,8 @@ func curveStatMarginal(base StatBlock, stat string, dps func(StatBlock) float64)
 		const nudge = 1e-9 // keep floor() on the intended side of each crossing
 		lo = statAtEffect(n + nudge)
 		hi = statAtEffect(n + 1 + nudge)
+	case "mainstat":
+		lo, hi = curveBracket(mainStatSamples, v)
 	}
 
 	if hi <= lo {
