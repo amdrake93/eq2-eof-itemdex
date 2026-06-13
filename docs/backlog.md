@@ -245,9 +245,12 @@ incomplete without them):
   unused today (census files all "+N primary attributes" under the `strength` key,
   which routes to MainStat regardless), so deferred until the sim branches on it
   or another class needs a different mainstat curve.
-- **NOT a class field:** `minDamageArtLevel` (57) is **derived**, not intrinsic —
-  abilities re-rank every 13 levels, so it's `maxLevel − 13` (70 − 13 = 57). Replace
-  the hardcoded 57 with that formula keyed off the character's level cap.
+- **NOT a class field:** `minDamageArtLevel` (57) is better understood as
+  *derived* than intrinsic — abilities tend to re-rank roughly every ~13 levels,
+  so `maxLevel − 13` (70 − 13 = 57) is a good **starting heuristic** keyed off the
+  character's level cap. NOT a concrete rule (re-rank cadence isn't guaranteed
+  uniform); fine as a default when bringing up new classes, refine if one proves
+  otherwise.
 
 Open question for import: the mainstat (AGI) curve and the ~23.4 potency-pool
 innate (§12) were measured for the Assassin — if they turn out class/archetype-
