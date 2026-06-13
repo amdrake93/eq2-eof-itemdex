@@ -17,7 +17,10 @@ func testLoadout() store.Loadout {
 func TestSetDPSAndCandidateDelta(t *testing.T) {
 	set := NewSet(model.StatBlock{}, testLoadout())
 
-	require.InDelta(t, 40.0, set.DPS(), 1e-6) // 160/4 swings * 1.0 factors, no off-hand/arts/stats
+	// DPS() always calls TotalDPSDual, which applies DualWieldDelayPenalty (×1.33)
+	// to main.DelaySecs even when no off-hand is equipped. Was 40.0 (160/4) before
+	// the dual-wield penalty landed; now 160/(4×1.33) ≈ 30.075.
+	require.InDelta(t, 160.0/(4.0*1.33), set.DPS(), 1e-6)
 
 	chest := store.ScorableItem{ID: 1, Slot: "Chest", Stats: model.StatBlock{Flurry: 10}}
 	require.Greater(t, set.CandidateDelta("Chest", chest), 0.0)

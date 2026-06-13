@@ -3,6 +3,7 @@ package model
 import (
 	"testing"
 
+	"github.com/amdrake93/eq2-eof-itemdex/internal/constants"
 	"github.com/amdrake93/eq2-eof-itemdex/internal/spell"
 	"github.com/stretchr/testify/require"
 )
@@ -33,9 +34,20 @@ func TestCADPS(t *testing.T) {
 }
 
 func TestAutoDPSDual(t *testing.T) {
-	main := Weapon{AvgDamage: 100, DelaySecs: 2.0} // 50 dps
-	off := Weapon{AvgDamage: 60, DelaySecs: 3.0}   // 20 dps
-	approx(t, 70.0, AutoDPSDual(StatBlock{}, main, off))
-	approx(t, AutoDPS(StatBlock{Haste: 50}, main)+AutoDPS(StatBlock{Haste: 50}, off),
+	main := Weapon{AvgDamage: 100, DelaySecs: 2.0} // 50 dps unpenalized
+	off := Weapon{AvgDamage: 60, DelaySecs: 3.0}   // 20 dps unpenalized
+
+	// Dual-wield multiplies each weapon's delay by the penalty, so with all
+	// other factors 1 the total is the naive sum divided by the penalty.
+	approx(t, 70.0/constants.DualWieldDelayPenalty, AutoDPSDual(StatBlock{}, main, off))
+
+	// It equals AutoDPS on penalty-scaled-delay weapons (the spec'd behavior).
+	mainPen := Weapon{AvgDamage: 100, DelaySecs: 2.0 * constants.DualWieldDelayPenalty}
+	offPen := Weapon{AvgDamage: 60, DelaySecs: 3.0 * constants.DualWieldDelayPenalty}
+	approx(t, AutoDPS(StatBlock{Haste: 50}, mainPen)+AutoDPS(StatBlock{Haste: 50}, offPen),
 		AutoDPSDual(StatBlock{Haste: 50}, main, off))
+
+	// And it is strictly below the un-penalized sum.
+	require.Less(t, AutoDPSDual(StatBlock{}, main, off),
+		AutoDPS(StatBlock{}, main)+AutoDPS(StatBlock{}, off))
 }

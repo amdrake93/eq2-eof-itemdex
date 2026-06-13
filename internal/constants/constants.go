@@ -15,6 +15,8 @@ const (
 	RecastReductionCeiling = 0.50 // per-art ceiling shared by ALL recast-reduction sources (AA mods + reuse); measured: Assassinate pinned at 2m30s with reuse gear
 	CARecoveryBaseSecs     = 0.5  // server base post-cast recovery, reduced subtractively by the character's recovery-speed stat (100 → "Recovery: Instant")
 
+	DualWieldDelayPenalty = 1.33 // equipping an off-hand multiplies each weapon's auto-attack delay ×1.33 (measured 1.32–1.34 across two haste levels; documented +33%)
+
 	// Rotation-sim parameters. Each cast occupies effCast + effRecovery (both reduced by the character's timing stats).
 	FightDurationSecs = 600.0 // 10-minute fight (long-fight-aware; short enough that one extra big nuke matters)
 	CACastTimeSecs    = 0.5   // combat arts share ~0.5s cast time

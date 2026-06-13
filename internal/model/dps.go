@@ -44,11 +44,15 @@ func CADPS(sb StatBlock, cas []spell.CombatArt) float64 {
 	return RotationCADPS(sb, cas, constants.FightDurationSecs)
 }
 
-// AutoDPSDual is dual-wield auto-attack: both weapons swing on their own delay.
-// Main and off-hand are treated equally — the off-hand's only EoF penalty is not
-// benefiting from the weapon-multiplier stat, which this model doesn't track, so
-// it nets out the same for relative comparison.
+// AutoDPSDual is dual-wield auto-attack. Equipping an off-hand imposes EQ2's
+// ~33% delay penalty on BOTH weapons (DualWieldDelayPenalty), on top of haste
+// and independent of it (measured 2026-06-13). The penalty lives only here, not
+// in single-weapon AutoDPS. Main and off are otherwise treated equally — the
+// off-hand's weapon-multiplier-stat penalty isn't tracked and nets out for
+// relative comparison.
 func AutoDPSDual(sb StatBlock, main, off Weapon) float64 {
+	main.DelaySecs *= constants.DualWieldDelayPenalty
+	off.DelaySecs *= constants.DualWieldDelayPenalty
 	return AutoDPS(sb, main) + AutoDPS(sb, off)
 }
 
