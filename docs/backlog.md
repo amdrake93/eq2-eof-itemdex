@@ -198,6 +198,28 @@ swap, then sweep (attribute value → Eviscerate tooltip max) over a wide range,
 potency/ability-mod held or re-read per point; fit attribute → multiplier curve
 (form/cap unknown). Then spec amendment → plan.
 
+### Mystery-hunt research log
+
+**2026-06-13 — weapon-skill scaling hypothesis (user lead): DISFAVORED, not eliminated.**
+EQ2's documented skill→damage mechanic is OVER-cap range compression (skill above
+the 5×level cap raises an art's *minimum* damage toward its max); weapon skill is
+otherwise contested accuracy. This fails our mystery's signature twice: (1) our
+mystery is a clean multiplier scaling min AND max identically (measured equal across
+Quick Strike / Ambush / Eviscerate) — compression would change each art's min/max
+ratio; (2) it's an over-cap effect, but a naked L70 is AT cap (350), not over it,
+yet the 23.4% was present naked. Spell skills (Disruption/Subjugation/Ordination)
+are resist-reduction in EQ2, not damage — the "skill scales spell damage" memory is
+EQ1's Destruction-family mechanic, not carried into EQ2. Our own data also shows the
+mystery pools ADDITIVELY with displayed potency, which looks like undisplayed flat
+potency from an innate/class source, not a skill-damage effect.
+CAVEAT: EoF-era deep-dives (eq2wire.com) were inaccessible (403); EoF TLE mechanics
+may differ from the 2010+ docs read. One unverified snippet ("Piercing +15% base
+CA/spell damage") distrusted (= the AA rider value, no primary source).
+DISCRIMINATING TEST: weapon skill is on the char sheet, rises with use. If skill
+scaled CA damage, a below-350 Piercing char shows lower tooltips and capping raises
+them. Record naked Piercing/Slashing value — if 350 with the 23.4% present, at-cap
+is the census baseline and skill can't be the extra source.
+
 ## 9. Manual scaling arts — recovered level-70 bases (unblocks §3)
 
 Via the same calibration: **Hilt Strike base ≈ 262–315**, **Strike of
