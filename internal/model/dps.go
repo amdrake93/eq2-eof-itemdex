@@ -1,6 +1,8 @@
 package model
 
 import (
+	"math"
+
 	"github.com/amdrake93/eq2-eof-itemdex/internal/constants"
 	"github.com/amdrake93/eq2-eof-itemdex/internal/spell"
 )
@@ -56,10 +58,28 @@ func AutoDPS(sb StatBlock, w Weapon) float64 {
 	return swings * (1 + MultiAttackEffect(sb.MultiAttack)/100) * autoDamageMult(sb) * critFactor(sb) * flurryFactor(sb)
 }
 
-// CADPS is the simulated combat-art DPS over a standard fight (priority rotation).
-// Slot pacing (cast + recovery) comes from the stat block's timing stats.
-func CADPS(sb StatBlock, cas []spell.CombatArt) float64 {
-	return RotationCADPS(sb, cas, constants.FightDurationSecs)
+// CADPS is the fight-length-smoothed combat-art DPS for a target fight length.
+// A single fixed length quantizes the last cast of long-cooldown arts (spec
+// §3.1); CADPS averages cumCA(t)/t over K samples spanning [fightLen − R/2,
+// fightLen + R/2], R = longest effective recast, computed from one sim pass to
+// the window's top. Short-recast-only art sets have R≈0 → effectively unsmoothed.
+func CADPS(sb StatBlock, cas []spell.CombatArt, fightLen float64) float64 {
+	if fightLen <= 0 || len(cas) == 0 {
+		return 0
+	}
+	r := maxEffRecast(sb, cas)
+	lo := math.Max(fightLen-r/2, 1.0)
+	hi := fightLen + r/2
+	starts, cum := rotationTimeline(sb, cas, hi)
+	if hi <= lo {
+		return cumCAAt(starts, cum, fightLen) / fightLen
+	}
+	var sum float64
+	for i := 0; i < fightSmoothingSamples; i++ {
+		s := lo + float64(i)*(hi-lo)/float64(fightSmoothingSamples-1)
+		sum += cumCAAt(starts, cum, s) / s
+	}
+	return sum / fightSmoothingSamples
 }
 
 // AutoDPSDual is dual-wield auto-attack. Equipping an off-hand WEAPON imposes
@@ -82,8 +102,8 @@ func AutoDPSDual(sb StatBlock, main, off Weapon, classAutoMult float64) float64 
 
 // TotalDPS = auto-attack + combat arts. Auto and CAs run in parallel.
 // classAutoMult is the class-intrinsic auto-attack multiplier.
-func TotalDPS(sb StatBlock, w Weapon, cas []spell.CombatArt, classAutoMult float64) float64 {
-	return classAutoMult*AutoDPS(sb, w) + CADPS(sb, cas)
+func TotalDPS(sb StatBlock, w Weapon, cas []spell.CombatArt, classAutoMult, fightLen float64) float64 {
+	return classAutoMult*AutoDPS(sb, w) + CADPS(sb, cas, fightLen)
 }
 
 // TotalDPSDual = dual-wield auto-attack + combat arts, in parallel. Assumes a
@@ -91,6 +111,6 @@ func TotalDPS(sb StatBlock, w Weapon, cas []spell.CombatArt, classAutoMult float
 // AutoDPSDual, which applies the ×1.33 off-hand delay penalty — so it must NOT
 // model a true single-wield/2H loadout (use TotalDPS for that).
 // classAutoMult is the class-intrinsic auto-attack multiplier.
-func TotalDPSDual(sb StatBlock, main, off Weapon, cas []spell.CombatArt, classAutoMult float64) float64 {
-	return AutoDPSDual(sb, main, off, classAutoMult) + CADPS(sb, cas)
+func TotalDPSDual(sb StatBlock, main, off Weapon, cas []spell.CombatArt, classAutoMult, fightLen float64) float64 {
+	return AutoDPSDual(sb, main, off, classAutoMult) + CADPS(sb, cas, fightLen)
 }

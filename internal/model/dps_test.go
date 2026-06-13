@@ -28,9 +28,12 @@ func TestEffDelayHasteFittedCurve(t *testing.T) {
 
 func TestCADPS(t *testing.T) {
 	ca := spell.CombatArt{Name: "X", MinDamage: 800, MaxDamage: 1200, RecastSecs: 10}
-	approx(t, 100.0, CADPS(StatBlock{}, []spell.CombatArt{ca}))            // 1000/10
-	approx(t, 110.0, CADPS(StatBlock{Potency: 10}, []spell.CombatArt{ca})) // base ×1.1
-	approx(t, 200.0, CADPS(StatBlock{Reuse: 100}, []spell.CombatArt{ca}))  // recast halved
+	// Smoothing: 10s-recast window [595,605] straddles the 60th/61st-cast boundary at
+	// t=600, so the smoothed average is ~0.74 above the naive 1000/10=100.0. Same
+	// fractional shift applies to the ×1.1 potency and ×2 recast-halved cases.
+	approx(t, 100.74, CADPS(StatBlock{}, []spell.CombatArt{ca}, 600))            // smoothed; unsmoothed = 100.0
+	approx(t, 110.81, CADPS(StatBlock{Potency: 10}, []spell.CombatArt{ca}, 600)) // base ×1.1; smoothed shift ~×1.1
+	approx(t, 200.74, CADPS(StatBlock{Reuse: 100}, []spell.CombatArt{ca}, 600))  // recast halved; smoothed
 }
 
 func TestAutoDPSDual(t *testing.T) {

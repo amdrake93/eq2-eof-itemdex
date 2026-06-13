@@ -45,16 +45,15 @@ func slotSecs(sb StatBlock, ca spell.CombatArt) float64 {
 	return effCast + effRecovery
 }
 
-// RotationCADPS simulates the priority rotation: at each slot it casts the
-// off-cooldown art with the highest damage-per-cast-time (eff/slot), since arts
-// have different cast times and a slow high-damage art can be worse per second
-// than a fast lower-damage one. Slot pacing (cast + recovery) comes from the
-// stat block's cast/recovery speeds. Auto-attack runs in parallel (modeled
-// separately), so casting does not displace it.
-func RotationCADPS(sb StatBlock, cas []spell.CombatArt, durationSecs float64) float64 {
-	if durationSecs <= 0 || len(cas) == 0 {
-		return 0
-	}
+// fightSmoothingSamples is K: how many fight lengths CADPS averages across the
+// recast-wide window to smooth cast-boundary quantization (spec §3.1).
+const fightSmoothingSamples = 9
+
+// rotationTimeline runs the priority sim out to maxLen, recording each fired
+// cast's start time and the cumulative CA damage through it. The sim is
+// prefix-consistent — a fight of length s credits exactly the casts with start
+// time < s — so one run yields cumCA(t) for every t ≤ maxLen.
+func rotationTimeline(sb StatBlock, cas []spell.CombatArt, maxLen float64) (starts, cum []float64) {
 	eff := make([]float64, len(cas))
 	rec := make([]float64, len(cas))
 	slot := make([]float64, len(cas))
@@ -65,7 +64,7 @@ func RotationCADPS(sb StatBlock, cas []spell.CombatArt, durationSecs float64) fl
 		slot[i] = slotSecs(sb, ca)
 	}
 	var total, t float64
-	for t < durationSecs {
+	for t < maxLen {
 		best, bestRate := -1, -1.0
 		for i := range cas {
 			if avail[i] <= t {
@@ -88,8 +87,45 @@ func RotationCADPS(sb StatBlock, cas []spell.CombatArt, durationSecs float64) fl
 			continue
 		}
 		total += eff[best]
+		starts = append(starts, t)
+		cum = append(cum, total)
 		avail[best] = t + rec[best]
 		t += slot[best]
 	}
-	return total / durationSecs
+	return starts, cum
+}
+
+// cumCAAt is the cumulative CA damage from casts started strictly before s.
+func cumCAAt(starts, cum []float64, s float64) float64 {
+	out := 0.0
+	for i, st := range starts {
+		if st < s {
+			out = cum[i]
+		} else {
+			break
+		}
+	}
+	return out
+}
+
+// maxEffRecast is the longest effective recast in the art set — the smoothing
+// window width R (one full big-cast boundary cycle).
+func maxEffRecast(sb StatBlock, cas []spell.CombatArt) float64 {
+	r := 0.0
+	for _, ca := range cas {
+		if er := effRecast(sb, ca); er > r {
+			r = er
+		}
+	}
+	return r
+}
+
+// RotationCADPS is total CA damage over a single fixed fight length / that
+// length (unsmoothed). Retained for direct single-length tests.
+func RotationCADPS(sb StatBlock, cas []spell.CombatArt, durationSecs float64) float64 {
+	if durationSecs <= 0 || len(cas) == 0 {
+		return 0
+	}
+	starts, cum := rotationTimeline(sb, cas, durationSecs)
+	return cumCAAt(starts, cum, durationSecs) / durationSecs
 }

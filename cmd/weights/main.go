@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/amdrake93/eq2-eof-itemdex/internal/charconfig"
+	"github.com/amdrake93/eq2-eof-itemdex/internal/constants"
 	"github.com/amdrake93/eq2-eof-itemdex/internal/model"
 	"github.com/amdrake93/eq2-eof-itemdex/internal/spell"
 	_ "modernc.org/sqlite"
@@ -48,6 +49,7 @@ func loadWeapon(db *sql.DB, query string, args ...any) (model.Weapon, string, er
 func main() {
 	dbPath := flag.String("db", "bis.db", "sqlite db from builddb")
 	character := flag.String("character", "characters/alex.toml", "character config (TOML)")
+	fight := flag.Float64("fight", constants.FightDurationSecs, "target fight length in seconds (smoothed)")
 	flag.Parse()
 
 	cfg, err := charconfig.Load(*character)
@@ -127,7 +129,7 @@ func main() {
 		}
 		fmt.Printf("\n== %s context weights (marginal DPS per +1 stat; dual-wield, %d combat arts) ==\n", strings.ToUpper(name), len(cas))
 		dps := func(sb model.StatBlock) float64 {
-			return model.TotalDPSDual(sb, mainWeapon, offWeapon, cas, classData.AutoAttackMultiplier)
+			return model.TotalDPSDual(sb, mainWeapon, offWeapon, cas, classData.AutoAttackMultiplier, *fight)
 		}
 		ws := model.DeriveWeights(block, dps)
 		keys := make([]string, 0, len(ws))

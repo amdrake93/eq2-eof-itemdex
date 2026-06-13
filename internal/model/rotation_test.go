@@ -124,3 +124,33 @@ func TestSlotTiming(t *testing.T) {
 	// Recovery is subtractive: 50% → 0.25s left.
 	require.InDelta(t, 0.75, slotSecs(StatBlock{RecoverySpeed: 50}, quick), 1e-9)
 }
+
+func TestCADPSSmoothingInvariantForShortRecast(t *testing.T) {
+	// A single short-recast art has no big-cast boundary: the window [595,605]
+	// straddles only a tiny 10s-boundary step, so the smoothed value stays within
+	// 1% of the naive 1000/10=100.0 rate (vs 50%+ swings for a 150s-recast art).
+	cas := []spell.CombatArt{{Name: "X", MinDamage: 800, MaxDamage: 1200, RecastSecs: 10}}
+	got := CADPS(StatBlock{}, cas, 600)
+	require.InDelta(t, 100.0, got, 1.0) // within 1% — no large boundary discontinuity
+}
+
+func TestCADPSSmoothsBigCastBoundary(t *testing.T) {
+	// One big art on a 150s recast, fight target 150 (right on its 2nd-cast
+	// boundary). Raw single-length is a coin-flip on the 2nd cast; smoothed
+	// CADPS lands strictly between the 1-cast and 2-cast rates.
+	cas := []spell.CombatArt{{Name: "Big", MinDamage: 10000, MaxDamage: 10000, RecastSecs: 150}}
+	oneCast := 10000.0 / 150.0 // only the t=0 cast credited
+	twoCast := 20000.0 / 150.0 // t=0 and t=150 both credited
+	got := CADPS(StatBlock{}, cas, 150)
+	require.Greater(t, got, oneCast)
+	require.Less(t, got, twoCast)
+}
+
+func TestCumCAAt(t *testing.T) {
+	starts := []float64{0, 150, 300}
+	cum := []float64{100, 200, 300}
+	require.InDelta(t, 0.0, cumCAAt(starts, cum, 0), 1e-9)     // nothing before t=0
+	require.InDelta(t, 100.0, cumCAAt(starts, cum, 150), 1e-9) // only the t=0 cast (start<150)
+	require.InDelta(t, 200.0, cumCAAt(starts, cum, 300), 1e-9)
+	require.InDelta(t, 300.0, cumCAAt(starts, cum, 1000), 1e-9)
+}

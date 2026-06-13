@@ -18,15 +18,15 @@ func TestTotalDPSDual_ParallelSum(t *testing.T) {
 		{Name: "Test Slash", MinDamage: 500, MaxDamage: 500, RecastSecs: 1},
 	}
 	sb := StatBlock{}
-	want := AutoDPSDual(sb, main, off, 1.0) + CADPS(sb, cas)
-	require.InDelta(t, want, TotalDPSDual(sb, main, off, cas, 1.0), 1e-9)
+	want := AutoDPSDual(sb, main, off, 1.0) + CADPS(sb, cas, 600)
+	require.InDelta(t, want, TotalDPSDual(sb, main, off, cas, 1.0, 600), 1e-9)
 }
 
 func TestTotalDPSDual_NoCAsEqualsPureAuto(t *testing.T) {
 	main := Weapon{AvgDamage: 100, DelaySecs: 2}
 	off := Weapon{AvgDamage: 100, DelaySecs: 2}
 	sb := StatBlock{}
-	require.InDelta(t, AutoDPSDual(sb, main, off, 1.0), TotalDPSDual(sb, main, off, nil, 1.0), 1e-9)
+	require.InDelta(t, AutoDPSDual(sb, main, off, 1.0), TotalDPSDual(sb, main, off, nil, 1.0, 600), 1e-9)
 }
 
 func TestRotationCADPS_RecoveryPacesThroughput(t *testing.T) {
@@ -47,6 +47,10 @@ func TestCADPS_UsesRecoveryPacedRotation(t *testing.T) {
 		{Name: "Test Strike", MinDamage: 800, MaxDamage: 1200, RecastSecs: 10, CastSecsHundredths: 50},
 	}
 	sb := StatBlock{}
+	// CADPS now smooths over a recast-wide window; for a short-recast art the
+	// smoothed result is close to but not identical to the single-point value.
+	// Verify the smoothed result is in the right ballpark (within 2% of single-point).
 	want := RotationCADPS(sb, cas, constants.FightDurationSecs)
-	require.InDelta(t, want, CADPS(sb, cas), 1e-9)
+	got := CADPS(sb, cas, constants.FightDurationSecs)
+	require.InDelta(t, want, got, want*0.02)
 }

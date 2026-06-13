@@ -9,6 +9,7 @@ import (
 
 	"github.com/amdrake93/eq2-eof-itemdex/internal/bis"
 	"github.com/amdrake93/eq2-eof-itemdex/internal/charconfig"
+	"github.com/amdrake93/eq2-eof-itemdex/internal/constants"
 	"github.com/amdrake93/eq2-eof-itemdex/internal/model"
 	"github.com/amdrake93/eq2-eof-itemdex/internal/store"
 )
@@ -79,6 +80,7 @@ func main() {
 	lock := flag.String("lock", "", "comma-separated item IDs to lock (raid re-model)")
 	topN := flag.Int("top", 3, "alternatives per slot")
 	character := flag.String("character", "characters/alex.toml", "character config (TOML)")
+	fight := flag.Float64("fight", constants.FightDurationSecs, "target fight length in seconds (smoothed)")
 	flag.Parse()
 
 	cfg, err := charconfig.Load(*character)
@@ -162,7 +164,7 @@ func main() {
 			profile = profile.Add(mainItem.Stats)
 		}
 		bySlot := bis.SlotCandidates(items, t.keep)
-		set := bis.BuildSet(profile, lo, bySlot, nil, maxBuildPasses, classData.AutoAttackMultiplier)
+		set := bis.BuildSet(profile, lo, bySlot, nil, maxBuildPasses, classData.AutoAttackMultiplier, *fight)
 		weights := bis.ConvergedWeights(set)
 		slotReports := withFixedPrimary(bis.BuildSlotReports(set, bySlot, weights, *topN), mainItem, haveMain)
 		allRows = append(allRows, scoreRows(slotReports, strings.ToLower(t.name))...)
@@ -176,7 +178,7 @@ func main() {
 		if haveMain {
 			profile = profile.Add(mainItem.Stats)
 		}
-		set := bis.BuildSet(profile, lo, bySlot, locked, maxBuildPasses, classData.AutoAttackMultiplier)
+		set := bis.BuildSet(profile, lo, bySlot, locked, maxBuildPasses, classData.AutoAttackMultiplier, *fight)
 		weights := bis.ConvergedWeights(set)
 		slotReports := withFixedPrimary(bis.BuildSlotReports(set, bySlot, weights, *topN), mainItem, haveMain)
 		reports = append(reports, bis.BaselineReport{
@@ -188,7 +190,7 @@ func main() {
 		fmt.Fprintln(os.Stderr, "write scores:", err)
 		os.Exit(1)
 	}
-	if err := os.WriteFile(*out, []byte(bis.Render(reports)), 0o644); err != nil {
+	if err := os.WriteFile(*out, []byte(bis.Render(reports, *fight)), 0o644); err != nil {
 		fmt.Fprintln(os.Stderr, "write report:", err)
 		os.Exit(1)
 	}

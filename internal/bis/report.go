@@ -27,7 +27,7 @@ func ConvergedWeights(set *Set) map[string]float64 {
 	base := set.restBase("")
 	off := set.offWeapon()
 	dps := func(sb model.StatBlock) float64 {
-		return model.TotalDPSDual(sb, set.Main, off, set.Arts, set.AutoMult)
+		return model.TotalDPSDual(sb, set.Main, off, set.Arts, set.AutoMult, set.FightLen)
 	}
 	return model.DeriveWeights(base, dps)
 }

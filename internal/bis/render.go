@@ -52,7 +52,7 @@ func writeScored(b *strings.Builder, s ScoredItem) {
 }
 
 // Render produces the full markdown BiS report across all baselines.
-func Render(reports []BaselineReport) string {
+func Render(reports []BaselineReport, fightLen float64) string {
 	var b strings.Builder
 	b.WriteString("# Assassin EoF Best-in-Slot\n\n")
 	b.WriteString("_Per-item numbers are in-context ΔDPS at the converged set; the `stat × weight` lines are the explainable breakdown at the converged-baseline weights._\n\n")
@@ -80,7 +80,7 @@ func Render(reports []BaselineReport) string {
 		}
 	}
 	writeProgression(&b, reports)
-	writeAssumptions(&b)
+	writeAssumptions(&b, fightLen)
 	return b.String()
 }
 
@@ -115,7 +115,7 @@ func writeProgression(b *strings.Builder, reports []BaselineReport) {
 	}
 }
 
-func writeAssumptions(b *strings.Builder) {
+func writeAssumptions(b *strings.Builder, fightLen float64) {
 	b.WriteString("---\n\n## Assumptions & Constants\n\n")
 	fmt.Fprintf(b, "- crit ×%.2f; flurry ×%.1f; ability-mod adds in full (50%% cap disproven by tooltip probes)\n",
 		constants.CritMultiplier, constants.FlurryMultiplier)
@@ -124,8 +124,8 @@ func writeAssumptions(b *strings.Builder) {
 	fmt.Fprintf(b, "- main stat (AGI): interpolated 13-reading curve, hard cap 1100 → %.0f%%; multiplies CA damage (auto-attack scaling unverified — not modeled)\n",
 		model.MainStatEffect(1100))
 	b.WriteString("- ⚠ CA potency pool includes a per-character calibrated `potency_bonus` whose source is UNEXPLAINED (~23.4 pts survive naked/AA-less/buff-less — spec §12 'potency-pool mystery', actively hunted)\n")
-	fmt.Fprintf(b, "- reuse: 1%%/pt to the %.0f-stat cap, sharing each art's %.0f%%-of-base recast ceiling with AA art mods; cast speed divides cast times; recovery base %.2fs (reduced by recovery speed); fight = %.0fs\n",
-		constants.ReuseCapStat, constants.RecastReductionCeiling*100, constants.CARecoveryBaseSecs, constants.FightDurationSecs)
+	fmt.Fprintf(b, "- reuse: 1%%/pt to the %.0f-stat cap, sharing each art's %.0f%%-of-base recast ceiling with AA art mods; cast speed divides cast times; recovery base %.2fs (reduced by recovery speed); fight target = %.0fs (smoothed)\n",
+		constants.ReuseCapStat, constants.RecastReductionCeiling*100, constants.CARecoveryBaseSecs, fightLen)
 	b.WriteString("- Set built by coordinate-ascent to convergence (caps/interactions resolved at the live set baseline).\n")
 	b.WriteString("- Main-hand is fixed (Soulfire Sabre); its weapon damage AND full stat line are included in the baseline.\n")
 }

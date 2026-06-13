@@ -25,7 +25,7 @@ func TestRender(t *testing.T) {
 		}},
 	}}
 
-	out := Render(reports)
+	out := Render(reports, 600)
 
 	require.Contains(t, out, "## RAID")
 	require.Contains(t, out, "### Chest")
@@ -49,7 +49,7 @@ func TestRenderFixedSlot(t *testing.T) {
 			Ranked: nil,
 		}},
 	}}
-	out := Render(reports)
+	out := Render(reports, 600)
 	require.Contains(t, out, "### Primary")
 	require.Contains(t, out, "BiS: **Soulfire Gladius** _(fixed)_")
 }
@@ -66,7 +66,7 @@ func TestRenderProgression(t *testing.T) {
 		{Name: "RAID", Reports: []SlotReport{mk("Fabled Chest", "FABLED", 50)}},
 		{Name: "BEST-OF-BEST", Reports: []SlotReport{mk("Avatar Robe", "MYTHICAL", 70)}},
 	}
-	out := Render(reports)
+	out := Render(reports, 600)
 
 	require.Contains(t, out, "## Progression")
 	chest := out[strings.Index(out, "## Progression"):]

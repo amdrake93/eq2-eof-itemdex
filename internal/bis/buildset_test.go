@@ -20,7 +20,7 @@ func TestBuildSetStopsStackingPastCap(t *testing.T) {
 		"Head":  {haste(1, "Head"), flurry(2, "Head")},
 		"Chest": {haste(3, "Chest"), flurry(4, "Chest")},
 	}
-	set := BuildSet(model.StatBlock{}, lo, bySlot, nil, 12, 1.0)
+	set := BuildSet(model.StatBlock{}, lo, bySlot, nil, 12, 1.0, 600)
 
 	picks := []int{set.Equipped["Head"][0].ID, set.Equipped["Chest"][0].ID}
 	hasteCount := 0
@@ -40,7 +40,7 @@ func TestBuildSetRespectsLocked(t *testing.T) {
 	locked := map[string][]store.ScorableItem{
 		"Chest": {{ID: 99, Slot: "Chest", Tier: "FABLED", Stats: model.StatBlock{Flurry: 50}}},
 	}
-	set := BuildSet(model.StatBlock{}, lo, bySlot, locked, 12, 1.0)
+	set := BuildSet(model.StatBlock{}, lo, bySlot, locked, 12, 1.0, 600)
 	require.Equal(t, 99, set.Equipped["Chest"][0].ID)
 	require.Equal(t, 1, set.Equipped["Head"][0].ID)
 }
@@ -51,8 +51,8 @@ func TestBuildSetConverges(t *testing.T) {
 		"Head":  {{ID: 1, Slot: "Head", Tier: "FABLED", Stats: model.StatBlock{Flurry: 10}}},
 		"Chest": {{ID: 2, Slot: "Chest", Tier: "FABLED", Stats: model.StatBlock{Haste: 50}}},
 	}
-	a := BuildSet(model.StatBlock{}, lo, bySlot, nil, 12, 1.0)
-	b := BuildSet(model.StatBlock{}, lo, bySlot, nil, 12, 1.0)
+	a := BuildSet(model.StatBlock{}, lo, bySlot, nil, 12, 1.0, 600)
+	b := BuildSet(model.StatBlock{}, lo, bySlot, nil, 12, 1.0, 600)
 	require.Equal(t, a.Equipped["Head"][0].ID, b.Equipped["Head"][0].ID)
 	require.Equal(t, 1, a.Equipped["Head"][0].ID)
 	require.Equal(t, 2, a.Equipped["Chest"][0].ID)

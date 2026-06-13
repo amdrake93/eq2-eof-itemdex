@@ -10,7 +10,7 @@ import (
 func TestDeriveWeights(t *testing.T) {
 	w := Weapon{AvgDamage: 100, DelaySecs: 2.0}
 	cas := []spell.CombatArt{{Name: "X", MinDamage: 800, MaxDamage: 1200, RecastSecs: 10}}
-	dps := func(sb StatBlock) float64 { return AutoDPS(sb, w) + CADPS(sb, cas) }
+	dps := func(sb StatBlock) float64 { return AutoDPS(sb, w) + CADPS(sb, cas, 600) }
 	weights := DeriveWeights(StatBlock{}, dps)
 	for _, k := range WeightStats {
 		_, ok := weights[k]
@@ -112,7 +112,7 @@ func TestWeightStatsIncludeMainStat(t *testing.T) {
 
 func TestCurveStatMarginalMainStat(t *testing.T) {
 	cas := []spell.CombatArt{{Name: "X", MinDamage: 800, MaxDamage: 1200, RecastSecs: 0}}
-	dps := func(sb StatBlock) float64 { return CADPS(sb, cas) }
+	dps := func(sb StatBlock) float64 { return CADPS(sb, cas, 600) }
 	// At mainstat 700 the bracket is the (695, 738) samples; positive marginal
 	// on a CA-only dps closure (mainstat multiplies CA damage).
 	// Derivation: slot = 0.5s (recovery-bound, RecoverySpeed 100 → instant cast);
@@ -124,7 +124,7 @@ func TestCurveStatMarginalMainStat(t *testing.T) {
 
 func TestCurveStatMarginalMainStatAtCap(t *testing.T) {
 	cas := []spell.CombatArt{{Name: "X", MinDamage: 800, MaxDamage: 1200, RecastSecs: 0}}
-	dps := func(sb StatBlock) float64 { return CADPS(sb, cas) }
+	dps := func(sb StatBlock) float64 { return CADPS(sb, cas, 600) }
 	require.InDelta(t, 0.0, curveStatMarginal(StatBlock{MainStat: 1100, RecoverySpeed: 100}, "mainstat", dps), 1e-9)
 }
 
@@ -152,7 +152,7 @@ func TestWeightStatsIncludeCastSpeedNotRecovery(t *testing.T) {
 
 	w := Weapon{AvgDamage: 100, DelaySecs: 2.0}
 	cas := []spell.CombatArt{{Name: "X", MinDamage: 800, MaxDamage: 1200, RecastSecs: 0}}
-	dps := func(sb StatBlock) float64 { return AutoDPS(sb, w) + CADPS(sb, cas) }
+	dps := func(sb StatBlock) float64 { return AutoDPS(sb, w) + CADPS(sb, cas, 600) }
 	weights := DeriveWeights(StatBlock{}, dps)
 	_, ok := weights["castspeed"]
 	require.True(t, ok)

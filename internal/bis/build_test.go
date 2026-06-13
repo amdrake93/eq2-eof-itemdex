@@ -15,7 +15,7 @@ func TestCapacityOf(t *testing.T) {
 }
 
 func TestPickBestRespectsCapacityAndContext(t *testing.T) {
-	set := NewSet(model.StatBlock{}, testLoadout(), 1.0)
+	set := NewSet(model.StatBlock{}, testLoadout(), 1.0, 600)
 	cands := []store.ScorableItem{
 		{ID: 1, Slot: "Ear", Tier: "FABLED", Stats: model.StatBlock{Flurry: 20}},
 		{ID: 2, Slot: "Ear", Tier: "FABLED", Stats: model.StatBlock{Haste: 100}},
