@@ -56,6 +56,12 @@ func main() {
 		os.Exit(1)
 	}
 
+	classData, err := charconfig.LoadClass("classes", cfg.Character.Class)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "load class data:", err)
+		os.Exit(1)
+	}
+
 	db, err := sql.Open("sqlite", *dbPath)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "open db:", err)
@@ -121,7 +127,7 @@ func main() {
 		}
 		fmt.Printf("\n== %s context weights (marginal DPS per +1 stat; dual-wield, %d combat arts) ==\n", strings.ToUpper(name), len(cas))
 		dps := func(sb model.StatBlock) float64 {
-			return model.TotalDPSDual(sb, mainWeapon, offWeapon, cas)
+			return model.TotalDPSDual(sb, mainWeapon, offWeapon, cas, classData.AutoAttackMultiplier)
 		}
 		ws := model.DeriveWeights(block, dps)
 		keys := make([]string, 0, len(ws))

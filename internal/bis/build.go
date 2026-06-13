@@ -70,8 +70,8 @@ func sameItems(a, b []store.ScorableItem) bool {
 // the DPS-maximizing pick at the current set state; passes repeat until no slot
 // changes (converged) or maxPasses is hit. Locked slots are pre-filled and never
 // re-optimized; the main-hand slot is fixed to the loadout and excluded.
-func BuildSet(profile model.StatBlock, lo store.Loadout, bySlot, locked map[string][]store.ScorableItem, maxPasses int) *Set {
-	set := NewSet(profile, lo)
+func BuildSet(profile model.StatBlock, lo store.Loadout, bySlot, locked map[string][]store.ScorableItem, maxPasses int, autoMult float64) *Set {
+	set := NewSet(profile, lo, autoMult)
 	lockedSlot := map[string]bool{}
 	for slot, items := range locked {
 		set.Equipped[slot] = items

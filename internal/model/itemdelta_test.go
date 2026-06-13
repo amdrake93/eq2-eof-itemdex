@@ -13,8 +13,8 @@ func TestItemDeltaInteractionMultiplicative(t *testing.T) {
 	var arts []spell.CombatArt
 	flurry := StatBlock{Flurry: 10}
 
-	low := ItemDelta(StatBlock{}, main, off, arts, flurry, nil)
-	high := ItemDelta(StatBlock{DPSMod: 200}, main, off, arts, flurry, nil)
+	low := ItemDelta(StatBlock{}, main, off, arts, flurry, nil, 1.0)
+	high := ItemDelta(StatBlock{DPSMod: 200}, main, off, arts, flurry, nil, 1.0)
 	require.Greater(t, high, low)
 }
 
@@ -22,7 +22,7 @@ func TestItemDeltaCappedStatZero(t *testing.T) {
 	main := Weapon{AvgDamage: 160, DelaySecs: 4}
 	off := Weapon{AvgDamage: 158, DelaySecs: 4.4}
 	var arts []spell.CombatArt
-	d := ItemDelta(StatBlock{Haste: 300}, main, off, arts, StatBlock{Haste: 50}, nil)
+	d := ItemDelta(StatBlock{Haste: 300}, main, off, arts, StatBlock{Haste: 50}, nil, 1.0)
 	require.InDelta(t, 0.0, d, 1e-9)
 }
 
@@ -30,6 +30,6 @@ func TestItemDeltaOffHandWeapon(t *testing.T) {
 	main := Weapon{AvgDamage: 160, DelaySecs: 4}
 	var arts []spell.CombatArt
 	w := Weapon{AvgDamage: 150, DelaySecs: 4}
-	d := ItemDelta(StatBlock{}, main, Weapon{}, arts, StatBlock{}, &w)
+	d := ItemDelta(StatBlock{}, main, Weapon{}, arts, StatBlock{}, &w, 1.0)
 	require.Greater(t, d, 0.0)
 }

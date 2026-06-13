@@ -12,12 +12,12 @@ import "github.com/amdrake93/eq2-eof-itemdex/internal/spell"
 // stat already at its cap in restBase contributes ~0 and the multiplicative
 // auto cluster (haste·MA·crit·flurry·dps-mod) makes a stat worth more as the
 // set accumulates its partners.
-func ItemDelta(restBase StatBlock, main, restOff Weapon, arts []spell.CombatArt, itemStats StatBlock, newOff *Weapon) float64 {
-	before := TotalDPSDual(restBase, main, restOff, arts)
+func ItemDelta(restBase StatBlock, main, restOff Weapon, arts []spell.CombatArt, itemStats StatBlock, newOff *Weapon, classAutoMult float64) float64 {
+	before := TotalDPSDual(restBase, main, restOff, arts, classAutoMult)
 	off := restOff
 	if newOff != nil {
 		off = *newOff
 	}
-	after := TotalDPSDual(restBase.Add(itemStats), main, off, arts)
+	after := TotalDPSDual(restBase.Add(itemStats), main, off, arts, classAutoMult)
 	return after - before
 }

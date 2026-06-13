@@ -17,7 +17,7 @@ func TestBuildSlotReports(t *testing.T) {
 		"Ear": {mk(1, "FABLED", 5), mk(2, "FABLED", 20), mk(3, "FABLED", 12), mk(4, "FABLED", 1),
 			mk(5, "LEGENDARY", 8), mk(6, "MYTHICAL", 50)},
 	}
-	set := BuildSet(model.StatBlock{}, lo, bySlot, nil, 12)
+	set := BuildSet(model.StatBlock{}, lo, bySlot, nil, 12, 1.0)
 	weights := ConvergedWeights(set)
 	reports := BuildSlotReports(set, bySlot, weights, 3)
 
@@ -41,7 +41,7 @@ func TestBuildSlotReportsSkipsPrimary(t *testing.T) {
 		"Primary": {{ID: 1, Slot: "Primary", Tier: "FABLED", WieldStyle: "One-Handed", WeaponAvg: 160, WeaponDelay: 4}},
 		"Chest":   {{ID: 2, Slot: "Chest", Tier: "FABLED", Stats: model.StatBlock{Potency: 30}}},
 	}
-	set := BuildSet(model.StatBlock{}, lo, bySlot, nil, 12)
+	set := BuildSet(model.StatBlock{}, lo, bySlot, nil, 12, 1.0)
 	reports := BuildSlotReports(set, bySlot, ConvergedWeights(set), 3)
 
 	for _, r := range reports {

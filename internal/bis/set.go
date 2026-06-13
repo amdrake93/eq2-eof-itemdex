@@ -18,12 +18,13 @@ type Set struct {
 	Profile  model.StatBlock
 	Main     model.Weapon
 	Arts     []spell.CombatArt
+	AutoMult float64 // class-intrinsic auto-attack multiplier (classes/<class>.toml)
 	Equipped map[string][]store.ScorableItem
 }
 
 // NewSet returns an empty set seeded with the profile baseline and loadout.
-func NewSet(profile model.StatBlock, lo store.Loadout) *Set {
-	return &Set{Profile: profile, Main: lo.Main, Arts: lo.Arts, Equipped: map[string][]store.ScorableItem{}}
+func NewSet(profile model.StatBlock, lo store.Loadout, autoMult float64) *Set {
+	return &Set{Profile: profile, Main: lo.Main, Arts: lo.Arts, AutoMult: autoMult, Equipped: map[string][]store.ScorableItem{}}
 }
 
 // restBase is the set's StatBlock with one slot's items excluded (exclude=""
@@ -61,7 +62,7 @@ func (s *Set) restOff(exclude string) model.Weapon {
 
 // DPS is the full set's modeled TotalDPS.
 func (s *Set) DPS() float64 {
-	return model.TotalDPSDual(s.restBase(""), s.Main, s.offWeapon(), s.Arts)
+	return model.TotalDPSDual(s.restBase(""), s.Main, s.offWeapon(), s.Arts, s.AutoMult)
 }
 
 // CandidateDelta is the in-context ΔDPS of putting a candidate in a slot, given
@@ -71,7 +72,7 @@ func (s *Set) CandidateDelta(slot string, c store.ScorableItem) float64 {
 	ro := s.restOff(slot)
 	if slot == offHandSlot && c.IsWeapon() {
 		w := model.Weapon{AvgDamage: c.WeaponAvg, DelaySecs: c.WeaponDelay}
-		return model.ItemDelta(rb, s.Main, ro, s.Arts, c.Stats, &w)
+		return model.ItemDelta(rb, s.Main, ro, s.Arts, c.Stats, &w, s.AutoMult)
 	}
-	return model.ItemDelta(rb, s.Main, ro, s.Arts, c.Stats, nil)
+	return model.ItemDelta(rb, s.Main, ro, s.Arts, c.Stats, nil, s.AutoMult)
 }

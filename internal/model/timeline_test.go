@@ -18,15 +18,15 @@ func TestTotalDPSDual_ParallelSum(t *testing.T) {
 		{Name: "Test Slash", MinDamage: 500, MaxDamage: 500, RecastSecs: 1},
 	}
 	sb := StatBlock{}
-	want := AutoDPSDual(sb, main, off) + CADPS(sb, cas)
-	require.InDelta(t, want, TotalDPSDual(sb, main, off, cas), 1e-9)
+	want := AutoDPSDual(sb, main, off, 1.0) + CADPS(sb, cas)
+	require.InDelta(t, want, TotalDPSDual(sb, main, off, cas, 1.0), 1e-9)
 }
 
 func TestTotalDPSDual_NoCAsEqualsPureAuto(t *testing.T) {
 	main := Weapon{AvgDamage: 100, DelaySecs: 2}
 	off := Weapon{AvgDamage: 100, DelaySecs: 2}
 	sb := StatBlock{}
-	require.InDelta(t, AutoDPSDual(sb, main, off), TotalDPSDual(sb, main, off, nil), 1e-9)
+	require.InDelta(t, AutoDPSDual(sb, main, off, 1.0), TotalDPSDual(sb, main, off, nil, 1.0), 1e-9)
 }
 
 func TestRotationCADPS_RecoveryPacesThroughput(t *testing.T) {

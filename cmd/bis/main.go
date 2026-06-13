@@ -87,6 +87,12 @@ func main() {
 		os.Exit(1)
 	}
 
+	classData, err := charconfig.LoadClass("classes", cfg.Character.Class)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "load class data:", err)
+		os.Exit(1)
+	}
+
 	lockIDs, err := parseLocks(*lock)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
@@ -156,7 +162,7 @@ func main() {
 			profile = profile.Add(mainItem.Stats)
 		}
 		bySlot := bis.SlotCandidates(items, t.keep)
-		set := bis.BuildSet(profile, lo, bySlot, nil, maxBuildPasses)
+		set := bis.BuildSet(profile, lo, bySlot, nil, maxBuildPasses, classData.AutoAttackMultiplier)
 		weights := bis.ConvergedWeights(set)
 		slotReports := withFixedPrimary(bis.BuildSlotReports(set, bySlot, weights, *topN), mainItem, haveMain)
 		allRows = append(allRows, scoreRows(slotReports, strings.ToLower(t.name))...)
@@ -170,7 +176,7 @@ func main() {
 		if haveMain {
 			profile = profile.Add(mainItem.Stats)
 		}
-		set := bis.BuildSet(profile, lo, bySlot, locked, maxBuildPasses)
+		set := bis.BuildSet(profile, lo, bySlot, locked, maxBuildPasses, classData.AutoAttackMultiplier)
 		weights := bis.ConvergedWeights(set)
 		slotReports := withFixedPrimary(bis.BuildSlotReports(set, bySlot, weights, *topN), mainItem, haveMain)
 		reports = append(reports, bis.BaselineReport{

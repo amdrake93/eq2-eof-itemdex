@@ -15,7 +15,7 @@ func testLoadout() store.Loadout {
 }
 
 func TestSetDPSAndCandidateDelta(t *testing.T) {
-	set := NewSet(model.StatBlock{}, testLoadout())
+	set := NewSet(model.StatBlock{}, testLoadout(), 1.0)
 
 	// This fixture has no off-hand, so it is single-wielding: the dual-wield
 	// delay penalty does NOT apply (it's gated on an equipped off-hand weapon).
@@ -30,10 +30,17 @@ func TestSetDPSAndCandidateDelta(t *testing.T) {
 }
 
 func TestSetRestBaseExcludesSlot(t *testing.T) {
-	set := NewSet(model.StatBlock{}, testLoadout())
+	set := NewSet(model.StatBlock{}, testLoadout(), 1.0)
 	set.Equipped["Head"] = []store.ScorableItem{{ID: 1, Slot: "Head", Stats: model.StatBlock{Potency: 10}}}
 	set.Equipped["Chest"] = []store.ScorableItem{{ID: 2, Slot: "Chest", Stats: model.StatBlock{Potency: 25}}}
 
 	require.InDelta(t, 35.0, set.restBase("").Potency, 1e-9)
 	require.InDelta(t, 25.0, set.restBase("Head").Potency, 1e-9)
+}
+
+func TestSetAppliesClassAutoMult(t *testing.T) {
+	lo := store.Loadout{Main: model.Weapon{AvgDamage: 160, DelaySecs: 4}}
+	base := NewSet(model.StatBlock{}, lo, 1.0).DPS()
+	scaled := NewSet(model.StatBlock{}, lo, 2.0).DPS()
+	require.InDelta(t, 2.0*base, scaled, 1e-9) // no CAs/arts in fixture → DPS is pure auto
 }

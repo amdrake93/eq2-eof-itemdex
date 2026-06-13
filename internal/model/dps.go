@@ -24,18 +24,33 @@ func dpsModFactor(sb StatBlock) float64 {
 	return 1 + HasteDpsModEffect(sb.DPSMod)/100
 }
 
+// autoDamageMult is the per-swing damage multiplier from the wielder's stats:
+// main-stat (AGI, same curve as CAs) × dps-mod. (The class auto multiplier is
+// applied separately at the AutoDPSDual/TotalDPS boundary.)
+func autoDamageMult(sb StatBlock) float64 {
+	return (1 + MainStatEffect(sb.MainStat)/100) * dpsModFactor(sb)
+}
+
+// AutoWeaponMultiplier is the full multiplier on census-base per-swing damage:
+// main-stat × dps-mod × class auto multiplier. Calibration target for /weaponstat.
+func AutoWeaponMultiplier(sb StatBlock, classAutoMult float64) float64 {
+	return autoDamageMult(sb) * classAutoMult
+}
+
 func effDelay(sb StatBlock, w Weapon) float64 {
 	h := HasteDpsModEffect(sb.Haste)
 	return w.DelaySecs / (1 + h/100)
 }
 
-// AutoDPS models sustained auto-attack damage per second.
+// AutoDPS models sustained auto-attack damage per second for one weapon. AGI and
+// dps-mod scale per-swing damage (autoDamageMult); the class auto multiplier is
+// applied by the caller (AutoDPSDual/TotalDPS).
 func AutoDPS(sb StatBlock, w Weapon) float64 {
 	if w.DelaySecs <= 0 {
 		return 0
 	}
 	swings := w.AvgDamage / effDelay(sb, w)
-	return swings * (1 + MultiAttackEffect(sb.MultiAttack)/100) * critFactor(sb) * flurryFactor(sb) * dpsModFactor(sb)
+	return swings * (1 + MultiAttackEffect(sb.MultiAttack)/100) * autoDamageMult(sb) * critFactor(sb) * flurryFactor(sb)
 }
 
 // CADPS is the simulated combat-art DPS over a standard fight (priority rotation).
@@ -52,24 +67,27 @@ func CADPS(sb StatBlock, cas []spell.CombatArt) float64 {
 // (shield/symbol) is correctly unpenalized — important for imported loadouts
 // that may not be dual-wielding. Main and off are otherwise treated equally —
 // the off-hand's weapon-multiplier-stat penalty isn't tracked and nets out for
-// relative comparison.
-func AutoDPSDual(sb StatBlock, main, off Weapon) float64 {
+// relative comparison. classAutoMult is the class-intrinsic auto-attack
+// multiplier (sources from classes/<class>.toml).
+func AutoDPSDual(sb StatBlock, main, off Weapon, classAutoMult float64) float64 {
 	if off.DelaySecs > 0 {
 		main.DelaySecs *= constants.DualWieldDelayPenalty
 		off.DelaySecs *= constants.DualWieldDelayPenalty
 	}
-	return AutoDPS(sb, main) + AutoDPS(sb, off)
+	return classAutoMult * (AutoDPS(sb, main) + AutoDPS(sb, off))
 }
 
 // TotalDPS = auto-attack + combat arts. Auto and CAs run in parallel.
-func TotalDPS(sb StatBlock, w Weapon, cas []spell.CombatArt) float64 {
-	return AutoDPS(sb, w) + CADPS(sb, cas)
+// classAutoMult is the class-intrinsic auto-attack multiplier.
+func TotalDPS(sb StatBlock, w Weapon, cas []spell.CombatArt, classAutoMult float64) float64 {
+	return classAutoMult*AutoDPS(sb, w) + CADPS(sb, cas)
 }
 
 // TotalDPSDual = dual-wield auto-attack + combat arts, in parallel. Assumes a
 // dual-wield context (the EoF Assassin always dual-wields): it routes through
 // AutoDPSDual, which applies the ×1.33 off-hand delay penalty — so it must NOT
 // model a true single-wield/2H loadout (use TotalDPS for that).
-func TotalDPSDual(sb StatBlock, main, off Weapon, cas []spell.CombatArt) float64 {
-	return AutoDPSDual(sb, main, off) + CADPS(sb, cas)
+// classAutoMult is the class-intrinsic auto-attack multiplier.
+func TotalDPSDual(sb StatBlock, main, off Weapon, cas []spell.CombatArt, classAutoMult float64) float64 {
+	return AutoDPSDual(sb, main, off, classAutoMult) + CADPS(sb, cas)
 }
