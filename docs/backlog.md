@@ -228,3 +228,27 @@ levels). Attribute-independent (modifiers divided out), so valid as
 census-equivalent bases under the current model. Implement per §3: manualArts
 appended after the census pull; recast/cast from census are correct (20s/0.5s
 and 12s/0.5s).
+
+## 10. Class-intrinsic data system (expand for character import)
+
+Started 2026-06-13: `classes/<class>.toml` (uniform strict schema, keyed by the
+character config's `class` field) holds class-intrinsic measured constants. v1
+ships only `auto_attack_multiplier` (Assassin 2.0; Enchanter ≈0.7 for reference).
+As character-import (§1) nears, move the remaining class-intrinsic values in —
+all "same field, different value per class," all strict-required (the sim is
+incomplete without them):
+
+- **`census_class_id`** (Assassin = 40) — currently hardcoded in `spell/pull.go`;
+  the CA census pull can't fetch another class's arts without it. Moving it makes
+  `builddb`/`spell.AssassinCombatArts` class-parameterized.
+- **`primary_attribute`** (scout = agi; fighter = str, mage = int, priest = wis) —
+  unused today (census files all "+N primary attributes" under the `strength` key,
+  which routes to MainStat regardless), so deferred until the sim branches on it
+  or another class needs a different mainstat curve.
+- **NOT a class field:** `minDamageArtLevel` (57) is **derived**, not intrinsic —
+  abilities re-rank every 13 levels, so it's `maxLevel − 13` (70 − 13 = 57). Replace
+  the hardcoded 57 with that formula keyed off the character's level cap.
+
+Open question for import: the mainstat (AGI) curve and the ~23.4 potency-pool
+innate (§12) were measured for the Assassin — if they turn out class/archetype-
+specific, they move into the class file too.
