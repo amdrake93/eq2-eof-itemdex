@@ -61,7 +61,10 @@ func TotalDPS(sb StatBlock, w Weapon, cas []spell.CombatArt) float64 {
 	return AutoDPS(sb, w) + CADPS(sb, cas)
 }
 
-// TotalDPSDual = dual-wield auto-attack + combat arts, in parallel.
+// TotalDPSDual = dual-wield auto-attack + combat arts, in parallel. Assumes a
+// dual-wield context (the EoF Assassin always dual-wields): it routes through
+// AutoDPSDual, which applies the ×1.33 off-hand delay penalty — so it must NOT
+// model a true single-wield/2H loadout (use TotalDPS for that).
 func TotalDPSDual(sb StatBlock, main, off Weapon, cas []spell.CombatArt) float64 {
 	return AutoDPSDual(sb, main, off) + CADPS(sb, cas)
 }
