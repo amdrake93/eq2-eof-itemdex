@@ -32,7 +32,9 @@ func autoDamageMult(sb StatBlock) float64 {
 }
 
 // AutoWeaponMultiplier is the full multiplier on census-base per-swing damage:
-// main-stat × dps-mod × class auto multiplier. Calibration target for /weaponstat.
+// main-stat × dps-mod × class auto multiplier. It is the model-verification
+// anchor for in-game /weaponstat readings (see TestAutoWeaponMultiplierCalibration),
+// not a production code path — AutoDPS composes these factors itself.
 func AutoWeaponMultiplier(sb StatBlock, classAutoMult float64) float64 {
 	return autoDamageMult(sb) * classAutoMult
 }
@@ -43,8 +45,9 @@ func effDelay(sb StatBlock, w Weapon) float64 {
 }
 
 // AutoDPS models sustained auto-attack damage per second for one weapon. AGI and
-// dps-mod scale per-swing damage (autoDamageMult); the class auto multiplier is
-// applied by the caller (AutoDPSDual/TotalDPS).
+// dps-mod scale per-swing damage (autoDamageMult). It does NOT apply the class
+// auto multiplier — callers MUST (AutoDPSDual/TotalDPS do); a new caller that
+// omits it silently under-reports for any class whose multiplier isn't 1.0.
 func AutoDPS(sb StatBlock, w Weapon) float64 {
 	if w.DelaySecs <= 0 {
 		return 0
