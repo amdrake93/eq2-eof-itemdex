@@ -149,7 +149,7 @@ flurryFactor = 1 + (flurry/100)·3.0                  # gear flurry only (no has
 dpsModFactor = 1 + curveHD(dpsMod)/100               # shared haste/dps-mod curve
 effDelay     = weaponDelay / (1 + curveHD(haste)/100)
 AutoDPS(w)   = (w.avgDmg / effDelay) · (1 + curveMA(MA)/100) · critFactor · flurryFactor · dpsModFactor
-AutoDPSDual  = AutoDPS(main) + AutoDPS(off)           # both weapons swing on own delay, treated equally
+AutoDPSDual  = AutoDPS(main×1.33dly) + AutoDPS(off×1.33dly)   # dual-wield delay penalty on BOTH hands (§ below)
 potPool      = potency + potencyBonus + artPotencyAdd   # potencyBonus: calibrated, ⚠ §12 mystery
 CAeffective  = ((min+max)/2 · (1+potPool/100) · (1+curveMS(mainstat)/100) + abilityMod) · critFactor
 effRecast    = base · (1 − min(0.50, artMod + min(reuse,50)/100))   # shared per-art ceiling
@@ -157,6 +157,18 @@ slot         = baseCast/(1 + castSpeed/100) + 0.5·(1 − min(recoverySpeed,100)
 CADPS        = RotationSim(arts, fight=600s)          # priority by CAeffective / slot
 TotalDPS     = AutoDPSDual + CADPS                    # PARALLEL — CA casting costs zero auto swings
 ```
+
+### Dual-wield delay penalty — measured 2026-06-13
+Equipping an off-hand multiplies **each** weapon's auto-attack delay by **1.33** (`DualWieldDelayPenalty`), applied on top of haste and **independent of it**. Measured on the character sheet across two haste levels (Blood Fire base 6.0s, Shock base 4.0s):
+
+| weapon | haste | sheet delay | implied penalty = sheet·(1+haste)/base |
+|---|---|---|---|
+| Blood Fire | 36% | 5.9 | 1.337 |
+| Shock | 36% | 3.9 | 1.326 |
+| Blood Fire | 60% | 5.0 | 1.333 |
+| Shock | 60% | 3.3 | 1.320 |
+
+Centroid **1.33**, flat across 36%→60% haste — confirming a delay multiplier, not a haste-effectiveness reduction (the penalty didn't shrink as haste rose). Independently corroborated: EQ2 documents a **+33% off-hand delay penalty**. Single-wield is unpenalized (Blood Fire reads 4.4s = 6.0/1.36 with the off-hand removed), so the penalty lives **only in the dual path** (`AutoDPSDual`); a 2H/single-weapon `AutoDPS` never applies it. The Assassin always dual-wields, so it always applies here — scaling the auto term ~0.75× uniformly and shifting the auto-vs-CA balance toward CAs (auto stats — haste/MA/flurry/dps-mod — weigh less; CA stats more). It is uniform on both hands, so it does **not** reorder the off-hand candidate pool. *Supersedes the earlier note that the off-hand's only penalty was the un-tracked weapon-multiplier stat.*
 
 ### Combat-art rotation / recovery
 - **Recovery time** is real and folded into CA pacing: each cast occupies `effCast + effRecovery` of the **CA** timeline before the next cast (weapon DPS amortizes over full delay; CA throughput must amortize over the full slot). Both timing stats come from the character config (§4) — e.g. at 37.4% cast speed and 100% recovery speed, a 0.5s art occupies `0.36s + 0s`. Recovery is a flat per-cast add for CA-vs-CA ranking, but **not** a common factor for CA-vs-auto, because it sizes total CA damage over the fight.
@@ -182,6 +194,7 @@ Linear stats use the standard +1 finite difference — except **cast speed**, wh
 - **Added:** the multi-attack interpolated+floored sample curve; the **fitted** haste/dps-mod equation (form + parameters derived by `cmd/fitcurve` from `data/curve-readings.csv`); `HasteStatCap` = 300; `DPSModCap` = 300; `ReuseCapStat` = 50 (1%/pt to the 50% ceiling); `RecastReductionCeiling` = 0.50 (per-art, shared by AA + reuse); `CARecoveryBaseSecs` = 0.5 (server base, reduced by the character's recovery-speed stat); `StatBlock.CastSpeed` / `StatBlock.RecoverySpeed`; per-art recast multipliers moved from a hardcoded map into config `[art_mods]`.
 - **Changed:** flurry ×5 → **×4**; dps-mod → the **shared fitted diminishing curve** (hard cap 300), not linear; reuse → full-strength 1%/pt (was half-strength).
 - **(2026-06-12 CA-equation revision)** — **Removed:** `AbilityModCapFrac` (0.50 — disproven by tooltip probes). **Added:** the main-stat interpolated sample table (13 readings, cap 1100 → 65%); `StatBlock.MainStat` / `StatBlock.PotencyBonus`; `spell.CombatArt.PotencyAdd` (config `[art_mods]` rider).
+- **(2026-06-13 dual-wield revision)** — **Added:** `DualWieldDelayPenalty` = 1.33 — multiplies each weapon's delay in `AutoDPSDual` only (measured 4 readings + documented +33%; § Dual-wield delay penalty).
 
 ---
 
@@ -322,7 +335,7 @@ The **cross-tier diff** (how weights and picks shift between pre-raid / raid / b
 
 Server-wide mechanics live in `internal/constants` + `internal/model`; per-character values live in the TOML config (§4):
 
-- **Combat constants (see §3.1 for the authoritative, revised mechanics):** crit ×1.30; **flurry ×4**; **haste & dps-mod** share a **fitted diminishing curve** (equation derived from `data/curve-readings.csv`; hard cap **300 stat**, effect at cap = `f(300)`, auto-attack only); **multi-attack** has its own gentler diminishing curve (runs to 3400 with triple overcap); **haste overcap does NOT convert to flurry**; **ability-mod uncapped** (old 50% cap disproven 2026-06-12); **main stat (AGI) multiplies CA damage** via an interpolated 13-reading table, hard cap 1100 → 65% (gear source: census `strength` key = "+N primary attributes"); CA potency pool = displayed potency + calibrated `potency_bonus` (**⚠ §12 mystery**) + per-art `[art_mods]` riders; **reuse 1%/pt capping at 50 stat, sharing each art's 50% recast ceiling with `[art_mods]` reductions**; **cast speed divisor** / **recovery subtractive from 0.5s base** (both from config; cast speed also on gear); potency on CAs only; non-primary attributes still excluded.
+- **Combat constants (see §3.1 for the authoritative, revised mechanics):** crit ×1.30; **flurry ×4**; **haste & dps-mod** share a **fitted diminishing curve** (equation derived from `data/curve-readings.csv`; hard cap **300 stat**, effect at cap = `f(300)`, auto-attack only); **multi-attack** has its own gentler diminishing curve (runs to 3400 with triple overcap); **haste overcap does NOT convert to flurry**; **ability-mod uncapped** (old 50% cap disproven 2026-06-12); **main stat (AGI) multiplies CA damage** via an interpolated 13-reading table, hard cap 1100 → 65% (gear source: census `strength` key = "+N primary attributes"); CA potency pool = displayed potency + calibrated `potency_bonus` (**⚠ §12 mystery**) + per-art `[art_mods]` riders; **reuse 1%/pt capping at 50 stat, sharing each art's 50% recast ceiling with `[art_mods]` reductions**; **cast speed divisor** / **recovery subtractive from 0.5s base** (both from config; cast speed also on gear); **dual-wield delay penalty ×1.33 on both weapons** (auto-attack only, dual path); potency on CAs only; non-primary attributes still excluded.
 - **Resolved (2026-06 curve refit):** cap = **300** confirmed (former-dev statement + readings growing past 238 and flattening by 281); the patch-note `(200 → 125%)` anchor **disproven** by `haste 281 → 124%` (monotonicity); curve re-derived as a fitted equation per §3.1.
 - **Resolved (2026-06 rotation revision):** reuse half-strength coefficient **disproven** (Eviscerate 57.8s @ 3.8 reuse); AA-then-reuse stacking **disproven** (Assassinate pinned at 2m30s with reuse gear → shared 50% ceiling); recovery "halved by AA" guess replaced by the measured recovery-speed stat (100% → "Recovery: Instant"); cast speed measured as a divisor (Head Shot 1.46s @ 37.4%).
 - **Rotation (as implemented):** CADPS = priority sim (fire highest **damage-per-cast-time** off-cooldown art; 600s fight; structural idle, auto fills it — idle % shifts with the measured timing stats; re-derive on the post-change report). Art pool = Expert, **level ≥ 57**, damaging, non-beneficial, highest-rank, **ranged shots included**. Stealth assumed always available (real stealth-grant economy parked — backlog §4).
