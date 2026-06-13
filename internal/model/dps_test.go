@@ -51,3 +51,12 @@ func TestAutoDPSDual(t *testing.T) {
 	require.Less(t, AutoDPSDual(StatBlock{}, main, off),
 		AutoDPS(StatBlock{}, main)+AutoDPS(StatBlock{}, off))
 }
+
+func TestAutoDPSDualNoOffhandUnpenalized(t *testing.T) {
+	main := Weapon{AvgDamage: 100, DelaySecs: 2.0}
+	// No off-hand weapon → not dual-wielding → main is NOT penalized; the result
+	// equals the single-weapon path exactly. (Detected via off.DelaySecs, so an
+	// imported single-wield/shield loadout is correct, not an assumed dual-wield.)
+	approx(t, 50.0, AutoDPSDual(StatBlock{}, main, Weapon{}))
+	approx(t, AutoDPS(StatBlock{}, main), AutoDPSDual(StatBlock{}, main, Weapon{}))
+}
