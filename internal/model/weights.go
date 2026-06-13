@@ -9,20 +9,6 @@ import (
 // epsilon is the finite-difference step (1 stat point/percent).
 const epsilon = 1.0
 
-// castSpeedMarginalSpan is the finite-difference width for castspeed. A +1
-// nudge shifts the rotation's decision lattice and can slide one long-cooldown
-// cast across the fight boundary (±a whole cast's DPS of noise, dwarfing the
-// real ~0.1/pt trend); a wide span averages ~10 lattice shifts (spec §3.1).
-const castSpeedMarginalSpan = 10.0
-
-// reuseMarginalHalfSpan: reuse marginals read a centered ±4 span, clamped to
-// [0, ReuseCapStat] and divided by the actual width. The +1 diff's boundary
-// noise (±one cast's DPS, ~±50 at a converged raid set) now exceeds the
-// genuine ~74/pt marginal since the CA-equation revision tripled per-cast
-// damage; converged baselines sit at 40–48 so a forward span would average
-// the past-cap dead zone into the slope (spec §3.1).
-const reuseMarginalHalfSpan = 4.0
-
 func bump(sb StatBlock, stat string, delta float64) StatBlock {
 	switch stat {
 	case "haste":
@@ -77,20 +63,6 @@ func DeriveWeights(base StatBlock, dps func(StatBlock) float64) map[string]float
 	for _, s := range WeightStats {
 		if curveStats[s] {
 			out[s] = curveStatMarginal(base, s, dps)
-			continue
-		}
-		if s == "reuse" {
-			lo := math.Max(0, getStat(base, s)-reuseMarginalHalfSpan)
-			hi := math.Min(constants.ReuseCapStat, getStat(base, s)+reuseMarginalHalfSpan)
-			if hi <= lo {
-				out[s] = 0
-				continue
-			}
-			out[s] = (dps(setStat(base, s, hi)) - dps(setStat(base, s, lo))) / (hi - lo)
-			continue
-		}
-		if s == "castspeed" {
-			out[s] = (dps(bump(base, s, castSpeedMarginalSpan)) - d0) / castSpeedMarginalSpan
 			continue
 		}
 		out[s] = (dps(bump(base, s, epsilon)) - d0) / epsilon

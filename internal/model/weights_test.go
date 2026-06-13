@@ -91,18 +91,12 @@ func TestDeriveWeightsMultiAttackIntegration(t *testing.T) {
 	require.InDelta(t, 0.4, DeriveWeights(StatBlock{MultiAttack: 34.2}, dps)["multiattack"], 1e-9)
 }
 
-func TestCastSpeedWeightUsesWideSpan(t *testing.T) {
-	// dps deliberately returns a lattice-noise shape: +1 castspeed reads a huge
-	// spurious spike, while the trend over 10 points is gentle. The wide-span
-	// derivation must report the trend, not the spike.
-	dps := func(sb StatBlock) float64 {
-		if sb.CastSpeed > 0 && sb.CastSpeed < 2 {
-			return 100 + 50 // spike a +1 probe would hit
-		}
-		return 100 + sb.CastSpeed // gentle 1/pt trend
-	}
+func TestCastSpeedWeightUsesPlainDiff(t *testing.T) {
+	// castspeed now uses the standard +1 forward diff; fight-length smoothing
+	// removes the cast-boundary quantization that required the old wide span.
+	dps := func(sb StatBlock) float64 { return 100 + sb.CastSpeed } // 1/pt trend
 	w := DeriveWeights(StatBlock{}, dps)
-	require.InDelta(t, 1.0, w["castspeed"], 1e-9) // (110−100)/10, not (150−100)/1
+	require.InDelta(t, 1.0, w["castspeed"], 1e-9) // (101−100)/1
 }
 
 func TestWeightStatsIncludeMainStat(t *testing.T) {
@@ -128,22 +122,12 @@ func TestCurveStatMarginalMainStatAtCap(t *testing.T) {
 	require.InDelta(t, 0.0, curveStatMarginal(StatBlock{MainStat: 1100, RecoverySpeed: 100}, "mainstat", dps), 1e-9)
 }
 
-func TestReuseWeightUsesCenteredClampedSpan(t *testing.T) {
-	// dps returns a lattice-noise shape: a +1 probe from 40 would hit a spike at
-	// 41; the centered span (36..44) must report the gentle trend instead.
-	dps := func(sb StatBlock) float64 {
-		if sb.Reuse > 40.5 && sb.Reuse < 41.5 {
-			return 1000 + 500
-		}
-		return 1000 + 2*sb.Reuse // gentle 2/pt trend
-	}
+func TestReuseWeightUsesPlainDiff(t *testing.T) {
+	// reuse now uses the standard +1 forward diff; fight-length smoothing removes
+	// the cast-boundary quantization that required the old centered ±4 span.
+	dps := func(sb StatBlock) float64 { return 1000 + 2*sb.Reuse } // 2/pt trend
 	w := DeriveWeights(StatBlock{Reuse: 40}, dps)
-	require.InDelta(t, 2.0, w["reuse"], 1e-9) // (1088−1072)/8, not (1500−1080)/1
-
-	// At the 50 cap the span clamps above: [44, 50], width 6 — and at/above cap
-	// entirely, weight is whatever the clamped window says (here trend 2/pt).
-	w = DeriveWeights(StatBlock{Reuse: 48}, dps)
-	require.InDelta(t, 2.0, w["reuse"], 1e-9) // (1100−1088)/(50−44)
+	require.InDelta(t, 2.0, w["reuse"], 1e-9) // (1082−1080)/1
 }
 
 func TestWeightStatsIncludeCastSpeedNotRecovery(t *testing.T) {
