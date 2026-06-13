@@ -1,0 +1,4 @@
+# Class-intrinsic measured constants (uniform schema across classes; see
+# docs/design-plan2.md §4 + backlog §10). Every class file defines the same
+# fields — a missing field is a hard error (the sim is incomplete without it).
+auto_attack_multiplier = 2.0  # innate Assassin auto-attack multiplier (measured /weaponstat 2026-06-13; Enchanter ≈0.7 for reference)

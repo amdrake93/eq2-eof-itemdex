@@ -7,6 +7,7 @@ package charconfig
 
 import (
 	"fmt"
+	"path/filepath"
 
 	"github.com/BurntSushi/toml"
 	"github.com/amdrake93/eq2-eof-itemdex/internal/model"
@@ -134,6 +135,32 @@ func Load(path string) (Config, error) {
 		return Config{}, fmt.Errorf("%s: config must define at least one context", path)
 	}
 	return cfg, nil
+}
+
+// ClassData holds class-intrinsic constants (docs/design-plan2.md §4): values
+// identical for every character of a class but differing between classes.
+// Uniform schema — every classes/<class>.toml defines the same fields.
+type ClassData struct {
+	AutoAttackMultiplier float64 `toml:"auto_attack_multiplier"`
+}
+
+// LoadClass reads classes/<class>.toml. Strict: unknown keys and a missing or
+// non-positive auto_attack_multiplier are errors — the sim is incomplete
+// without these class constants.
+func LoadClass(dir, class string) (ClassData, error) {
+	path := filepath.Join(dir, class+".toml")
+	var cd ClassData
+	md, err := toml.DecodeFile(path, &cd)
+	if err != nil {
+		return ClassData{}, err
+	}
+	if undec := md.Undecoded(); len(undec) > 0 {
+		return ClassData{}, fmt.Errorf("%s: unknown class keys: %v", path, undec)
+	}
+	if cd.AutoAttackMultiplier <= 0 {
+		return ClassData{}, fmt.Errorf("%s: auto_attack_multiplier must be > 0 (got %v)", path, cd.AutoAttackMultiplier)
+	}
+	return cd, nil
 }
 
 // ApplyArtMods returns a copy of the art pool with each config art mod applied

@@ -197,3 +197,31 @@ multiattack = 10
 `))
 	require.ErrorContains(t, err, "potency_add")
 }
+
+// --- Task 1: LoadClass ---
+
+func TestLoadClassAssassin(t *testing.T) {
+	cd, err := LoadClass("../../classes", "assassin")
+	require.NoError(t, err)
+	require.InDelta(t, 2.0, cd.AutoAttackMultiplier, 1e-9)
+}
+
+func TestLoadClassMissingFile(t *testing.T) {
+	_, err := LoadClass("../../classes", "wizard")
+	require.Error(t, err)
+}
+
+func TestLoadClassRejectsMissingMultiplier(t *testing.T) {
+	dir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "x.toml"), []byte("# empty\n"), 0o644))
+	_, err := LoadClass(dir, "x")
+	require.ErrorContains(t, err, "auto_attack_multiplier")
+}
+
+func TestLoadClassRejectsUnknownKey(t *testing.T) {
+	dir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "x.toml"),
+		[]byte("auto_attack_multiplier = 2.0\nbogus = 1\n"), 0o644))
+	_, err := LoadClass(dir, "x")
+	require.ErrorContains(t, err, "bogus")
+}
