@@ -170,7 +170,15 @@ slightly different loadout than the report. Cosmetic for weight *ordering*, but
 align the query (or share the loadout-loading code with cmd/bis) when next
 touching cmd/weights. (Surfaced by the 2026-06 curve-refit final review.)
 
-## 8. Primary-attribute CA damage scaling (spec assumption overturned 2026-06-12)
+## 8. Primary-attribute CA damage scaling — RESOLVED 2026-06-12 except the ⚠ mystery (spec §3.1/§12)
+
+Measured and spec'd: AGI multiplies CA damage via a 13-reading interpolated
+curve (cap 1100 -> 65%); potency pool = displayed + per-art AA riders + a
+calibrated hidden bonus; ability-mod cap disproven. REMAINING: the ~23.4-point
+naked/AA-less hidden potency bonus (the ⚠ §12 mystery — hunt experiments listed
+there) and the auto-attack question. Original discovery notes below.
+
+### Original discovery notes (2026-06-12)
 
 Tooltip calibration (Eviscerate V Expert, potency 57.7%, ability mod 738) shows
 combat-art tooltips carry a base multiplier of ~2.99 where potency alone predicts

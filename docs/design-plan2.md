@@ -31,9 +31,9 @@ Plan 1's `census.TypeInfo` captured `skilltype` (armor) but **not** the weapon `
 
 ## 3. The DPS Model
 
-`TotalDPS = AutoDPS + CADPS`, computed in **parallel** — auto-attack and combat-art casting run on independent timelines, so casting does **not** displace auto swings (a CA's cast+recovery only paces the *CA* side; see §3.1). Locked combat values: crit ×1.30; **flurry ×4** (a flurry proc does +100%–500%, averaging +300% = ×4); **ability-mod cap = 50% of the potency-adjusted CA base**; reuse converts at **1%/point capping at 50 stat**, sharing each art's **50% recast-reduction ceiling** with AA reductions (§3.1); **potency applies to CAs only**; `critbonus` ignored. Haste, multi-attack, and dps-mod are **non-linear** (§3.1) — *not* `1 + stat/100`. Haste & dps-mod share one **fitted** diminishing curve (hard cap **300** stat; the old `200 → 125%` anchor is disproven — see §3.1); multi-attack has its own gentler curve (runs to 3400 with triple overcap). Stat-conversion mechanics, the AA cooldown/recovery effects, and the curve table are in **§3.1** (the authoritative stat-mechanics block, revised from the Varsoon playtest session).
+`TotalDPS = AutoDPS + CADPS`, computed in **parallel** — auto-attack and combat-art casting run on independent timelines, so casting does **not** displace auto swings (a CA's cast+recovery only paces the *CA* side; see §3.1). Locked combat values: crit ×1.30; **flurry ×4** (a flurry proc does +100%–500%, averaging +300% = ×4); **ability-mod applies in full — the old 50% cap is disproven** (§3.1); reuse converts at **1%/point capping at 50 stat**, sharing each art's **50% recast-reduction ceiling** with AA reductions (§3.1); **potency applies to CAs only**, pooled with a **calibrated hidden bonus (⚠ open mystery, §12)**; **main stat (AGI) multiplies all CA damage** via its own capped curve (§3.1); `critbonus` ignored. Haste, multi-attack, and dps-mod are **non-linear** (§3.1) — *not* `1 + stat/100`. Haste & dps-mod share one **fitted** diminishing curve (hard cap **300** stat; the old `200 → 125%` anchor is disproven — see §3.1); multi-attack has its own gentler curve (runs to 3400 with triple overcap). Stat-conversion mechanics, the AA cooldown/recovery effects, and the curve table are in **§3.1** (the authoritative stat-mechanics block, revised from the Varsoon playtest session).
 
-**Why the Assassin CA query is integral (not just additive damage):** the CA term needs each Combat Art's *base* damage to model potency and ability-mod correctly — potency scales the base `×(1+potency)`, and ability-mod caps at **50% of that potency-adjusted base**. Without the per-CA base damages, neither term is computable. So `internal/spell` pulls the Assassin's CAs (Expert tier, level ≤70), regex-parses damage from `effect_list`, and applies the TLE translations (§ Assumptions).
+**Why the Assassin CA query is integral (not just additive damage):** the CA term needs each Combat Art's *base* damage to model the multipliers correctly — the potency pool and the main-stat curve scale the base, and ability-mod adds flat on top. Without the per-CA base damages, neither term is computable. So `internal/spell` pulls the Assassin's CAs (Expert tier, level ≤70), regex-parses damage from `effect_list`, and applies the TLE translations (§ Assumptions).
 
 **Derive-don't-declare:** for each baseline, compute the marginal DPS per stat (`∂TotalDPS/∂stat`) at a realistically-geared baseline → the **weights**; iterate (equip current best → recompute near caps → re-rank) to convergence so saturation/caps self-correct. Score each Assassin-usable item `= Σ(weight × itemStat)`; rank per slot. **No stat is pre-judged valuable or dead — the weights are computed outputs.**
 
@@ -113,9 +113,22 @@ The tool fits each form three ways — **haste-only, dpsmod-only, and joint** �
 
 ### Linear / direct stats
 - **Crit chance** — linear, `crit% = stat`. `critFactor = 1 + (crit%/100)·(1.30−1)`.
-- **Potency** — linear, `potency% = stat`; scales CA base `×(1 + potency/100)`.
+- **Potency** — linear, `potency% = stat`; enters the CA potency pool (below).
 - **Flurry** — **gear % only** (no haste contribution); `flurryFactor = 1 + (flurry%/100)·(4−1)`.
-- **Ability-mod** — flat add to each CA, capped at `0.50 × CA_maxDamage × (1+potency/100)` (per-CA; potency floats the cap up, so it binds mainly on small filler arts). At a fully-geared baseline the *stacked* ability-mod (~700, since every item carries it) caps most small/frequent arts, so its marginal weight reads small even though the big nukes still have headroom — that aggregate, not any one item, is the saturator.
+- **Ability-mod** — flat add to each CA, **in full: the old 50% cap is disproven** (measured 2026-06-12: Quick Strike VI, base 215–359, tooltips a flat add of 818 at ability-mod 738 — the old rule would have capped it at ~283). A small measured per-art enhancer (`add ≈ AM × (1 + base_max/3400)`, ≤1% of tooltip on ranking) is documented but NOT modeled.
+
+### Combat-art damage equation — measured 2026-06-12 (tooltip calibration, 4 gear/AA states × 3 probe arts)
+
+```
+CAdamage = base × (1 + (potency + potencyBonus + artPotencyAdd)/100)
+                × (1 + mainStatCurve(mainstat)/100)
+         + abilityMod
+```
+
+- **Main stat (AGI for scouts)** multiplies all CA damage via its own curve — **interpolated sample table from 13 committed live readings** (the curve flattens below ~600: readings at 73→6.08% and 156→15.01% sit under the high-range trend, so no global equation is assumed — `curveInterp` over the table, the multi-attack treatment). **Hard cap 1100 → 65% (user-confirmed).** High range (625–1100) happens to fit a quadratic peaking at ~1142 — the third "peak just past the cap" dev signature — recorded as commentary only. The AGI tooltip displays the conversion directly (*"Agility increases your damage by X%"*), so readings are cheap; the *"your damage"* wording may include auto-attack — **unverified, auto-attack NOT scaled** pending a combat-log test (§12).
+- **Main stat is a gear stat**: census files "+N to primary attributes" under the `strength` key (3,248 items) — point-for-point AGI for a scout. The ~70 explicit single-attribute items (`agility`/`wisdom`/`intelligence`, mostly avatar mythicals) are data-suspicious and excluded from the mainstat mapping pending the data-fixing pass.
+- **The potency pool**: displayed potency + per-character `potencyBonus` (calibrated; see the ⚠ mystery below) + per-art AA riders (`[art_mods]` `potency_add` — e.g. the cooldown AA grants Assassinate/Mortal Blade +15 potency each, per its own text).
+- **⚠ OPEN MYSTERY (flagged at user insistence — see §12 and backlog):** a naked, AA-less, buff-less level-70 still swings CAs at `(1 + ~23.4/100) × (1 + agi%)` — **~23.4 hidden points in the potency pool that survive removing everything removable**. Measured across four states (23.4 no-AA naked / 24.6 naked / 24.4 full gear / 25.6 partial-gear outlier, suspected UI lag). Level-vs-art-level scaling is ELIMINATED (probe arts at native levels 57/63/66 share one multiplier to ±0.1%). Surviving hypotheses: combat-skill scaling at the 350 cap, or a flat level-70 innate (70/3 ≈ 23.3 — noted, not assumed). Until named, it is a calibrated per-character config value, prominently flagged in the report output. **It is not allowed to become furniture.**
 
 ### Reuse (combat-art recast %) — measured 2026-06, replaces the halved-coefficient guess
 - **Conversion is full-strength: 1 point of reuse = 1% recast reduction, capping at 50 stat** (= the 50% ceiling). Measured: Eviscerate 60s base → **57.8s tooltip at 3.8 reuse** — the half-strength rule (`ReuseHalveCoeff = 0.50`, never directly verified) would have shown 58.9s; disproven and removed.
@@ -137,7 +150,8 @@ dpsModFactor = 1 + curveHD(dpsMod)/100               # shared haste/dps-mod curv
 effDelay     = weaponDelay / (1 + curveHD(haste)/100)
 AutoDPS(w)   = (w.avgDmg / effDelay) · (1 + curveMA(MA)/100) · critFactor · flurryFactor · dpsModFactor
 AutoDPSDual  = AutoDPS(main) + AutoDPS(off)           # both weapons swing on own delay, treated equally
-CAeffective  = ((min+max)/2 · (1+potency/100) + min(abilityMod, 0.5·max·(1+potency/100))) · critFactor
+potPool      = potency + potencyBonus + artPotencyAdd   # potencyBonus: calibrated, ⚠ §12 mystery
+CAeffective  = ((min+max)/2 · (1+potPool/100) · (1+curveMS(mainstat)/100) + abilityMod) · critFactor
 effRecast    = base · (1 − min(0.50, artMod + min(reuse,50)/100))   # shared per-art ceiling
 slot         = baseCast/(1 + castSpeed/100) + 0.5·(1 − min(recoverySpeed,100)/100)
 CADPS        = RotationSim(arts, fight=600s)          # priority by CAeffective / slot
@@ -157,12 +171,15 @@ TotalDPS     = AutoDPSDual + CADPS                    # PARALLEL — CA casting 
 
 **Haste/dps-mod** (fitted equation — no sample brackets) generalize the same trick to anywhere on the curve: the marginal is the DPS slope between the fitted curve's **adjacent integer-effect crossings** bracketing the baseline — endpoints land exactly on whole-percent effects, so the floor contributes no noise. Marginals clamp to 0 at the 300 cap, and are legitimately 0 in the **dead zone** past the last integer crossing (≈289, where `f` can no longer reach the next whole percent before the cap) — the floored in-game effect genuinely cannot improve there.
 
+**Main stat** (sample table, like multi-attack) brackets between its table samples and clamps to 0 at the 1100 cap.
+
 Linear stats use the standard +1 finite difference — except **cast speed**, which uses a **wide +10 difference** (slope over `[v, v+10]/10`). Diagnosed 2026-06: a +1 castspeed nudge shifts the rotation's decision lattice and can slide one long-cooldown cast across the 600s fight boundary, so the +1 diff reads ±(one cast's DPS) of quantization noise (observed ±10 at a converged raid set) while the genuine trend is ~0.05–0.5/pt — noise dwarfs signal. The wide bracket averages ~10 lattice shifts; same artifact family as the old reuse boundary drift (reuse keeps the +1 diff: its genuine marginal, ~20/pt under the measured rules, dominates its noise).
 
 ### Removed / changed constants
 - **Removed:** `HasteCapPct` (100), `HasteToFlurry` (10:1), `DPSModEffectAtCap` (1.25), the haste→flurry term, the linear dps-mod form, (2026-06 refit) the piecewise haste/dps-mod sample table with its `(200,125)` anchor, and (2026-06 rotation revision) `ReuseHalveCoeff` (0.50) / `ReuseHalvesAt` (100) / `CARecoverySecs` (0.25) — all three disproven by live tooltip measurements.
 - **Added:** the multi-attack interpolated+floored sample curve; the **fitted** haste/dps-mod equation (form + parameters derived by `cmd/fitcurve` from `data/curve-readings.csv`); `HasteStatCap` = 300; `DPSModCap` = 300; `ReuseCapStat` = 50 (1%/pt to the 50% ceiling); `RecastReductionCeiling` = 0.50 (per-art, shared by AA + reuse); `CARecoveryBaseSecs` = 0.5 (server base, reduced by the character's recovery-speed stat); `StatBlock.CastSpeed` / `StatBlock.RecoverySpeed`; per-art recast multipliers moved from a hardcoded map into config `[art_mods]`.
 - **Changed:** flurry ×5 → **×4**; dps-mod → the **shared fitted diminishing curve** (hard cap 300), not linear; reuse → full-strength 1%/pt (was half-strength).
+- **(2026-06-12 CA-equation revision)** — **Removed:** `AbilityModCapFrac` (0.50 — disproven by tooltip probes). **Added:** the main-stat interpolated sample table (13 readings, cap 1100 → 65%); `StatBlock.MainStat` / `StatBlock.PotencyBonus`; `spell.CombatArt.PotencyAdd` (config `[art_mods]` rider).
 
 ---
 
@@ -179,11 +196,16 @@ art_tier = "expert"
 [stats]                      # character-permanent: AA + innate bonuses (NOT gear, NOT buffs)
 cast_speed     = 37.4
 recovery_speed = 100
+mainstat       = 156         # innate + AA agility (naked-with-AAs reading)
+potency        = 5           # AA potency (displayed in the character window)
+potency_bonus  = 24.6        # calibrated hidden potency-pool points (⚠ §12 open mystery; naked-tooltip procedure in §3.1)
 
-[art_mods."Assassinate"]     # per-art AA effects; counts against the 50% recast ceiling
-recast_mult = 0.5
+[art_mods."Assassinate"]     # per-art AA effects
+recast_mult = 0.5            # counts against the 50% recast ceiling
+potency_add = 15             # the same AA's potency rider, per its own text
 [art_mods."Mortal Blade"]
 recast_mult = 0.5
+potency_add = 15
 
 [contexts.solo]              # each context = the FULL buff package on you in that situation
 multiattack = 34.2           # Villainy (maintained self-buff — listed in every context it's up)
@@ -298,11 +320,11 @@ The **cross-tier diff** (how weights and picks shift between pre-raid / raid / b
 
 Server-wide mechanics live in `internal/constants` + `internal/model`; per-character values live in the TOML config (§4):
 
-- **Combat constants (see §3.1 for the authoritative, revised mechanics):** crit ×1.30; **flurry ×4**; **haste & dps-mod** share a **fitted diminishing curve** (equation derived from `data/curve-readings.csv`; hard cap **300 stat**, effect at cap = `f(300)`, auto-attack only); **multi-attack** has its own gentler diminishing curve (runs to 3400 with triple overcap); **haste overcap does NOT convert to flurry**; ability-mod cap = 50% of potency-adjusted CA base; **reuse 1%/pt capping at 50 stat, sharing each art's 50% recast ceiling with `[art_mods]` reductions**; **cast speed divisor** / **recovery subtractive from 0.5s base** (both from config; cast speed also on gear); potency on CAs only; attributes excluded (track itemlevel).
+- **Combat constants (see §3.1 for the authoritative, revised mechanics):** crit ×1.30; **flurry ×4**; **haste & dps-mod** share a **fitted diminishing curve** (equation derived from `data/curve-readings.csv`; hard cap **300 stat**, effect at cap = `f(300)`, auto-attack only); **multi-attack** has its own gentler diminishing curve (runs to 3400 with triple overcap); **haste overcap does NOT convert to flurry**; **ability-mod uncapped** (old 50% cap disproven 2026-06-12); **main stat (AGI) multiplies CA damage** via an interpolated 13-reading table, hard cap 1100 → 65% (gear source: census `strength` key = "+N primary attributes"); CA potency pool = displayed potency + calibrated `potency_bonus` (**⚠ §12 mystery**) + per-art `[art_mods]` riders; **reuse 1%/pt capping at 50 stat, sharing each art's 50% recast ceiling with `[art_mods]` reductions**; **cast speed divisor** / **recovery subtractive from 0.5s base** (both from config; cast speed also on gear); potency on CAs only; non-primary attributes still excluded.
 - **Resolved (2026-06 curve refit):** cap = **300** confirmed (former-dev statement + readings growing past 238 and flattening by 281); the patch-note `(200 → 125%)` anchor **disproven** by `haste 281 → 124%` (monotonicity); curve re-derived as a fitted equation per §3.1.
 - **Resolved (2026-06 rotation revision):** reuse half-strength coefficient **disproven** (Eviscerate 57.8s @ 3.8 reuse); AA-then-reuse stacking **disproven** (Assassinate pinned at 2m30s with reuse gear → shared 50% ceiling); recovery "halved by AA" guess replaced by the measured recovery-speed stat (100% → "Recovery: Instant"); cast speed measured as a divisor (Head Shot 1.46s @ 37.4%).
 - **Rotation (as implemented):** CADPS = priority sim (fire highest **damage-per-cast-time** off-cooldown art; 600s fight; structural idle, auto fills it — idle % shifts with the measured timing stats; re-derive on the post-change report). Art pool = Expert, **level ≥ 57**, damaging, non-beneficial, highest-rank, **ranged shots included**. Stealth assumed always available (real stealth-grant economy parked — backlog §4).
-- **TLE translations:** `doubleattackchance` → **Multi-Attack** (legacy key; displayname already "Multi Attack"); `spelltimecastpct` → **Cast Speed** (gear stat); `critbonus` → **ignored entirely**; Fervor → does not exist.
+- **TLE translations:** `doubleattackchance` → **Multi-Attack** (legacy key; displayname already "Multi Attack"); `spelltimecastpct` → **Cast Speed** (gear stat); `strength` → **Main Stat** ("+N primary attributes" — AGI point-for-point for a scout; explicit `agility`/`wisdom`/`intelligence` keys data-suspicious, excluded pending fixing); `critbonus` → **ignored entirely**; Fervor → does not exist.
 - **CA tier:** Expert (classic "Adept III" — the farmable raiding baseline); config `art_tier` field reserved.
 - **Character/contexts:** all per-character values (AA stats, art mods, buff packages incl. raid group DPS-mod **114.2**) live in `characters/<name>.toml` — config is data with in-file provenance comments, refined without spec changes.
 
@@ -310,7 +332,10 @@ Server-wide mechanics live in `internal/constants` + `internal/model`; per-chara
 
 ## 12. Open / To-Confirm (non-blocking)
 
+- **⚠⚠ THE POTENCY-POOL MYSTERY — flagged for active hunting, not acceptance.** ~23.4 hidden potency-pool points on a naked, AA-less, buff-less level-70 (§3.1 measurement ledger). Eliminated: gear, AAs, buffs, level-vs-art-level scaling. Surviving suspects: combat-skill scaling at the 350 cap; a flat level-70 innate. **Kill experiments:** (a) a different-level character (alt or guildmate) runs the naked five-number protocol — if the constant tracks level (or skill cap = 5×level), it's named; (b) any skill-debuff opportunity. Mentoring is confounded (its own penalties). Until named, it lives as calibrated config (`potency_bonus`) and is printed in every report's assumptions. **Do not let this become furniture.**
 - Config numeric values (buff packages, AA stats) — config is data; refinement is an edit + re-run. The raid crit estimate (31) still conflates AA crit with buff crit — split into `[stats]` vs `[contexts.raid]` when measured.
+- **Main-stat curve gaps**: no readings in 156–625 (curve shape between the flat low range and the quadratic-like high range is interpolated); a deliberately overcapped reading (AGI > 1100) to verify the clamp; whether the AGI multiplier also applies to **auto-attack** (*"increases your damage"* wording — needs a combat-log session; auto NOT scaled until verified).
+- **Per-art potency riders unverified numerically**: the cooldown AA's "+15% potency to Assassinate/Mortal Blade" is modeled from its text; the regeared Mortal Blade tooltip read (~13.8k max predicted vs ~12.8k without the rider) confirms or refutes.
 - **Cast-speed cap unknown** — measured as a divisor at 37.4%; un-sampled above. Modeled uncapped; grab tooltip readings if AA respec/gear pushes it higher (the haste-curve lesson: don't trust received caps).
 - **Haste/dps-mod curve — remaining gaps** (cap = 300 and the refit itself are resolved, §3.1): readings in 153–238 and 281–300, the effect at exactly 300, and one overcapped pair to verify the clamp. Append to `data/curve-readings.csv` + re-run `cmd/fitcurve`; gatherable any time via buff/CD-stacking. Also keep watching the haste-vs-dpsmod separate-fit residuals as data lands — split the shared curve if they diverge.
 - **Reuse weight under the measured rules** — now full-strength per point but blind to ceiling-filled arts (Assassinate/Mortal Blade); the old negative converged-weight artifact (boundary drift on the AA-halved arts) is predicted to shrink/vanish — verify on the post-change report.
