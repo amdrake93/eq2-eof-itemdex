@@ -32,6 +32,43 @@ func effRecast(sb StatBlock, ca spell.CombatArt) float64 {
 	return ca.RecastSecs * (1 - math.Min(constants.RecastReductionCeiling, reduction))
 }
 
+// hasTermination reports whether the art carries an on-termination detonate
+// component — the switch that makes a DoT held to full duration rather than
+// clipped on cooldown.
+func hasTermination(ca spell.CombatArt) bool {
+	for _, c := range ca.Components {
+		if c.Kind == spell.Termination {
+			return true
+		}
+	}
+	return false
+}
+
+// artCadence is the scheduling interval between casts. A termination art is HELD
+// to its full duration so the detonate lands (max with effRecast — a long
+// cooldown still gates it); every other art (including clipped DoTs) recasts on
+// its plain effRecast.
+func artCadence(sb StatBlock, ca spell.CombatArt) float64 {
+	er := effRecast(sb, ca)
+	if hasTermination(ca) {
+		return math.Max(er, ca.DurationSecs)
+	}
+	return er
+}
+
+// dotTicks is the number of applications a DoT component delivers inside an
+// active window: one instant tick (if present) plus one per completed interval.
+func dotTicks(c spell.Component, windowSecs float64) float64 {
+	if c.IntervalSecs <= 0 {
+		return 0
+	}
+	ticks := math.Floor(windowSecs / c.IntervalSecs)
+	if c.HasInstant {
+		ticks++
+	}
+	return ticks
+}
+
 // slotSecs is the CA-timeline slot one cast occupies: cast time divided by the
 // cast-speed stat (measured divisor: Head Shot 2.0s → 1.46s @ 37.4%), plus the
 // 0.5s base recovery shrunk subtractively by recovery speed (100 → instant).

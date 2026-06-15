@@ -154,3 +154,34 @@ func TestCumCAAt(t *testing.T) {
 	require.InDelta(t, 200.0, cumCAAt(starts, cum, 300), 1e-9)
 	require.InDelta(t, 300.0, cumCAAt(starts, cum, 1000), 1e-9)
 }
+
+func TestArtCadence_HoldOnTermination(t *testing.T) {
+	dot := spell.CombatArt{
+		Name: "Bleed Art", RecastSecs: 10, DurationSecs: 24,
+		Components: []spell.Component{
+			{Kind: spell.DoT, MinDamage: 70, MaxDamage: 117, IntervalSecs: 4, HasInstant: true},
+		},
+	}
+	// No termination → clip → cadence is the plain effRecast (10s, no reuse).
+	require.InDelta(t, 10.0, artCadence(StatBlock{}, dot), 1e-9)
+
+	term := dot
+	term.Components = append([]spell.Component{{Kind: spell.Termination, MinDamage: 300, MaxDamage: 500}}, dot.Components...)
+	// Has termination → hold → cadence = max(effRecast 10, duration 24) = 24.
+	require.InDelta(t, 24.0, artCadence(StatBlock{}, term), 1e-9)
+	// Reuse can pull effRecast below duration, but a held art still waits for termination.
+	require.InDelta(t, 24.0, artCadence(StatBlock{Reuse: 50}, term), 1e-9) // effRecast 5 < 24 → 24
+}
+
+func TestDotTicks(t *testing.T) {
+	// instant + every 4s over a 24s window → 1 + floor(24/4) = 7.
+	c := spell.Component{Kind: spell.DoT, IntervalSecs: 4, HasInstant: true}
+	require.InDelta(t, 7.0, dotTicks(c, 24), 1e-9)
+	// periodic-only (no instant) over 12s / 4s → 3.
+	c2 := spell.Component{Kind: spell.DoT, IntervalSecs: 4, HasInstant: false}
+	require.InDelta(t, 3.0, dotTicks(c2, 12), 1e-9)
+	// clipped to a 5s window: instant + floor(5/4)=1 → 2.
+	require.InDelta(t, 2.0, dotTicks(c, 5), 1e-9)
+	// zero interval guards against div-by-zero.
+	require.InDelta(t, 0.0, dotTicks(spell.Component{Kind: spell.DoT}, 24), 1e-9)
+}
