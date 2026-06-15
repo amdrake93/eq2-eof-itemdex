@@ -280,3 +280,22 @@ func TestGushingWoundCalibration(t *testing.T) {
 	require.InDelta(t, want, CAEffectiveDamage(sb, gw), 0.01)
 	require.InDelta(t, 30.0, artCadence(sb, gw), 1e-9) // max(effRecast 30, duration 24)
 }
+
+func TestDeathMarkCalibration(t *testing.T) {
+	// Trigger art with no DirectHit: each of 5 triggers takes HALF the ability mod
+	// (k≈0.5 measured) on top of base×scaling. No termination → recast on effRecast.
+	dm := spell.CombatArt{
+		Name: "Death Mark IV", RecastSecs: 30, DurationSecs: 72,
+		Components: []spell.Component{
+			{Kind: spell.TriggerProc, DamageType: "piercing", MinDamage: 329, MaxDamage: 545, Triggers: 5, TriggeredSpell: "Agonizing Pain"},
+		},
+	}
+	// Half-gear state: pool 33.9+24.6, AGI via MainStat 625 (~51.7%), abmod 376, crit 0.
+	sb := StatBlock{Potency: 33.9, PotencyBonus: 24.6, MainStat: 625, AbilityMod: 376}
+	scaling := (1 + (33.9+24.6)/100) * (1 + MainStatEffect(625)/100)
+	perTrigger := (329+545)/2.0*scaling + 0.5*376 // ½ abmod per trigger
+	want := perTrigger * 5
+
+	require.InDelta(t, want, CAEffectiveDamage(sb, dm), 0.01)
+	require.InDelta(t, 30.0, artCadence(sb, dm), 1e-9) // no termination → plain effRecast
+}
