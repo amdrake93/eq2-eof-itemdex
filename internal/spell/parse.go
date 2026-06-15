@@ -66,19 +66,36 @@ func parseDamageLine(desc string) (damageLine, bool) {
 	return dl, true
 }
 
-var terminationRe = regexp.MustCompile(`^Applies (.+?) on termination`)
+var (
+	terminationRe = regexp.MustCompile(`^Applies (.+?) on termination`)
+	castSpellRe   = regexp.MustCompile(`(?:may|will) cast (.+?) on target`)
+	perMinuteRe   = regexp.MustCompile(`Triggers about ([\d.]+) times per minute`)
+	triggersRe    = regexp.MustCompile(`Grants a total of (\d+) trigger`)
+)
 
 // ParseComponents extracts the typed damage components of an ability from its
 // effect_list. durationSecs is the art's effect duration (census
 // duration.max_sec_tenths/10). Parsing only — the sim consumes Components in
 // Increment B. Indented damage lines are resolved against their parent line
-// (the entry at indentation-1): a child of an "Applies <Spell> on termination"
-// line is the termination/detonate damage.
+// (the entry at indentation-1): a child of "Applies <Spell> on termination" is a
+// Termination component; a child of a "may/will cast <Spell>" line is a proc
+// (RateProc if it carries "Triggers about N times per minute", else TriggerProc).
+// A "Grants a total of N triggers" line sets the trigger count of the proc
+// component at the same indentation.
 func ParseComponents(effects []Effect, durationSecs float64) []Component {
 	var comps []Component
 	parent := map[int]string{} // indentation -> last description seen at that level
+	procIdx := map[int]int{}   // indentation -> index in comps of a proc component at that level
 	for _, e := range effects {
 		parent[e.Indentation] = e.Description
+
+		if m := triggersRe.FindStringSubmatch(e.Description); m != nil {
+			if idx, ok := procIdx[e.Indentation]; ok {
+				comps[idx].Triggers, _ = strconv.Atoi(m[1])
+			}
+			continue
+		}
+
 		dl, ok := parseDamageLine(e.Description)
 		if !ok {
 			continue
@@ -87,12 +104,43 @@ func ParseComponents(effects []Effect, durationSecs float64) []Component {
 			comps = append(comps, standaloneComponent(dl))
 			continue
 		}
+
 		pd := parent[e.Indentation-1]
-		if terminationRe.MatchString(pd) {
+		switch {
+		case terminationRe.MatchString(pd):
 			comps = append(comps, terminationComponent(dl, pd))
+		case castSpellRe.MatchString(pd) && perMinuteRe.MatchString(pd):
+			comps = append(comps, procComponent(dl, pd, RateProc))
+			procIdx[e.Indentation] = len(comps) - 1
+		case castSpellRe.MatchString(pd):
+			comps = append(comps, procComponent(dl, pd, TriggerProc))
+			procIdx[e.Indentation] = len(comps) - 1
 		}
 	}
 	return comps
+}
+
+func procComponent(dl damageLine, parentDesc string, kind ComponentKind) Component {
+	c := Component{
+		Kind:       kind,
+		DamageType: dl.dmgType,
+		MinDamage:  dl.min,
+		MaxDamage:  dl.max,
+		AoE:        dl.aoe,
+	}
+	if dl.periodic { // a proc that casts a DoT (e.g. Hemotoxin)
+		c.IntervalSecs = dl.intervalSecs
+		c.HasInstant = dl.hasInstant
+	}
+	if m := castSpellRe.FindStringSubmatch(parentDesc); m != nil {
+		c.TriggeredSpell = m[1]
+	}
+	if kind == RateProc {
+		if m := perMinuteRe.FindStringSubmatch(parentDesc); m != nil {
+			c.PerMinute = toFloat(m[1])
+		}
+	}
+	return c
 }
 
 func terminationComponent(dl damageLine, parentDesc string) Component {

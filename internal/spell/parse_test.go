@@ -95,3 +95,44 @@ func TestParseComponents_Termination(t *testing.T) {
 	require.Equal(t, DoT, comps[2].Kind)
 	require.True(t, comps[2].HasInstant)
 }
+
+func TestParseComponents_Procs(t *testing.T) {
+	// Death Mark IV: TriggerProc — damage + count at ind 2; outer "Grants 1
+	// trigger" at ind 1 (for Marked, which has no inlined damage) must be ignored.
+	deathMark := []Effect{
+		{Description: "When damaged with a melee weapon this spell has a 5% chance to cast Marked on target.  Lasts for 36.0 seconds.", Indentation: 0},
+		{Description: "When damaged with a melee weapon this spell will cast Agonizing Pain on target.", Indentation: 1},
+		{Description: "Inflicts 295 - 492 piercing damage on target", Indentation: 2},
+		{Description: "Grants a total of 5 triggers of the spell.", Indentation: 2},
+		{Description: "Grants a total of 1 trigger of the spell.", Indentation: 1},
+	}
+	comps := ParseComponents(deathMark, 72.0)
+	require.Len(t, comps, 1)
+	require.Equal(t, TriggerProc, comps[0].Kind)
+	require.Equal(t, "Agonizing Pain", comps[0].TriggeredSpell)
+	require.Equal(t, 492.0, comps[0].MaxDamage)
+	require.Equal(t, 5, comps[0].Triggers)
+
+	// Whirling Blades IV: RateProc — a hit cast ~2/min.
+	whirling := []Effect{
+		{Description: "On a melee hit this spell may cast Swipe on target of attack.  Triggers about 2.0 times per minute.", Indentation: 0},
+		{Description: "Inflicts 252 - 421 melee damage on target", Indentation: 1},
+	}
+	comps = ParseComponents(whirling, 0)
+	require.Len(t, comps, 1)
+	require.Equal(t, RateProc, comps[0].Kind)
+	require.Equal(t, "Swipe", comps[0].TriggeredSpell)
+	require.Equal(t, 2.0, comps[0].PerMinute)
+
+	// Apply Poison: RateProc that casts a DoT (interval/instant captured).
+	applyPoison := []Effect{
+		{Description: "On a melee hit this spell may cast Assassin's Hemotoxin on target of attack.  Lasts for 24.0 seconds.  Triggers about 3.0 times per minute.", Indentation: 0},
+		{Description: "Inflicts 217 poison damage on target instantly and every 4 seconds.", Indentation: 1},
+	}
+	comps = ParseComponents(applyPoison, 0)
+	require.Len(t, comps, 1)
+	require.Equal(t, RateProc, comps[0].Kind)
+	require.Equal(t, 3.0, comps[0].PerMinute)
+	require.Equal(t, 4.0, comps[0].IntervalSecs)
+	require.True(t, comps[0].HasInstant)
+}
