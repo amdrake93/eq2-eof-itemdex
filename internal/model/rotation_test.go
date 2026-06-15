@@ -239,3 +239,19 @@ func TestCAEffectiveDamage_PerComponent(t *testing.T) {
 	legacy := spell.CombatArt{MinDamage: 800, MaxDamage: 1200}
 	require.InDelta(t, 1100.0, CAEffectiveDamage(sb, legacy), 0.01)
 }
+
+func TestRotationHoldsTerminationArt(t *testing.T) {
+	// A termination DoT with effRecast 10 but duration 24 must recast on 24 (held),
+	// not 10. Over a 48s fight it fires at t=0 and t=24 → exactly 2 casts.
+	term := spell.CombatArt{
+		Name: "Held", RecastSecs: 10, DurationSecs: 24, CastSecsHundredths: 100,
+		Components: []spell.Component{
+			{Kind: spell.DirectHit, MinDamage: 1000, MaxDamage: 1000},
+			{Kind: spell.Termination, MinDamage: 500, MaxDamage: 500},
+		},
+	}
+	starts, _ := rotationTimeline(StatBlock{RecoverySpeed: 100}, []spell.CombatArt{term}, 48)
+	require.Len(t, starts, 2)
+	require.InDelta(t, 0.0, starts[0], 1e-9)
+	require.InDelta(t, 24.0, starts[1], 1e-9) // held to duration, not 10
+}

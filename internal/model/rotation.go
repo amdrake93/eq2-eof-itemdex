@@ -129,7 +129,7 @@ func rotationTimeline(sb StatBlock, cas []spell.CombatArt, maxLen float64) (star
 	avail := make([]float64, len(cas))
 	for i, ca := range cas {
 		eff[i] = CAEffectiveDamage(sb, ca)
-		rec[i] = effRecast(sb, ca)
+		rec[i] = artCadence(sb, ca)
 		slot[i] = slotSecs(sb, ca)
 	}
 	var total, t float64
@@ -182,8 +182,8 @@ func cumCAAt(starts, cum []float64, s float64) float64 {
 func maxEffRecast(sb StatBlock, cas []spell.CombatArt) float64 {
 	r := 0.0
 	for _, ca := range cas {
-		if er := effRecast(sb, ca); er > r {
-			r = er
+		if c := artCadence(sb, ca); c > r {
+			r = c
 		}
 	}
 	return r
