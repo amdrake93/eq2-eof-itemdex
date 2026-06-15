@@ -26,8 +26,10 @@ type CombatArt struct {
 	MaxDamage          float64
 	RecastSecs         float64
 	CastSecsHundredths int
-	RecastReduction    float64 // per-art AA recast reduction (1 − recast_mult), set from character config; counts against the shared 50% ceiling
-	PotencyAdd         float64 // per-art AA potency rider (config [art_mods]), pooled with potency
+	RecastReduction    float64     // per-art AA recast reduction (1 − recast_mult), set from character config; counts against the shared 50% ceiling
+	PotencyAdd         float64     // per-art AA potency rider (config [art_mods]), pooled with potency
+	DurationSecs       float64     // effect duration in seconds (0 if none); census duration.max_sec_tenths/10
+	Components         []Component // parsed damage components (Increment A; the sim consumes these in Increment B)
 }
 
 // AssassinCombatArts pulls the Assassin's Expert-tier combat arts usable by
