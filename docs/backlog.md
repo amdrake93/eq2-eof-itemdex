@@ -252,23 +252,30 @@ incomplete without them):
   uniform); fine as a default when bringing up new classes, refine if one proves
   otherwise.
 
-### Candidate class-intrinsic "magical multipliers" — compare across classes
+### The "innate multipliers" — SOURCE IDENTIFIED: Wuoshi TLE damage tuning (2026-06-15)
 
-Two innate multipliers were measured for the Assassin and have no explanation
-beyond "it's intrinsic." Both are prime suspects for being **class-specific** —
-when we bring up a second class, measure its equivalents and compare; if they
-differ by class, they belong in the class file:
+Two unsourceable multipliers measured for the Assassin — the CA-side ~23.4
+potency-pool bonus and (part of) the auto-attack ×2.0 — were traced to a
+**Wuoshi (official TLE) server-applied damage adjustment** (the TLE lineage's dev
+"balance pass that increased outgoing damage across most classes", GU104-era).
+That's why they survived stripping all gear/AAs/buffs: server-applied, not stats.
+No clean published scalar; both effects are already captured empirically (CA via
+`potency_bonus` ~24.6; auto via `auto_attack_multiplier` ×2.0), so the model is
+correct regardless.
 
-- **Auto-attack innate ×2.0** — RESOLVED and housed: it's `auto_attack_multiplier`
-  in `classes/assassin.toml` (this is the model for the others).
-- **⚠ CA-side potency-pool innate (~23.4 points)** — the §12 "potency-pool
-  mystery": ~23.4 hidden potency-pool points that survive naked/AA-less/buff-less
-  (≈ +15% to CA damage at raid gear). Currently parked in the per-character config
-  as `potency_bonus` (calibrated), NOT yet proven class-intrinsic — but it smells
-  exactly like the auto ×2.0's CA-side twin. **Do not lose this.** When a second
-  class is measured, check whether its naked CA potency-pool innate differs; if so,
-  move it from `[stats]` into the class file. (User flagged 2026-06-13 as a likely
-  "magical Assassin multiplier" worth tracking.)
+**The one open question — uniform-global vs per-class** — is what the cross-class
+read settles, and it's *only* relevant for whether the value can be shared/sourced
+once, not for Assassin rankings (a constant on Assassin damage cancels in relative
+gear comparisons):
+- Measure a second class's hidden multiplier (ideally a **mage** — spells have no
+  auto/weapon confounder, cleanest read).
+- If it shares a common factor with the Assassin's → uniform global boost (one
+  number, could live in a server-level config).
+- If not → per-class tuning, and each class's value stays its own calibrated
+  constant (`potency_bonus` / `auto_attack_multiplier` per class).
+- `auto_attack_multiplier` (×2.0) already lives in `classes/assassin.toml`; if it's
+  partly a global boost, that just means it factors as classMult × globalBoost —
+  bookkeeping, not a ranking change.
 
 Also watch: the mainstat (AGI) curve itself was measured for the Assassin — if a
 different class's primary-stat→damage curve differs, it too becomes class data.

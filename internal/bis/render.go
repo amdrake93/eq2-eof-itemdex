@@ -123,7 +123,7 @@ func writeAssumptions(b *strings.Builder, fightLen float64) {
 		model.HasteDpsModA, model.HasteDpsModB, constants.HasteStatCap, model.HasteDpsModEffect(constants.HasteStatCap))
 	fmt.Fprintf(b, "- main stat (AGI): interpolated 13-reading curve, hard cap 1100 → %.0f%%; multiplies BOTH CA and auto-attack damage (same curve)\n",
 		model.MainStatEffect(1100))
-	b.WriteString("- ⚠ CA potency pool includes a per-character calibrated `potency_bonus` whose source is UNEXPLAINED (~23.4 pts survive naked/AA-less/buff-less — spec §12 'potency-pool mystery', actively hunted)\n")
+	b.WriteString("- CA potency pool includes a calibrated `potency_bonus` (~24.6) — a Wuoshi TLE server damage adjustment (survives naked/AA-less/buff-less; captured empirically, spec §12)\n")
 	fmt.Fprintf(b, "- reuse: 1%%/pt to the %.0f-stat cap, sharing each art's %.0f%%-of-base recast ceiling with AA art mods; cast speed divides cast times; recovery base %.2fs (reduced by recovery speed); fight target = %.0fs (smoothed)\n",
 		constants.ReuseCapStat, constants.RecastReductionCeiling*100, constants.CARecoveryBaseSecs, fightLen)
 	b.WriteString("- Set built by coordinate-ascent to convergence (caps/interactions resolved at the live set baseline).\n")

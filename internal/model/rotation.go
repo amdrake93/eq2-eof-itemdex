@@ -14,8 +14,8 @@ import (
 // adds IN FULL (the old 50%-of-adjusted-base cap is disproven — Quick Strike
 // at AM 738 tooltips the whole add). A small measured per-art enhancer
 // (≈ AM × base_max/3400) is documented, not modeled. The PotencyBonus
-// component is calibrated, its source unexplained — spec §12 'potency-pool
-// mystery'.
+// component is a Wuoshi TLE server damage adjustment, calibrated empirically
+// (spec §12).
 func CAEffectiveDamage(sb StatBlock, ca spell.CombatArt) float64 {
 	potPool := 1 + (sb.Potency+sb.PotencyBonus+ca.PotencyAdd)/100
 	mainStat := 1 + MainStatEffect(sb.MainStat)/100
