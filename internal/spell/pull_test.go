@@ -72,3 +72,26 @@ func TestFilterCombatArts(t *testing.T) {
 	require.False(t, names["Pierce"], "low-level (<57) art dropped by the level floor")
 	require.Len(t, arts, 3)
 }
+
+func TestFilterCombatArtsPopulatesComponents(t *testing.T) {
+	gushing := Spell{
+		Name:       "Gushing Wound",
+		Level:      66,
+		Beneficial: 0,
+		RecastSecs: 30,
+		Duration:   Duration{MaxSecTenths: 240},
+		Effects: []Effect{
+			{Description: "Applies Untreated Bleeding on termination.", Indentation: 0},
+			{Description: "Inflicts 6 - 10 piercing damage on target.", Indentation: 1},
+			{Description: "Inflicts 0 - 1 melee damage on target", Indentation: 0},
+			{Description: "Inflicts 1 - 2 piercing damage on target instantly and every 4 seconds.", Indentation: 0},
+		},
+	}
+	arts := FilterCombatArts([]Spell{gushing})
+	require.Len(t, arts, 1)
+	require.Equal(t, 24.0, arts[0].DurationSecs)
+	require.Len(t, arts[0].Components, 3)
+	require.Equal(t, Termination, arts[0].Components[0].Kind)
+	require.Equal(t, DirectHit, arts[0].Components[1].Kind)
+	require.Equal(t, DoT, arts[0].Components[2].Kind)
+}

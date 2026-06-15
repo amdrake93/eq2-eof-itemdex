@@ -67,6 +67,7 @@ func FilterCombatArts(spells []Spell) []CombatArt {
 		if !ok {
 			continue
 		}
+		durationSecs := float64(s.Duration.MaxSecTenths) / 10
 		arts = append(arts, CombatArt{
 			Name:               s.Name,
 			Level:              s.Level,
@@ -74,6 +75,8 @@ func FilterCombatArts(spells []Spell) []CombatArt {
 			MaxDamage:          max,
 			RecastSecs:         s.RecastSecs,
 			CastSecsHundredths: s.CastSecsHundredths,
+			DurationSecs:       durationSecs,
+			Components:         ParseComponents(s.Effects, durationSecs),
 		})
 	}
 	return arts
