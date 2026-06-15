@@ -7,20 +7,52 @@ import (
 	"github.com/amdrake93/eq2-eof-itemdex/internal/spell"
 )
 
-// CAEffectiveDamage is one cast's damage under the measured equation (spec
-// §3.1, tooltip-calibrated 2026-06-12 across 4 gear/AA states × 3 probe arts):
-// the potency pool (displayed potency + the calibrated PotencyBonus + the
-// art's AA rider) and the main-stat curve each multiply the base; ability mod
-// adds IN FULL (the old 50%-of-adjusted-base cap is disproven — Quick Strike
-// at AM 738 tooltips the whole add). A small measured per-art enhancer
-// (≈ AM × base_max/3400) is documented, not modeled. The PotencyBonus
-// component is a Wuoshi TLE server damage adjustment, calibrated empirically
-// (spec §12).
+// CAEffectiveDamage is one cast's total damage (spec §3.1, tooltip-calibrated).
+// The potency pool (displayed potency + calibrated PotencyBonus + the art's AA
+// rider) and the main-stat curve multiply every component's base; crit multiplies
+// the total. Arts with parsed Components sum per-component under the measured
+// per-mechanic ability-mod rule: a DirectHit takes ability mod IN FULL; DoT ticks
+// and Termination take none; a TriggerProc takes half the ability mod per trigger;
+// RateProc is not scored. DoT tick count and whether the detonate fires are gated
+// by the cadence — a termination art is HELD to its full duration (full ticks +
+// detonate); any other DoT is CLIPPED on effRecast (ticks within that window, no
+// detonate). Arts with no parsed components use the legacy single damage line
+// (full abmod) — keeps existing callers/tests unchanged.
 func CAEffectiveDamage(sb StatBlock, ca spell.CombatArt) float64 {
 	potPool := 1 + (sb.Potency+sb.PotencyBonus+ca.PotencyAdd)/100
 	mainStat := 1 + MainStatEffect(sb.MainStat)/100
-	avgBase := (ca.MinDamage + ca.MaxDamage) / 2 * potPool * mainStat
-	return (avgBase + sb.AbilityMod) * critFactor(sb)
+	scaling := potPool * mainStat
+
+	if len(ca.Components) == 0 {
+		avgBase := (ca.MinDamage + ca.MaxDamage) / 2 * scaling
+		return (avgBase + sb.AbilityMod) * critFactor(sb)
+	}
+
+	hold := hasTermination(ca)
+	window := ca.DurationSecs
+	if !hold {
+		window = math.Min(effRecast(sb, ca), ca.DurationSecs)
+	}
+
+	var total float64
+	for _, c := range ca.Components {
+		base := (c.MinDamage + c.MaxDamage) / 2 * scaling
+		switch c.Kind {
+		case spell.DirectHit:
+			total += base + sb.AbilityMod
+		case spell.DoT:
+			total += base * dotTicks(c, window)
+		case spell.Termination:
+			if hold { // detonate fires only when the DoT runs to termination
+				total += base
+			}
+		case spell.TriggerProc:
+			total += (base + 0.5*sb.AbilityMod) * float64(c.Triggers)
+		case spell.RateProc:
+			// deferred — proc-rate scoring not modeled (spec §3.1 deferred)
+		}
+	}
+	return total * critFactor(sb)
 }
 
 // effRecast applies the measured recast rules: every reduction source (per-art

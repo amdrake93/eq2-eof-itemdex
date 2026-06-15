@@ -185,3 +185,57 @@ func TestDotTicks(t *testing.T) {
 	// zero interval guards against div-by-zero.
 	require.InDelta(t, 0.0, dotTicks(spell.Component{Kind: spell.DoT}, 24), 1e-9)
 }
+
+func TestCAEffectiveDamage_PerComponent(t *testing.T) {
+	// No-stats StatBlock → scaling = 1, crit = 1, so damage is just the base math.
+	sb := StatBlock{AbilityMod: 100}
+
+	// DirectHit gets full abmod.
+	dh := spell.CombatArt{Components: []spell.Component{
+		{Kind: spell.DirectHit, MinDamage: 800, MaxDamage: 1200},
+	}}
+	require.InDelta(t, 1100.0, CAEffectiveDamage(sb, dh), 0.01) // avg 1000 + 100 abmod
+
+	// DoT held to full duration: instant + 6 ticks = 7 applications, NO abmod; detonate fires.
+	gw := spell.CombatArt{
+		RecastSecs: 30, DurationSecs: 24,
+		Components: []spell.Component{
+			{Kind: spell.DirectHit, MinDamage: 800, MaxDamage: 1200},
+			{Kind: spell.DoT, MinDamage: 50, MaxDamage: 50, IntervalSecs: 4, HasInstant: true},
+			{Kind: spell.Termination, MinDamage: 300, MaxDamage: 300},
+		},
+	}
+	// 1100 + 50×7 + 300 = 1100 + 350 + 300 = 1750.
+	require.InDelta(t, 1750.0, CAEffectiveDamage(sb, gw), 0.01)
+
+	// Clipped DoT (no termination): effRecast 10 < duration 24 → window 10 → instant + floor(10/4)=2 → 3 ticks.
+	clip := spell.CombatArt{
+		RecastSecs: 10, DurationSecs: 24,
+		Components: []spell.Component{
+			{Kind: spell.DirectHit, MinDamage: 800, MaxDamage: 1200},
+			{Kind: spell.DoT, MinDamage: 50, MaxDamage: 50, IntervalSecs: 4, HasInstant: true},
+		},
+	}
+	// 1100 + 50×3 = 1250 (no detonate — none present, never terminates).
+	require.InDelta(t, 1250.0, CAEffectiveDamage(sb, clip), 0.01)
+
+	// TriggerProc: (base + 0.5×abmod) × triggers, no DirectHit.
+	dm := spell.CombatArt{
+		RecastSecs: 30, DurationSecs: 72,
+		Components: []spell.Component{
+			{Kind: spell.TriggerProc, MinDamage: 400, MaxDamage: 600, Triggers: 5},
+		},
+	}
+	// (500 + 0.5×100) × 5 = 550 × 5 = 2750.
+	require.InDelta(t, 2750.0, CAEffectiveDamage(sb, dm), 0.01)
+
+	// RateProc is not scored.
+	rp := spell.CombatArt{Components: []spell.Component{
+		{Kind: spell.RateProc, MinDamage: 100, MaxDamage: 100, PerMinute: 3},
+	}}
+	require.InDelta(t, 0.0, CAEffectiveDamage(sb, rp), 0.01)
+
+	// Backward-compat: no components → legacy single line (full abmod on the one line).
+	legacy := spell.CombatArt{MinDamage: 800, MaxDamage: 1200}
+	require.InDelta(t, 1100.0, CAEffectiveDamage(sb, legacy), 0.01)
+}
