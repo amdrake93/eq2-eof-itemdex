@@ -252,6 +252,21 @@ incomplete without them):
   uniform); fine as a default when bringing up new classes, refine if one proves
   otherwise.
 
+### DoT/bleed clip-viability — per-class, revisit on multi-class support (2026-06-15)
+
+For the Assassin, hold-vs-clip on multi-component arts (DoTs + detonates) is fully
+settled in spec §3.1: **never clip.** Two independent reasons — Gushing Wound's
+duration (24s) is far under the ~65.6s break-even where spamming would beat the
+termination detonate, AND all the Assassin's single-target bleeds carry a raid-wide
++0.2% damage-taken debuff that makes uptime mandatory regardless of personal DPS.
+
+Neither reason is guaranteed to hold for other classes: a class whose DoTs have no
+detonate and no uptime-mandating debuff faces a **real clip-vs-hold DPS tradeoff**
+(re-cast for more front-loads vs let it ride for full ticks). So when additional
+classes are implemented, re-run the clip-viability check per class rather than
+assuming the Assassin's trivial "never clip" rule. The general DoT damage formula
+(spec §3.1) already generalizes; only the rotation decision is class-dependent.
+
 ### The "innate multipliers" — SOURCE IDENTIFIED: Wuoshi TLE damage tuning (2026-06-15)
 
 Two unsourceable multipliers measured for the Assassin — the CA-side ~23.4
