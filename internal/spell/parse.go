@@ -65,3 +65,39 @@ func parseDamageLine(desc string) (damageLine, bool) {
 	}
 	return dl, true
 }
+
+// ParseComponents extracts the typed damage components of an ability from its
+// effect_list. durationSecs is the art's effect duration (census
+// duration.max_sec_tenths/10). Parsing only — the sim consumes Components in
+// Increment B. (Termination and proc nesting are added in later tasks.)
+func ParseComponents(effects []Effect, durationSecs float64) []Component {
+	var comps []Component
+	for _, e := range effects {
+		if e.Indentation != 0 {
+			continue // indented children handled with their parents (later tasks)
+		}
+		dl, ok := parseDamageLine(e.Description)
+		if !ok {
+			continue
+		}
+		comps = append(comps, standaloneComponent(dl))
+	}
+	return comps
+}
+
+func standaloneComponent(dl damageLine) Component {
+	c := Component{
+		DamageType: dl.dmgType,
+		MinDamage:  dl.min,
+		MaxDamage:  dl.max,
+		AoE:        dl.aoe,
+	}
+	if dl.periodic {
+		c.Kind = DoT
+		c.IntervalSecs = dl.intervalSecs
+		c.HasInstant = dl.hasInstant
+	} else {
+		c.Kind = DirectHit
+	}
+	return c
+}

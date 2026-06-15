@@ -48,3 +48,31 @@ func TestParseDamageLine(t *testing.T) {
 		}
 	}
 }
+
+func TestParseComponents_DirectHitAndDoT(t *testing.T) {
+	// Impale: a DirectHit + a DoT-with-instant (both ind 0).
+	impale := []Effect{
+		{Description: "Inflicts 73 - 122 piercing damage on target", Indentation: 0},
+		{Description: "Inflicts 20 - 33 piercing damage on target instantly and every 4 seconds.", Indentation: 0},
+	}
+	comps := ParseComponents(impale, 24.0)
+	require.Len(t, comps, 2)
+	require.Equal(t, DirectHit, comps[0].Kind)
+	require.Equal(t, 122.0, comps[0].MaxDamage)
+	require.Equal(t, DoT, comps[1].Kind)
+	require.True(t, comps[1].HasInstant)
+	require.Equal(t, 4.0, comps[1].IntervalSecs)
+
+	// Quick Strike: DirectHit + periodic-only DoT (single value, no instant).
+	quick := []Effect{
+		{Description: "Inflicts 8 - 13 melee damage on target", Indentation: 0},
+		{Description: "Inflicts 2 slashing damage on target every 4 seconds.", Indentation: 0},
+	}
+	comps = ParseComponents(quick, 12.0)
+	require.Len(t, comps, 2)
+	require.Equal(t, DirectHit, comps[0].Kind)
+	require.Equal(t, DoT, comps[1].Kind)
+	require.False(t, comps[1].HasInstant)
+	require.Equal(t, 2.0, comps[1].MinDamage)
+	require.Equal(t, 2.0, comps[1].MaxDamage)
+}
