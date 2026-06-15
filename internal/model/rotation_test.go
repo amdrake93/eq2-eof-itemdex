@@ -255,3 +255,28 @@ func TestRotationHoldsTerminationArt(t *testing.T) {
 	require.InDelta(t, 0.0, starts[0], 1e-9)
 	require.InDelta(t, 24.0, starts[1], 1e-9) // held to duration, not 10
 }
+
+func TestGushingWoundCalibration(t *testing.T) {
+	// Ground-truth naked-recovered bases (spec §3.1). Validates the full per-component
+	// sum: DirectHit (full abmod) + DoT (7 applications, no abmod) + detonate (held → fires).
+	gw := spell.CombatArt{
+		Name: "Gushing Wound VI", RecastSecs: 30, DurationSecs: 24,
+		Components: []spell.Component{
+			{Kind: spell.Termination, DamageType: "piercing", MinDamage: 326.1, MaxDamage: 543.2, TriggeredSpell: "Untreated Bleeding"},
+			{Kind: spell.DirectHit, DamageType: "melee", MinDamage: 49.2, MaxDamage: 82.5},
+			{Kind: spell.DoT, DamageType: "piercing", MinDamage: 69.6, MaxDamage: 116.5, IntervalSecs: 4, HasInstant: true},
+		},
+	}
+	// Full-gear state: pool 58.7+24.6, AGI via MainStat 983 (~64%), abmod 694, crit 0.
+	sb := StatBlock{Potency: 58.7, PotencyBonus: 24.6, MainStat: 983, AbilityMod: 694}
+	scaling := (1 + (58.7+24.6)/100) * (1 + MainStatEffect(983)/100)
+	avg := func(a, b float64) float64 { return (a + b) / 2 }
+
+	directHit := avg(49.2, 82.5)*scaling + 694      // full abmod
+	dot := avg(69.6, 116.5) * scaling * 7           // instant + 6 ticks, no abmod
+	detonate := avg(326.1, 543.2) * scaling         // held → fires, no abmod
+	want := directHit + dot + detonate              // crit 0 → ×1
+
+	require.InDelta(t, want, CAEffectiveDamage(sb, gw), 0.01)
+	require.InDelta(t, 30.0, artCadence(sb, gw), 1e-9) // max(effRecast 30, duration 24)
+}
