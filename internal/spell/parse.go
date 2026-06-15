@@ -66,23 +66,47 @@ func parseDamageLine(desc string) (damageLine, bool) {
 	return dl, true
 }
 
+var terminationRe = regexp.MustCompile(`^Applies (.+?) on termination`)
+
 // ParseComponents extracts the typed damage components of an ability from its
 // effect_list. durationSecs is the art's effect duration (census
 // duration.max_sec_tenths/10). Parsing only — the sim consumes Components in
-// Increment B. (Termination and proc nesting are added in later tasks.)
+// Increment B. Indented damage lines are resolved against their parent line
+// (the entry at indentation-1): a child of an "Applies <Spell> on termination"
+// line is the termination/detonate damage.
 func ParseComponents(effects []Effect, durationSecs float64) []Component {
 	var comps []Component
+	parent := map[int]string{} // indentation -> last description seen at that level
 	for _, e := range effects {
-		if e.Indentation != 0 {
-			continue // indented children handled with their parents (later tasks)
-		}
+		parent[e.Indentation] = e.Description
 		dl, ok := parseDamageLine(e.Description)
 		if !ok {
 			continue
 		}
-		comps = append(comps, standaloneComponent(dl))
+		if e.Indentation == 0 {
+			comps = append(comps, standaloneComponent(dl))
+			continue
+		}
+		pd := parent[e.Indentation-1]
+		if terminationRe.MatchString(pd) {
+			comps = append(comps, terminationComponent(dl, pd))
+		}
 	}
 	return comps
+}
+
+func terminationComponent(dl damageLine, parentDesc string) Component {
+	c := Component{
+		Kind:       Termination,
+		DamageType: dl.dmgType,
+		MinDamage:  dl.min,
+		MaxDamage:  dl.max,
+		AoE:        dl.aoe,
+	}
+	if m := terminationRe.FindStringSubmatch(parentDesc); m != nil {
+		c.TriggeredSpell = m[1]
+	}
+	return c
 }
 
 func standaloneComponent(dl damageLine) Component {

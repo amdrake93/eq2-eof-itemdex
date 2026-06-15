@@ -76,3 +76,22 @@ func TestParseComponents_DirectHitAndDoT(t *testing.T) {
 	require.Equal(t, 2.0, comps[1].MinDamage)
 	require.Equal(t, 2.0, comps[1].MaxDamage)
 }
+
+func TestParseComponents_Termination(t *testing.T) {
+	// Gushing Wound: termination (+inlined detonate child) + DirectHit + DoT.
+	gushing := []Effect{
+		{Description: "Applies Untreated Bleeding on termination.", Indentation: 0},
+		{Description: "Inflicts 6 - 10 piercing damage on target.", Indentation: 1},
+		{Description: "Inflicts 0 - 1 melee damage on target", Indentation: 0},
+		{Description: "Inflicts 1 - 2 piercing damage on target instantly and every 4 seconds.", Indentation: 0},
+	}
+	comps := ParseComponents(gushing, 24.0)
+	require.Len(t, comps, 3)
+	require.Equal(t, Termination, comps[0].Kind)
+	require.Equal(t, "Untreated Bleeding", comps[0].TriggeredSpell)
+	require.Equal(t, 10.0, comps[0].MaxDamage)
+	require.Equal(t, DirectHit, comps[1].Kind)
+	require.Equal(t, "melee", comps[1].DamageType)
+	require.Equal(t, DoT, comps[2].Kind)
+	require.True(t, comps[2].HasInstant)
+}
