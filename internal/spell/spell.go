@@ -7,6 +7,14 @@ import (
 
 type Effect struct {
 	Description string `json:"description"`
+	Indentation int    `json:"indentation"`
+}
+
+// Duration is the census effect-duration object; seconds = max_sec_tenths / 10.
+type Duration struct {
+	MaxSecTenths  int `json:"max_sec_tenths"`
+	MinSecTenths  int `json:"min_sec_tenths"`
+	DoesNotExpire int `json:"does_not_expire"`
 }
 
 type ClassReq struct {
@@ -25,6 +33,7 @@ type Spell struct {
 	Beneficial         int                 `json:"beneficial"`
 	CastSecsHundredths int                 `json:"cast_secs_hundredths"`
 	RecastSecs         float64             `json:"recast_secs"`
+	Duration           Duration            `json:"duration"`
 	Classes            map[string]ClassReq `json:"classes"`
 	Effects            []Effect            `json:"effect_list"`
 }
