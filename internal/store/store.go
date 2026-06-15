@@ -42,7 +42,13 @@ CREATE TABLE IF NOT EXISTS item_stats (
 );
 CREATE TABLE IF NOT EXISTS combat_arts (
   name TEXT PRIMARY KEY, level INTEGER, min_dmg REAL, max_dmg REAL,
-  recast_secs REAL, cast_secs_hundredths INTEGER
+  recast_secs REAL, cast_secs_hundredths INTEGER, duration_secs REAL DEFAULT 0
+);
+CREATE TABLE IF NOT EXISTS combat_art_components (
+  art_name TEXT, idx INTEGER, kind INTEGER, dmg_type TEXT,
+  min_dmg REAL, max_dmg REAL, interval_secs REAL, has_instant INTEGER,
+  aoe INTEGER, triggered_spell TEXT, triggers INTEGER, per_minute REAL,
+  PRIMARY KEY (art_name, idx)
 );
 CREATE TABLE IF NOT EXISTS scores (
   item_id INTEGER, baseline TEXT, dps_score REAL, slot TEXT,
@@ -53,6 +59,13 @@ CREATE TABLE IF NOT EXISTS scores (
 func (d *DB) Init() error {
 	_, err := d.db.Exec(schema)
 	return err
+}
+
+func boolToInt(b bool) int {
+	if b {
+		return 1
+	}
+	return 0
 }
 
 func firstSlot(it census.Item) string {
@@ -84,14 +97,88 @@ func (d *DB) LoadCombatArts(arts []spell.CombatArt) (err error) {
 	}()
 	for _, a := range arts {
 		if _, err = tx.Exec(
-			`INSERT OR REPLACE INTO combat_arts (name,level,min_dmg,max_dmg,recast_secs,cast_secs_hundredths)
-			 VALUES (?,?,?,?,?,?)`,
-			a.Name, a.Level, a.MinDamage, a.MaxDamage, a.RecastSecs, a.CastSecsHundredths,
+			`INSERT OR REPLACE INTO combat_arts (name,level,min_dmg,max_dmg,recast_secs,cast_secs_hundredths,duration_secs)
+			 VALUES (?,?,?,?,?,?,?)`,
+			a.Name, a.Level, a.MinDamage, a.MaxDamage, a.RecastSecs, a.CastSecsHundredths, a.DurationSecs,
 		); err != nil {
 			return err
 		}
+		if _, err = tx.Exec(`DELETE FROM combat_art_components WHERE art_name = ?`, a.Name); err != nil {
+			return err
+		}
+		for i, c := range a.Components {
+			if _, err = tx.Exec(
+				`INSERT INTO combat_art_components
+				 (art_name,idx,kind,dmg_type,min_dmg,max_dmg,interval_secs,has_instant,aoe,triggered_spell,triggers,per_minute)
+				 VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
+				a.Name, i, int(c.Kind), c.DamageType, c.MinDamage, c.MaxDamage,
+				c.IntervalSecs, boolToInt(c.HasInstant), boolToInt(c.AoE), c.TriggeredSpell, c.Triggers, c.PerMinute,
+			); err != nil {
+				return err
+			}
+		}
 	}
 	return tx.Commit()
+}
+
+// CombatArts loads every combat art with its parsed damage components attached.
+func (d *DB) CombatArts() ([]spell.CombatArt, error) {
+	rows, err := d.db.Query(`SELECT name, level, min_dmg, max_dmg, recast_secs, cast_secs_hundredths, duration_secs FROM combat_arts`)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = rows.Close() }()
+	var arts []spell.CombatArt
+	for rows.Next() {
+		var a spell.CombatArt
+		if err := rows.Scan(&a.Name, &a.Level, &a.MinDamage, &a.MaxDamage, &a.RecastSecs, &a.CastSecsHundredths, &a.DurationSecs); err != nil {
+			return nil, err
+		}
+		arts = append(arts, a)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	comps, err := d.loadComponents()
+	if err != nil {
+		return nil, err
+	}
+	for i := range arts {
+		arts[i].Components = comps[arts[i].Name]
+	}
+	return arts, nil
+}
+
+func (d *DB) loadComponents() (map[string][]spell.Component, error) {
+	rows, err := d.db.Query(
+		`SELECT art_name, kind, dmg_type, min_dmg, max_dmg, interval_secs, has_instant, aoe, triggered_spell, triggers, per_minute
+		 FROM combat_art_components ORDER BY art_name, idx`)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = rows.Close() }()
+	out := map[string][]spell.Component{}
+	for rows.Next() {
+		var (
+			name       string
+			kind       int
+			hasInstant int
+			aoe        int
+			c          spell.Component
+		)
+		if err := rows.Scan(&name, &kind, &c.DamageType, &c.MinDamage, &c.MaxDamage,
+			&c.IntervalSecs, &hasInstant, &aoe, &c.TriggeredSpell, &c.Triggers, &c.PerMinute); err != nil {
+			return nil, err
+		}
+		c.Kind = spell.ComponentKind(kind)
+		c.HasInstant = hasInstant != 0
+		c.AoE = aoe != 0
+		out[name] = append(out[name], c)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 // ScoreRow is one item's in-context ΔDPS under one baseline.
@@ -151,20 +238,8 @@ func (d *DB) LoadLoadout() (Loadout, error) {
 	if err != nil {
 		return Loadout{}, err
 	}
-	rows, err := d.db.Query(`SELECT name, min_dmg, max_dmg, recast_secs, cast_secs_hundredths FROM combat_arts`)
+	arts, err := d.CombatArts()
 	if err != nil {
-		return Loadout{}, err
-	}
-	defer func() { _ = rows.Close() }()
-	var arts []spell.CombatArt
-	for rows.Next() {
-		var a spell.CombatArt
-		if err := rows.Scan(&a.Name, &a.MinDamage, &a.MaxDamage, &a.RecastSecs, &a.CastSecsHundredths); err != nil {
-			return Loadout{}, err
-		}
-		arts = append(arts, a)
-	}
-	if err := rows.Err(); err != nil {
 		return Loadout{}, err
 	}
 	return Loadout{Main: main, MainName: mainName, Arts: spell.HighestRanks(arts)}, nil
