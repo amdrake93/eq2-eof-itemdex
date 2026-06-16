@@ -31,6 +31,7 @@ func main() {
 		fmt.Fprintln(os.Stderr, "pull combat arts:", err)
 		os.Exit(1)
 	}
+	arts = append(arts, spell.ManualArts()...) // low-level-learned arts the census pull misses (§9)
 
 	_ = os.Remove(*dbPath)
 	db, err := store.Open(*dbPath)
