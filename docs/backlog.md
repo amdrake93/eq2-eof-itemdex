@@ -220,7 +220,14 @@ scaled CA damage, a below-350 Piercing char shows lower tooltips and capping rai
 them. Record naked Piercing/Slashing value — if 350 with the 23.4% present, at-cap
 is the census baseline and skill can't be the extra source.
 
-## 9. Manual scaling arts — recovered level-70 bases (unblocks §3)
+## 9. Manual scaling arts — recovered level-70 bases (unblocks §3) — ✅ DONE 2026-06-15
+
+**Implemented** (plan 2s): `spell.ManualArts()` (Hilt Strike, Strike of Consistency)
+appended in `cmd/builddb` after the census pull → persisted to `combat_art_components`,
+scored as single DirectHits by the per-component sim. No census-component overrides for
+the in-pool low-level-learned arts (Gushing Wound / Death Mark) — census is trusted
+there (the melee match validated census VI; the ~7–11% gaps on other components were
+opposite-direction read noise; spec §3.1 base-source note).
 
 Via the same calibration: **Hilt Strike base ≈ 262–315**, **Strike of
 Consistency ≈ 199 flat** at level 70 (census files 17–21 / 2 at their base
