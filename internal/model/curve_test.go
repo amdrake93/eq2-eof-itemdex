@@ -49,7 +49,16 @@ func TestMainStatEffect(t *testing.T) {
 	require.InDelta(t, 64.06, MainStatEffect(983), 1e-9)
 	// Interpolated between samples: (738,57.10)-(780,58.74) midpoint
 	require.InDelta(t, 57.92, MainStatEffect(759), 1e-9)
-	// Hard cap 1100 → 65, overcap clamps:
+	// Cap-approach top: 1100 → 65.
 	require.InDelta(t, 65.0, MainStatEffect(1100), 1e-9)
-	require.InDelta(t, 65.0, MainStatEffect(5000), 1e-9)
+	// Deadzone ~1100–1200 holds flat at 65 (measured 2026-06-16; 1109 read 65).
+	require.InDelta(t, 65.0, MainStatEffect(1150), 1e-9)
+	require.InDelta(t, 65.0, MainStatEffect(1200), 1e-9)
+	// Second regime reproduces measured samples …
+	require.InDelta(t, 69.45, MainStatEffect(1294), 1e-9)
+	require.InDelta(t, 79.54, MainStatEffect(1661), 1e-9)
+	// … and interpolates within it: (1327,70.47)-(1393,72.43) midpoint 1360 → 71.45.
+	require.InDelta(t, 71.45, MainStatEffect(1360), 1e-9)
+	// Overcap now clamps at the top sample (1661 → 79.54), not the old 1100.
+	require.InDelta(t, 79.54, MainStatEffect(5000), 1e-9)
 }
