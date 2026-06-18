@@ -73,7 +73,7 @@ Census API
 
 | Package | Responsibility |
 |---|---|
-| `internal/census` | Throttled Daybreak Census API client (`Client.Get`). Rate-limited to 1 request per 6 seconds with a single 30-second retry on HTTP 429 or network timeout. Decodes `item_list` and `spell_list` JSON envelopes. |
+| `internal/census` | Throttled Daybreak Census API client (`Client.Get`). Rate-limited to 1 request per 6 seconds with a single 30-second retry on HTTP 429 or network timeout. Decodes the `item_list` JSON envelope (`DecodeItems`); spell decoding lives in `internal/spell`. |
 | `internal/extract` | Varsoon-windowed pagination over the Census `item` collection. Server-side pre-filter: world 614, EoF timestamp window, item level < 72. Handles incremental resume when the `s:example` service-ID quota cuts a session short (`PartialError`, `.census_next_offset` marker). |
 | `internal/classify` | EoF and KoS expansion-window detection. Defines the Varsoon world ID (614), the EoF discovery window (2023-04-11 – 2023-08-08), and the KoS window immediately prior. `IsEoF` / `IsKoS` are the client-side per-item gates applied after server-side pre-filtering. |
 | `internal/source` | CSV cache gatekeeper. `Load` serves items from the category CSVs when they exist and `--refresh` is false; otherwise calls `FreshPull`. `FreshPull` merges any prior partial cache, calls `extract.AllEoFFrom`, splits output by catalog category, and writes `weapons.csv`, `armor.csv`, `jewelry-charms.csv`, and `maxlife.csv`. |
