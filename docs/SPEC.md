@@ -87,8 +87,164 @@ Census API
 | `internal/fit` | Curve fitting for the haste/DPS-mod conversion. `FitQuad` fits `f(s) = A·s − B·s²` to tooltip readings in `data/curve-readings.csv`; `FitLog` fits the logarithmic alternative for residual comparison. `cmd/fitcurve` prints paste-ready constants for `internal/model/curve.go`; `TestFittedConstantsMatchReadings` (sync test) fails until those constants are updated after new readings. |
 
 ## 3. Data Acquisition (Census)
+
+### Client
+
+`internal/census/client.go New` creates a throttled HTTP client with a 60-second request timeout, a token-bucket limiter set to one request every 6 seconds (`rate.Every(6*time.Second), 1`), and a 30-second backoff (`Backoff: 30 * time.Second`). This keeps the caller comfortably within the public `s:example` service-ID quota of approximately 10 requests/minute.
+
+`Client.Get` retries once on HTTP 429 (Too Many Requests) or any network-level error (timeout, connection reset). On a retriable error it sleeps the full backoff before the second attempt; after two attempts it returns an error. The request URL format is `{BaseURL}/{SID}/get/eq2/{collection}/?{query}`.
+
+### Flexible JSON — `census.FlexString`
+
+`internal/census/item.go FlexString` is a `string` alias whose `UnmarshalJSON` handles the Census API's inconsistent field encoding: some fields (notably `displayname` on unnamed items) are emitted as bare JSON numbers rather than quoted strings. When the first byte is not `"`, the raw JSON scalar is stored verbatim as its decimal string representation.
+
+### Server-side pre-filter (`extract.collect`)
+
+`internal/extract/extract.go collect` pages the Census `item` collection with three server-side predicates in the query string:
+
+- `_extended.discovered.world_list.id=614` — Varsoon TLE server only (`classify.VarsoonWorldID = 614`)
+- `_extended.discovered.world_list.timestamp` inside the expansion window (operators URL-encoded as `%3E` / `%3C`)
+- `itemlevel<%3C72` (`maxItemLevel = 72` — the EoF item level ceiling)
+
+The timestamp window used for the server-side filter is intentionally loose: Census array matching cannot bind `id==614` and the timestamp range to the same element in a single query, so the window pre-filters broadly and `classify.IsEoF` (or `classify.IsKoS`) does the precise per-item classification client-side.
+
+### Client-side classification (`classify.IsEoF`)
+
+`internal/classify/eof.go VarsoonDiscovery` scans an item's `_extended.discovered.world_list` for an entry with `ID == 614` and returns its Unix timestamp. `IsEoF` accepts an item whose Varsoon discovery timestamp falls in `[EoFStart, EoFEnd)`:
+
+- `EoFStart = 2023-04-11` (White Oak Acorn, first EoF-exclusive collectable)
+- `EoFEnd   = 2023-08-08` (Tuft of Dark Brown Brute Fur, first RoK-exclusive collectable — exclusive upper bound)
+
+`IsKoS` uses the window `[KoSStart, KoSEnd)` where `KoSStart = 2022-12-11` and `KoSEnd = EoFStart`. The KoS window is only exercised by `extract.AllKoS`, which feeds `maxlife.csv` (the cross-cut max-life list).
+
+### Pagination and quota resume
+
+`extract.AllEoFFrom` (and `AllEoF` which wraps it at offset 0) calls `collect` with a caller-supplied page size and start offset. If Census returns its quota-exceeded sentinel ("Missing Service ID…") mid-run, `collect` returns a `*PartialError` carrying the items already collected and the `NextOffset` at which the session ended. The caller can re-run with `--refresh` and pass `NextOffset` to `AllEoFFrom` to accumulate additional pages in a future session. The package-level sentinel `ErrQuotaExceeded` is wrapped inside `PartialError` and can be tested with `errors.Is`.
+
 ## 4. Catalog & Persistence
+
+### CSV cache — wide format
+
+`internal/catalog/csv.go WriteCSV` writes items in a wide (denormalized) CSV format. The file has a fixed column block followed by a dynamic stat-key block:
+
+**Fixed columns:** `id`, `name`, `slot`, `tier`, `itemlevel`, `armor_type`, `classes`, `weapon_min_dmg`, `weapon_max_dmg`, `delay`, `damage_rating`, `skill`, `wieldstyle`, `gamelink`.
+
+**Stat columns:** the union of all Census modifier keys present across the items in the batch, sorted alphabetically. Cells are empty for items that lack a given modifier.
+
+`ReadCSV` reconstructs `[]census.Item` from a `WriteCSV` stream by reading the header to discover which columns are fixed vs stat, then rebuilding each item's `Modifiers` map from the non-empty stat cells. The `armor_type` label is round-tripped back to the Census `skilltype` string via `SkillTypeFromArmorType` so that slot-to-category lookups continue to work after a cache load.
+
+### Category files
+
+Items are split across four CSV files based on their first slot:
+
+| File | Category | Slots |
+|---|---|---|
+| `data/weapons.csv` | `weapons` | primary, secondary, ranged |
+| `data/armor.csv` | `armor` | head, shoulders, chest, forearms, hands, legs, feet |
+| `data/jewelry-charms.csv` | `jewelry-charms` | neck, ears, wrist, ring, finger, charm, waist, belt, cloak |
+| `data/maxlife.csv` | cross-cut | KoS-window items, used for the max-life tier |
+
+`internal/catalog/category.go CategoryForSlot` performs the slot→category lookup (case-insensitive); unrecognized slots map to `"other"` so nothing is silently dropped.
+
+### Armor-type mapping
+
+`ArmorType` maps Census `typeinfo.skilltype` values to human-readable labels stored in the CSV `armor_type` column:
+
+| Census `skilltype` | Label |
+|---|---|
+| `verylightarmor` | `Cloth` |
+| `lightarmor` | `Leather` |
+| `mediumarmor` | `Chain` |
+| `heavyarmor` | `Plate` |
+
+`SkillTypeFromArmorType` is the inverse, used during CSV load-back.
+
+### SQLite schema
+
+`internal/store/store.go` defines five tables, created by `Init()`:
+
+| Table | Purpose |
+|---|---|
+| `items` | One row per gear item: identity fields (id, name, slot, tier, itemlevel), armor_type, weapon damage/delay fields (0 for non-weapons), class list, gamelink. |
+| `item_stats` | One row per (item_id, stat) pair — the modifier key/value pairs from Census, normalized out of the wide CSV into a two-column table. |
+| `combat_arts` | One row per combat art: name (PK), level, damage range (min/max), recast_secs, cast_secs_hundredths, duration_secs (effect duration; 0 if none). |
+| `combat_art_components` | One row per parsed damage component: art_name + idx form the PK; kind (integer-encoded `ComponentKind`), dmg_type, damage range, interval_secs, has_instant, aoe, triggered_spell, triggers, per_minute. |
+| `scores` | One row per (item_id, baseline) pair: the item's in-context ΔDPS score and the slot it was evaluated for. |
+
+### Census modifier key → StatBlock field
+
+`internal/model/stats.go modifierToField` maps every Census item modifier key the system tracks to the `StatBlock` field it increments. Unlisted keys (critbonus, resistances, hp/power, specific attributes) are silently skipped.
+
+| Census key | StatBlock field | Notes |
+|---|---|---|
+| `attackspeed` | `Haste` | |
+| `doubleattackchance` | `MultiAttack` | Legacy Census key name; maps to the Multi-Attack stat |
+| `critchance` | `CritChance` | |
+| `basemodifier` | `Potency` | |
+| `dps` | `DPSMod` | |
+| `spelltimereusepct` | `Reuse` | |
+| `flurry` | `Flurry` | |
+| `all` | `AbilityMod` | displayname "All" = Ability Modifier |
+| `spelltimecastpct` | `CastSpeed` | |
+| `strength` | `MainStat` | Game encoding for "+N to all primary attributes" — EQ2 files all-primary-attribute bonuses under the `strength` key. For a scout the relevant primary attribute is Agility, and the game grants it point-for-point from items keyed `strength`. Explicit single-attribute keys (`agility`, `wisdom`, `intelligence`) are excluded as data-suspicious (see §11). |
+
 ## 5. Combat-Art Pipeline
+
+### Overview
+
+The pipeline runs: pull from Census → filter → collapse to highest rank → parse damage → append manual arts.
+
+### Pull — `AssassinCombatArts`
+
+`internal/spell/pull.go AssassinCombatArts` queries the Census `spell` collection with these fixed predicates:
+
+- `classes.assassin.id=40` (`assassinClassID = 40` — the Assassin class id in the spell collection; note this differs from the item collection's class id of 15, a Census quirk)
+- `type=arts`
+- `tier_name=Expert`
+- `level<71` (level ≤ 70)
+
+This is the current hardcoded reality: the pipeline is Assassin-only and Expert-tier-only. Class-agnosticism and tier flexibility are deferred (see §16 — Open Items & Known Divergences).
+
+### Filter — `FilterCombatArts`
+
+`FilterCombatArts` applies three conditions to keep only arts that belong in a melee rotation:
+
+1. `level >= minDamageArtLevel` (57) — below this threshold abilities are vestigial low-level filler that never scales to level 70.
+2. `beneficial == 0` — drops buffs, debuffs, and utility arts.
+3. A parseable damage line must be present in `effect_list` (confirmed by `ParseDamage`) — drops non-damaging arts.
+
+Ranged bow shots pass all three tests and are intentionally kept: they fire with no minimum range restriction and do not consume melee auto-attack time, so they contribute free bonus CA damage that fills idle slots in the rotation.
+
+### Rank collapse — `HighestRanks` / `BaseName`
+
+Census returns multiple ranks of each ability line (e.g. "Mortal Blade III", "Mortal Blade IV"). `BaseName` strips trailing roman-numeral or arabic-digit rank suffixes. `HighestRanks` collapses all ranks of a line to the single entry with the highest `MaxDamage`. All ranks of a line share one cooldown, so only the highest rank is ever cast.
+
+### Parse — `ParseDamage` / `ParseComponents`
+
+`internal/spell/parse.go ParseDamage` scans an art's `effect_list` for the first line matching `"Inflicts N - M <type> damage"` and returns the min/max as the art's headline damage range.
+
+`ParseComponents` extracts the full typed component hierarchy. Census `effect_list` encodes structure through indentation: each `Effect` carries an `Indentation` integer, and a child line (indentation N) is interpreted against its parent (the last line seen at indentation N−1). The resolution rules are:
+
+- **Indentation 0, no periodic clause** → `DirectHit` component.
+- **Indentation 0, "every N seconds" clause** → `DoT` component (`HasInstant=true` when the clause reads "instantly and every").
+- **Child of "Applies \<Spell\> on termination"** → `Termination` component (fires once when the effect expires).
+- **Child of "may/will cast \<Spell\> on target" with "Triggers about N times per minute"** → `RateProc` component.
+- **Child of "may/will cast \<Spell\> on target" without a rate** → `TriggerProc` component.
+- **"Grants a total of N triggers"** at the same indentation as a proc component → sets that component's `Triggers` count.
+
+`effect_list` is sourced from Census raw data, pre-calculation — it represents the structural content of the ability (component kinds, damage types, delivery patterns) without character-stat scaling applied, making it the correct structural source for building the component model.
+
+### Manual supplement — `ManualArts`
+
+`internal/spell/manual.go ManualArts` returns two arts that the Census pull misses because they are learned below the level-57 floor. Census reports their low-level base damage; the level-70 effective bases were recovered via tooltip calibration (attribute-divided back to the Census-equivalent value):
+
+| Art | L70 min | L70 max | Recast | Cast |
+|---|---|---|---|---|
+| Hilt Strike | 262 | 315 | 20 s | 0.5 s |
+| Strike of Consistency | 199 | 199 | 12 s | 0.5 s |
+
+Both are single `DirectHit` melee components. `ManualArts` returns a deep copy to prevent callers from mutating the package-level constants.
+
 ## 6. Configuration & Accessibility Tiers
 ## 7. BiS Engine
 ## 8. Commands & Operations
