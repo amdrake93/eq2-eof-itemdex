@@ -530,7 +530,157 @@ CARecoveryBaseSecs = 0.5
 Recovery speed subtractively shrinks the 0.5s server base post-cast recovery; at 100% the recovery is zero ("Recovery: Instant"). It is config-only — there is no gear modifier key for it.
 
 ## 12. Auto-Attack Model
+
+`internal/model/dps.go` models auto-attack as sustained per-weapon swing DPS. The per-swing damage of one weapon is its census base average lifted by the wielder's stats:
+
+```
+perSwing = weaponAvg · (1 + MainStatEffect(AGI)/100) · dpsModFactor · classAutoMult     (autoDamageMult × classAutoMult)
+```
+
+`weaponAvg` is the weapon's census `(min+max)/2` base; `autoDamageMult = (1 + MainStatEffect(AGI)/100) · dpsModFactor` (`autoDamageMult`). **AGI scales auto-attack on the same main-stat curve as combat arts** — `MainStatEffect` is the §11 curve, shared verbatim. **Potency does *not* scale auto-attack** — the auto term carries only AGI and dps-mod; folding potency into the per-swing damage was tried and drifts the `/weaponstat` residual, so it is deliberately excluded.
+
+`classAutoMult` is the class-intrinsic auto multiplier (Assassin = 2.0, from `classes/<class>.toml`, §6). It is applied **at the `AutoDPSDual` / `TotalDPS` boundary, not as a `StatBlock` field**: a multiplier carried on the stat block would zero auto-attack at the block's zero value (the StatBlock zero value is a valid "no-gear" baseline). `AutoDPS(sb, w)` therefore does **not** apply it and callers must — `AutoDPSDual`, `TotalDPS`, and `TotalDPSDual` all multiply it in. `AutoWeaponMultiplier(sb, classAutoMult) = autoDamageMult · classAutoMult` is the full census-base-to-actual multiplier, used as the `/weaponstat` verification anchor (`TestAutoWeaponMultiplierCalibration`), not a production path.
+
+Full sustained single-weapon DPS (`AutoDPS`):
+
+```
+AutoDPS = (weaponAvg / effDelay) · (1 + MultiAttackEffect(MA)/100) · autoDamageMult · critFactor · flurryFactor
+effDelay = w.DelaySecs / (1 + HasteDpsModEffect(haste)/100)
+```
+
+A zero/negative weapon delay yields 0 (no weapon equipped). The MA / crit / flurry / haste / dps-mod factors are the §11 conversions.
+
+**Dual-wield** (`AutoDPSDual`) sums both weapons and applies the off-hand delay penalty:
+
+```
+if off.DelaySecs > 0:  main.DelaySecs ·= DualWieldDelayPenalty;  off.DelaySecs ·= DualWieldDelayPenalty
+AutoDPSDual = classAutoMult · (AutoDPS(sb, main) + AutoDPS(sb, off))
+```
+
+`DualWieldDelayPenalty = 1.33` (`constants.go`) multiplies **both** weapons' delays, on top of and independent of haste (measured 1.32–1.34 across two haste levels, 2026-06-13). The penalty is **detected, not assumed**: it fires only when a real off-hand weapon is present (`off.DelaySecs > 0`), so an empty off-hand or a non-weapon off-hand (shield/symbol) is correctly unpenalized — important for imported loadouts that may not be dual-wielding. Main and off are otherwise treated identically; the off-hand's weapon-multiplier-stat penalty is not tracked and nets out for relative comparison.
+
+### `/weaponstat` decomposition (provenance)
+
+The auto-attack multiplier stack is anchored to in-game `/weaponstat` readings, which decompose into three measured quantities at a fixed gear state:
+
+- **census-raw** — the weapon's catalog base damage (the `weaponAvg` input).
+- **"base"** — census-raw with the dps-mod factor applied (the dps-mod-scaled per-swing damage the game reports as the weapon's base after stats).
+- **"actual"** — the fully-buffed per-swing damage including the AGI curve and the class auto multiplier.
+
+The residual between the AGI-and-dps-mod-scaled value and "actual" resolves to the **×2.0 class auto multiplier**, which held constant across the measured gear states — confirming it is class-intrinsic, not a stat-derived factor, and justifying its placement outside `autoDamageMult` and `StatBlock`.
+
 ## 13. Combat-Art Damage & Components
+
+`CAEffectiveDamage` (`internal/model/rotation.go`) is one cast's total damage. Two shared multipliers apply to every component:
+
+```
+potPool  = 1 + (Potency + PotencyBonus + PotencyAdd) / 100
+mainStat = 1 + MainStatEffect(AGI) / 100
+scaling  = potPool · mainStat
+```
+
+(The potency pool and main-stat curve are §11.) Crit multiplies the cast **total** (`· critFactor`), not each component.
+
+### Legacy single-line path
+
+An art with no parsed components (`len(ca.Components) == 0`) uses one damage line that takes the **full** ability mod:
+
+```
+avgBase = (MinDamage + MaxDamage)/2 · scaling
+cast    = (avgBase + AbilityMod) · critFactor
+```
+
+This keeps pre-component callers and tests unchanged.
+
+### Component path
+
+An art with parsed components sums per component, with ability-mod placement **per mechanic**. For each component, `base = (MinDamage + MaxDamage)/2 · scaling`:
+
+| `ComponentKind` | Contribution |
+|---|---|
+| `DirectHit` | `base + AbilityMod` (full ability mod) |
+| `DoT` | `base · dotTicks(c, window)` (no ability mod) |
+| `Termination` | `base` **only if the art is held** (detonate lands); else 0 |
+| `TriggerProc` | `(base + 0.5·AbilityMod) · Triggers` (half ability mod per trigger) |
+| `RateProc` | not scored (parsed-but-deferred) |
+
+```
+cast = Σ component_contribution · critFactor
+```
+
+`ComponentKind` (`internal/spell/component.go`) enumerates the five kinds (`DirectHit`, `DoT`, `Termination`, `TriggerProc`, `RateProc`). `Component` carries the kind plus per-kind fields: `MinDamage`/`MaxDamage`, `IntervalSecs` and `HasInstant` (DoT), `TriggeredSpell`/`Triggers` (Termination/proc), `PerMinute` (RateProc), `DamageType`, and `AoE`.
+
+**DoT tick count** is `dotTicks(c, window)`:
+
+```
+dotTicks = floor(window / IntervalSecs) + (HasInstant ? 1 : 0)        (0 if IntervalSecs ≤ 0)
+```
+
+i.e. one application per completed interval, plus one instant tick if the line reads "instantly and every" rather than bare "every". The `window` is set by the hold/clip rule (§14): a termination art is **held** to its full `DurationSecs` (all ticks fire and the detonate lands); every other DoT is **clipped** to `min(effRecast, DurationSecs)` (only ticks inside the recast window count; no detonate).
+
+### Per-mechanic ability-mod rule (provenance)
+
+Ability-mod placement is calibrated, not assumed:
+
+- **DirectHit takes ability mod in full** — Gushing Wound's DirectHit absorbs the full 694 ability mod measured on a single hit.
+- **TriggerProc takes half the ability mod per trigger** — Death Mark, a 5-trigger proc, scales ≈ 2.4× across ability mod 0 / 376 / 694, matching `(base + 0.5·abmod)·5` rather than full or zero abmod per trigger.
+- **DoT ticks and on-Termination detonates take none.**
+- **Beneficial abilities are excluded** from scoring entirely (filtered upstream).
+
+The old flat 50%-of-base ability-mod *cap* is disproven; the rule is per-mechanic, not a global cap.
+
+### Base sources (provenance)
+
+Component bases come from the **highest-rank census damage lines** for the sim. **Naked-recovered bases** (read from tooltips with all gear removed) are the calibration ground truth that the census bases are reconciled against; the two agree to ~7% on the piercing / detonate lines, a residual tracked as a known reconcile note (§16). `RateProc` is **parsed but deferred** — proc-rate scoring is not modeled, so RateProc components contribute nothing to a cast's damage.
+
 ## 14. Rotation Model
+
+`rotationTimeline` (`internal/model/rotation.go`) is a priority simulation. Each timeline slot it fires the off-cooldown art with the highest **damage-per-slot-second** `CAEffectiveDamage(sb, ca) / slotSecs(sb, ca)`; ties resolve to the first such art. When no art is ready it **idle-jumps** the clock to the soonest art's availability rather than advancing by a fixed step. The sim is **prefix-consistent**: a fight of length `s` credits exactly the casts whose start time is `< s` (`cumCAAt`), so one pass to the window top yields `cumCA(t)` for every `t`.
+
+### Clip vs hold
+
+Whether a DoT art is clipped on cooldown or held to its full duration is decided by `hasTermination(ca)` (true iff the art carries a `Termination` component). The scheduling interval is `artCadence`:
+
+```
+artCadence = hasTermination ? max(effRecast, DurationSecs) : effRecast
+```
+
+A **termination art is held**: its cadence is `max(effRecast, DurationSecs)`, so the DoT runs to its full duration and the on-termination detonate fires (a long cooldown still gates re-cast). **Every other art clips on `effRecast`** — it re-casts as soon as cooldown allows, and its DoT (if any) only counts ticks inside that window with no detonate (§13). `effRecast` is the §11 reuse divisor floored at 50% of base.
+
+### Fight-length smoothing
+
+`CADPS` (`internal/model/dps.go`) averages CA DPS across a window of fight lengths to remove last-cast quantization. A single fixed fight length quantizes the final cast of a long-cooldown art (whether it just fits or just misses swings the result), so:
+
+```
+R   = maxEffRecast(sb, cas)                       (longest artCadence in the set)
+lo  = max(fightLen − R/2, 1.0),  hi = fightLen + R/2
+CADPS = mean over fightSmoothingSamples samples of cumCA(s)/s,  s evenly spaced in [lo, hi]
+```
+
+`fightSmoothingSamples = 9` (`rotation.go`); the window width `R` is one full big-cast boundary cycle. A short-recast-only art set has `R ≈ 0` and is effectively unsmoothed (`CADPS` falls back to the single-length value when `hi ≤ lo`). The default fight length is `FightDurationSecs = 600.0` (`constants.go`) — a 10-minute fight, long-fight-aware yet short enough that one extra big nuke still matters. `RotationCADPS` is the single-fixed-length (unsmoothed) variant, retained for direct tests.
+
+### Per-slot timing
+
+Each cast occupies `slotSecs(sb, ca) = effCast + effRecovery`, the §11 cast-speed and recovery-speed conversions of the art's base cast time and the 0.5s server recovery. `maxEffRecast` scans `artCadence` over the art set for the smoothing width.
+
+### Structural idle and stealth
+
+On long fights the priority sim leaves **~45–50% of the timeline idle** — the high-value arts are on cooldown and nothing else is worth pressing. This is by design: auto-attack runs in parallel (§10) and fills that idle time, so CA idle is not lost DPS. Stealth-opener arts are **assumed free** (the stealth setup cost is not modeled). The priority-by-rate heuristic plus the clip/hold cadence can leave the smoothed `CADPS` slightly non-monotonic in a stat across gear states; that residual is tracked in §16.
+
 ## 15. Constants Block
+
+This table mirrors `internal/constants/constants.go`. **The code is authoritative** — every value below is copied from the file; where they ever disagree, the file wins.
+
+| Constant | Value | Provenance |
+|---|---|---|
+| `CritMultiplier` | `1.30` | A crit deals +30% (flat expected-value model; §11/§16 note the disproven flat model). |
+| `FlurryMultiplier` | `4.0` | A flurry proc does +100%–500% (2×–6×); 4× is the mean used for expected DPS. |
+| `HasteStatCap` | `300.0` | Haste stat hard cap; fitted curve gives f(300) ≈ 125.56 → 125%; overcap wasted. |
+| `DPSModCap` | `300.0` | Dps-mod stat hard cap; shares the haste curve and cap. |
+| `RecastReductionCeiling` | `0.50` | Recast floor = 50% of base; reuse divisor reaches it at 100% reuse (recalibrated 2026-06-18, six Eviscerate reads). |
+| `CARecoveryBaseSecs` | `0.5` | Server base post-cast recovery, reduced subtractively by recovery-speed stat (100 → "Recovery: Instant"). |
+| `DualWieldDelayPenalty` | `1.33` | Off-hand multiplies each weapon's auto delay ×1.33 (measured 1.32–1.34 across two haste levels). |
+| `FightDurationSecs` | `600.0` | 10-minute default fight (long-fight-aware; short enough that one extra big nuke matters). |
+| `CACastTimeSecs` | `0.5` | Combat arts share ~0.5s base cast time. |
+
 ## 16. Open Items & Known Divergences
