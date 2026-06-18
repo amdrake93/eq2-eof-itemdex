@@ -423,7 +423,112 @@ Several tests in `internal/model` pin the DPS model against live measured values
 # Part II — The Game (mechanics, calibrated)
 
 ## 10. The DPS Model
+
+`internal/model/dps.go` composes total damage per second from two parallel timelines — auto-attack swings and the combat-art rotation. The two do **not** displace each other: casting a combat art does not consume an auto-attack swing, so the model sums them rather than interleaving:
+
+```
+TotalDPS     = classAutoMult · AutoDPS(sb, w)            + CADPS(sb, cas, fightLen)
+TotalDPSDual = AutoDPSDual(sb, main, off, classAutoMult) + CADPS(sb, cas, fightLen)
+```
+
+`TotalDPS` (single weapon) and `TotalDPSDual` (dual-wield) differ only in the auto term. `TotalDPSDual` is the production path for the EoF Assassin, who always dual-wields; it routes through `AutoDPSDual`, which applies the ×1.33 off-hand delay penalty to both weapons when a real off-hand weapon is present (§12). `classAutoMult` is the class-intrinsic auto-attack multiplier sourced from `classes/<class>.toml` (Assassin = 2.0, §6); `AutoDPS` deliberately does **not** apply it, so callers must.
+
+`AutoDPS(sb, w)` is sustained per-weapon swing DPS. Its multiplier stack is:
+
+```
+AutoDPS = (weaponAvg / effDelay) · (1 + MA%/100) · autoDamageMult · critFactor · flurryFactor
+```
+
+where `effDelay = w.DelaySecs / (1 + haste%/100)`, `autoDamageMult = (1 + AGI%/100) · dpsModFactor`, and the MA / crit / flurry / haste / dps-mod conversions are the per-stat factor functions detailed in §11 and the auto-attack model in §12. This section is the top-level overview; §11–§14 are the authoritative detail for each factor.
+
+`CADPS(sb, cas, fightLen)` is the fight-length-smoothed combat-art DPS. A single fixed fight length quantizes the last cast of a long-cooldown art, so `CADPS` averages `cumCA(t)/t` over K samples (`fightSmoothingSamples = 9`) spanning a window of width R = the longest effective recast, centered on `fightLen`. The rotation timeline and per-cast damage are detailed in §13–§14.
+
 ## 11. Stat-Conversion Mechanics
+
+This is the single authoritative statement of how each combat stat converts to a damage or timing effect. Every other section references this block rather than restating it. Each formula matches its cited code symbol exactly; constants live in `internal/constants/constants.go` and `internal/model/curve.go`.
+
+### Crit
+
+```
+critFactor = 1 + (crit/100) · (CritMultiplier − 1)        CritMultiplier = 1.30
+```
+
+`critFactor` (`dps.go`) is a flat expected-value multiplier: at 100% crit chance, damage is ×1.30. It multiplies both the auto-swing stack and each combat-art cast's total (§13). `CritMultiplier = 1.30` is locked in `constants.go`.
+
+> Known divergence: raid-log validation found this flat ×1.30 model wrong — a crit appears to add the weapon/ability range width (~×1.5) rather than a fixed 30% bonus. §16 tracks the fix. This subsection states the **code** behavior as currently implemented.
+
+### Flurry
+
+```
+flurryFactor = 1 + (flurry/100) · (FlurryMultiplier − 1)  FlurryMultiplier = 4.0
+```
+
+`flurryFactor` (`dps.go`) is gear flurry only — haste overcap no longer converts to flurry. A flurry proc deals +100%–500% extra (2×–6×); `FlurryMultiplier = 4.0` is the mean used for expected DPS (`constants.go`).
+
+### Haste / DPS-mod
+
+Haste and DPS-mod share one fitted curve, `f(s) = A·s − B·s²` (`HasteDpsModEffect`, `curve.go`):
+
+```
+A = HasteDpsModA = 0.800348        B = HasteDpsModB = 0.00127275
+```
+
+The result is floored to a whole percent (UI behavior). Both stats hard-cap at 300 (`HasteStatCap` / `DPSModCap`, `constants.go`); the curve is clamped to the cap before flooring, giving `f(300) ≈ 125.56` → displays 125%. Haste divides weapon delay (`effDelay`); DPS-mod multiplies per-swing damage (`dpsModFactor`).
+
+Provenance: a 2026-06 joint floor-aware quadratic refit over the 20 readings in `data/curve-readings.csv` (RMS 0.29 vs 1.93 for the logarithmic alternative, which it replaced; haste-only and dps-mod-only fits agreed within flooring noise, confirming the shared curve). `internal/fit`'s `TestFittedConstantsMatchReadings` pins the constants to the CSV (§9).
+
+### Multi-attack
+
+`MultiAttackEffect` (`curve.go`) interpolates a piecewise-linear sample table (`multiAttackSamples`), anchored at (0, 0) and floored to a whole percent. The table runs to 3400 → 200% with no hard cap; effect above 100% is triple-attack. The report brackets this table with a slope method rather than a +1 difference to avoid flooring noise (§7).
+
+### Main stat (AGI)
+
+`MainStatEffect` (`curve.go`) interpolates the piecewise-linear `mainStatSamples` table, **unfloored** (AGI tooltips display two decimals), clamped to the top sample above 1661. Three regimes:
+
+- **Climb to the cap** — rises to 65% at 1100 (decelerating, slope ~0.008 near 1100).
+- **Deadzone ~1100–1200** — flat at 65% (1109 read 65%; the {1200, 65} sample marks the plateau end).
+- **Second regime >1200** — climbs again at ~0.027–0.031 %/AGI (1294 → 69.45 … 1661 → 79.54), ~3–4× the cap-approach slope.
+
+Provenance: live tooltip readings measured 2026-06-16, which disproved an earlier "hard cap at 1100" model. `data/mainstat-readings.csv` spans `73 → 6.08` (first) to `1661 → 79.54` (last); raid AGI reaches ~1800, so a >1661 reading is still needed to anchor that range (§16). `internal/fit`'s `TestMainStatSamplesMatchReadings` pins the table to the CSV (§9). AGI from gear arrives via the `strength` modifier key — see §4 for the all-primary-attribute translation note.
+
+### Potency pool
+
+```
+potPool = 1 + (Potency + PotencyBonus + PotencyAdd) / 100        (rotation.go, CAEffectiveDamage)
+```
+
+Within the pool the three terms **add**; the pool then multiplies a combat art's component bases. The AGI curve multiplies separately (`scaling = potPool · mainStat`), so potency and main stat compound. `Potency` is the displayed character potency, `PotencyAdd` is the art's AA potency rider (§6), and `PotencyBonus` is an empirically captured hidden pool adjustment applied by the TLE server (≈ 24.6 in `characters/alex.toml`). Whether the pool multiplies in-component bases or the final cast total is the open question in §16.
+
+### Ability-mod
+
+Ability-mod placement is per-mechanic, applied inside `CAEffectiveDamage` (`rotation.go`): a DirectHit takes the ability mod **in full**; a TriggerProc takes **half** the ability mod per trigger; DoT ticks and on-Termination detonates take **none**. Arts with no parsed components fall back to a single damage line that takes the full ability mod. This is summarized here; §13 carries the per-component detail. The old 50% ability-mod cap is disproven.
+
+### Reuse
+
+```
+effRecast = max(0.5 · base, base · (1 − RecastReduction) / (1 + Reuse/100))   (rotation.go)
+RecastReductionCeiling = 0.50
+```
+
+Reuse is a **divisor** (like haste), applied after the per-art AA recast reduction (a multiplier), and floored at 50% of the art's base recast (`RecastReductionCeiling`). The divisor reaches that floor at 100% reuse; an AA-halved art (Assassinate 300→150, Mortal Blade 180→90) already sits on the floor, so reuse cannot reduce it further. Provenance: recalibrated 2026-06-18 from six Eviscerate readings (to 61.8%), which disproved the old subtractive 1%-per-point / 50-stat-cap model.
+
+### Cast speed
+
+```
+effCast = baseCast / (1 + castSpeed/100)        (slotSecs, rotation.go)
+```
+
+Cast speed is a divisor on the art's base cast time (measured: Head Shot 2.0s → 1.46s @ 37.4%). It is also a gear stat, mapped from the `spelltimecastpct` Census key (§4). The cap is unknown (§16).
+
+### Recovery speed
+
+```
+effRecovery = CARecoveryBaseSecs · (1 − min(recovery, 100)/100)        (slotSecs, rotation.go)
+CARecoveryBaseSecs = 0.5
+```
+
+Recovery speed subtractively shrinks the 0.5s server base post-cast recovery; at 100% the recovery is zero ("Recovery: Instant"). It is config-only — there is no gear modifier key for it.
+
 ## 12. Auto-Attack Model
 ## 13. Combat-Art Damage & Components
 ## 14. Rotation Model
