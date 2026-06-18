@@ -433,13 +433,7 @@ TotalDPSDual = AutoDPSDual(sb, main, off, classAutoMult) + CADPS(sb, cas, fightL
 
 `TotalDPS` (single weapon) and `TotalDPSDual` (dual-wield) differ only in the auto term. `TotalDPSDual` is the production path for the EoF Assassin, who always dual-wields; it routes through `AutoDPSDual`, which applies the ×1.33 off-hand delay penalty to both weapons when a real off-hand weapon is present (§12). `classAutoMult` is the class-intrinsic auto-attack multiplier sourced from `classes/<class>.toml` (Assassin = 2.0, §6); `AutoDPS` deliberately does **not** apply it, so callers must.
 
-`AutoDPS(sb, w)` is sustained per-weapon swing DPS. Its multiplier stack is:
-
-```
-AutoDPS = (weaponAvg / effDelay) · (1 + MA%/100) · autoDamageMult · critFactor · flurryFactor
-```
-
-where `effDelay = w.DelaySecs / (1 + haste%/100)`, `autoDamageMult = (1 + AGI%/100) · dpsModFactor`, and the MA / crit / flurry / haste / dps-mod conversions are the per-stat factor functions detailed in §11 and the auto-attack model in §12. This section is the top-level overview; §11–§14 are the authoritative detail for each factor.
+`AutoDPS(sb, w)` is sustained per-weapon swing DPS — weapon damage over haste-adjusted delay, scaled by the multi-attack, AGI, dps-mod, crit, and flurry factors. Its exact multiplier stack is the authoritative §12; the per-stat factor functions are §11. This section is the top-level overview; §11–§14 carry the detail.
 
 `CADPS(sb, cas, fightLen)` is the fight-length-smoothed combat-art DPS. A single fixed fight length quantizes the last cast of a long-cooldown art, so `CADPS` averages `cumCA(t)/t` over K samples (`fightSmoothingSamples = 9`) spanning a window of width R = the longest effective recast, centered on `fightLen`. The rotation timeline and per-cast damage are detailed in §13–§14.
 
@@ -571,15 +565,7 @@ The residual between the AGI-and-dps-mod-scaled value and "actual" resolves to t
 
 ## 13. Combat-Art Damage & Components
 
-`CAEffectiveDamage` (`internal/model/rotation.go`) is one cast's total damage. Two shared multipliers apply to every component:
-
-```
-potPool  = 1 + (Potency + PotencyBonus + PotencyAdd) / 100
-mainStat = 1 + MainStatEffect(AGI) / 100
-scaling  = potPool · mainStat
-```
-
-(The potency pool and main-stat curve are §11.) Crit multiplies the cast **total** (`· critFactor`), not each component.
+`CAEffectiveDamage` (`internal/model/rotation.go`) is one cast's total damage. Every component's base is scaled by `scaling = potPool · mainStat`, where the potency pool and the main-stat curve are both defined in §11. Crit multiplies the cast **total** (`· critFactor`), not each component.
 
 ### Legacy single-line path
 
