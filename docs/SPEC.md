@@ -684,3 +684,40 @@ This table mirrors `internal/constants/constants.go`. **The code is authoritativ
 | `CACastTimeSecs` | `0.5` | Combat arts share ~0.5s base cast time. |
 
 ## 16. Open Items & Known Divergences
+
+This section is the forward worklist. Items are grouped by kind; each gives the divergence or gap and the concrete next step.
+
+### 16.1 Known Code Divergences
+
+**Crit model (highest impact).** `constants.CritMultiplier = 1.30` (`internal/constants/constants.go`) and the `critFactor = 1 + critChance·0.30` term in `internal/model/dps.go` both implement a flat ×1.30 expected-value model. The 2026-06-16 raid log (`docs/raid-log-analysis-2026-06-16.md` §3) measured effective crit multipliers of 1.47–1.64 per ability, consistent with the community **range-shift** mechanic: a crit re-rolls in `[max+1, 2·max−min+1]`, i.e. it **adds ≈ the range width** to the rolled result. The effective multiplier is therefore `1 + width/avg`, which varies per component — wide-range abilities gain more from crit than narrow ones. Crit bonus is **not** a gear stat here; the correction uses the `MinDamage`/`MaxDamage` already stored per component. The flat model under-estimates the crit portion by ~17–25%, translating to ~10–12% on total raid DPS. Status: documented known bug; fix deferred pending one clean non-crit vs crit tooltip read (no buff noise) to pin the exact form — specifically whether ability-mod participates in the shifted range and whether the `+1` boundary term is literal.
+
+**Reconcile residual on Gushing Wound piercing / detonate bases.** Naked-recovered tooltip bases and the highest-rank census damage lines agree to ~7–11% on the piercing DoT and detonate components. Both directions of read noise are plausible (tooltip noise from hidden buff sources; census inconsistency at tier boundaries). The current code uses census bases; the discrepancy is tracked but not acted on. Status: accepted; re-examine if the crit fix or a fresh naked read changes the picture.
+
+### 16.2 Coverage Gaps
+
+**Missing CAs — Bladed Opening and Point Blank Shot.** Bladed Opening (~1.8% of raid damage) and Point Blank Shot (~0.3%) are absent from the art pool. Both appear in the live EQ2 census as level 100–110 abilities (post-EoF redesigns), so the `classes.assassin & level<71` pull in `internal/spell/pull.go` legitimately skips them — even though both are real arts in the TLE/EoF kit. Next step: recover their EoF L70 bases manually via tooltip reads and add them through the `ManualArts` path (`internal/spell/manual.go`), the same route used for Hilt Strike and Strike of Consistency (§9). Also worth a broader audit of whether any currently-pooled arts carry wrong live-census damage numbers due to the same live-vs-TLE drift.
+
+**Unmodeled procs and poisons (~7% of raid damage).** Caustic Poison (3.1%), Vampiric Requiem (2.8%), Greater Rune of Blasting (0.5%), Incinerate Blood (0.5%), Shock (0.3%), and similar sources form a flat, non-critting damage class the sim does not model. Because these are not gear-driven they have little effect on stat-weight *ordering* — but they pull absolute DPS down by ~7% versus a parse. Next step: decide whether a proc/poison scoring layer is worth adding (likely only valuable once absolute calibration is needed, not for relative BiS ranking).
+
+**`potencyBonus` placement.** Both spec and code (`internal/model/dps.go`) add `PotencyBonus` into the potency pool alongside displayed `Potency` and per-art AA riders. An alternative interpretation is that it is a final after-everything multiplier (equivalent if no cross-terms exist, non-equivalent if it does). The two forms are distinguishable with reads at two different potency levels — the cross-term `potency × potencyBonus/100` only appears in the additive-pool version. Next step: run two reads (one low-potency, one high-potency) and check which form fits.
+
+### 16.3 Modeling Decisions
+
+**Residual rotation non-monotonicity.** `CADPS` (`internal/model/dps.go`) is slightly non-monotone in reuse and cast-speed at fine resolution: increasing reuse can locally lower `CADPS` by approximately one mid-art cast, because the greedy lattice re-orders under the shifted cooldown availability. This is intrinsic to the discrete simulation — increasing `fightSmoothingSamples` (`internal/model/rotation.go`) does not fix it, only sampling resolution on a problem that is discrete at the source. Consequence: strict-dominance inversions in the per-slot `ΔDPS` scores, magnitudes ~1.5–29 DPS on near-tied items (~37 inversions found across slot/baseline groups as of 2026-06-13). The converged BiS picks from the coordinate-ascent resim (`internal/bis/build.go`) are a valid local optimum regardless. Options: accept and document (cheapest — inversions only flip near-ties); replace the discrete greedy sim with an analytic expected-fractional-cast model (removes quantization at the source; significant rewrite); note that weight-side smoothing does NOT fix this (the inversions live in the resim `ΔDPS`, not the weight display). Route through brainstorm before implementing.
+
+### 16.4 Future: Class-Agnosticism
+
+The system is currently Assassin-specific in two hardcoded places:
+
+- **`assassinClassID = 40`** in `internal/spell/pull.go` — the Census `classes.assassin` filter that gates which combat arts are fetched. Moving this to `classes/<class>.toml` as `census_class_id` makes `spell.AssassinCombatArts` (and `builddb`) class-parameterized; no CA pull for another class is possible without it.
+- **`expert`-tier and `assassin`-class validation** in `internal/charconfig` — guards that reject non-Assassin configs. These become per-class config checks once the class field drives the lookup.
+
+`classAutoMult = 2.0` already lives in `classes/assassin.toml` and is the template for the above. See `docs/backlog.md §10` for the full class-intrinsic data plan.
+
+Note: the `strength` → `MainStat` mapping (`internal/stats` / Census item stat key) is a **general game encoding** — the Census files all "+N primary attributes" under the `strength` key for all classes; scouts receive AGI point-for-point from it. This is not an Assassin coupling and is not a blocker for class-agnosticism (see §4 and §11).
+
+### 16.5 Data Wishlist
+
+- **AGI reading above 1661.** The main-stat curve (`internal/model/curve.go`) clamps above 1661 (the highest measured reading). Raid AGI is ~1800, so the clamped regime covers real play. A reading at ~1800+ would anchor whether the second-regime slope continues, flattens further, or caps before 1800.
+- **Haste/dps-mod gap fills.** The fitted curve has measurement gaps at haste/dps-mod 153–238 and 281–300. These are low-priority (the current fit is smooth through the gaps) but a pair of readings per gap would tighten the curve residuals.
+- **Cast-speed cap.** The current model treats cast-speed as uncapped above ~37%. If a cap exists, an overcapped read would reveal it as a tooltip plateau. Low probability of binding in EoF gear, but worth confirming if cast-speed items appear in BiS contention.
