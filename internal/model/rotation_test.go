@@ -90,11 +90,15 @@ func TestCAEffectiveDamageMeasuredEquation(t *testing.T) {
 
 func TestEffRecastMeasuredRules(t *testing.T) {
 	evis := spell.CombatArt{Name: "Eviscerate V", RecastSecs: 60}
-	// Full-strength conversion: 60 × (1 − 3.8/100) = 57.72 (live tooltip: 57.8 @ 3.8 reuse)
-	require.InDelta(t, 57.72, effRecast(StatBlock{Reuse: 3.8}, evis), 1e-9)
-	// Reuse stat caps at 50 → recast can halve but never beat the ceiling.
-	require.InDelta(t, 30.0, effRecast(StatBlock{Reuse: 50}, evis), 1e-9)
+	// Reuse is a DIVISOR: recast = base/(1+reuse/100). Live Eviscerate tooltip points (2026-06-18).
+	require.InDelta(t, 58.6, effRecast(StatBlock{Reuse: 2.4}, evis), 0.05)
+	require.InDelta(t, 54.4, effRecast(StatBlock{Reuse: 10.3}, evis), 0.05)
+	require.InDelta(t, 37.1, effRecast(StatBlock{Reuse: 61.8}, evis), 0.05)
+	// No reuse-stat cap below the floor: 60/1.5 = 40 (the old model wrongly capped this at 30).
+	require.InDelta(t, 40.0, effRecast(StatBlock{Reuse: 50}, evis), 1e-9)
+	// Floor = 50% of base, reached at 100% reuse and never beaten.
 	require.InDelta(t, 30.0, effRecast(StatBlock{Reuse: 100}, evis), 1e-9)
+	require.InDelta(t, 30.0, effRecast(StatBlock{Reuse: 150}, evis), 1e-9)
 }
 
 func TestEffRecastSharedCeiling(t *testing.T) {
@@ -104,12 +108,14 @@ func TestEffRecastSharedCeiling(t *testing.T) {
 	require.InDelta(t, 150.0, effRecast(StatBlock{Reuse: 3.8}, assassinate), 1e-9)
 	require.InDelta(t, 150.0, effRecast(StatBlock{Reuse: 50}, assassinate), 1e-9)
 
-	// A partial art mod leaves headroom under the ceiling for reuse.
+	// Partial AA reduction (multiplier) then the reuse divisor, floored at 50% of base.
+	// (The partial AA×reuse combination is uncalibrated — no real art is partial; this
+	// just pins the chosen formula's mechanics.)
 	partial := spell.CombatArt{Name: "Y", RecastSecs: 100, RecastReduction: 0.3}
-	require.InDelta(t, 60.0, effRecast(StatBlock{Reuse: 10}, partial), 1e-9) // 0.3+0.1
-	require.InDelta(t, 50.0, effRecast(StatBlock{Reuse: 30}, partial), 1e-9) // 0.3+0.3 → ceiling
+	require.InDelta(t, 63.64, effRecast(StatBlock{Reuse: 10}, partial), 0.01) // 100×0.7/1.1
+	require.InDelta(t, 53.85, effRecast(StatBlock{Reuse: 30}, partial), 0.01) // 100×0.7/1.3, above the 50 floor
 
-	// An art mod alone can exceed the ceiling — still clamped.
+	// An AA reduction beyond 50% is clamped to the 50%-of-base floor.
 	deep := spell.CombatArt{Name: "Z", RecastSecs: 100, RecastReduction: 0.75}
 	require.InDelta(t, 50.0, effRecast(StatBlock{}, deep), 1e-9)
 }

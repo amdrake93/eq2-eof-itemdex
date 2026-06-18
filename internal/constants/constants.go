@@ -11,8 +11,7 @@ const (
 	HasteStatCap     = 300.0 // haste stat hard cap; fitted curve gives f(300) ≈ 125.56 → shows 125%; overcap wasted (no flurry)
 	DPSModCap        = 300.0 // dps-mod stat hard cap — shares the haste curve and cap
 
-	ReuseCapStat           = 50.0 // reuse converts 1%/pt and the stat caps at 50 (= the 50% ceiling); measured: Eviscerate 60s → 57.8s @ 3.8 reuse
-	RecastReductionCeiling = 0.50 // per-art ceiling shared by ALL recast-reduction sources (AA mods + reuse); measured: Assassinate pinned at 2m30s with reuse gear
+	RecastReductionCeiling = 0.50 // recast floor = 50% of base; reuse is a DIVISOR base/(1+reuse/100) that reaches it at 100% reuse (recalibrated 2026-06-18, six Eviscerate reads). AA art mods (Assassinate/Mortal Blade) sit on this floor.
 	CARecoveryBaseSecs     = 0.5  // server base post-cast recovery, reduced subtractively by the character's recovery-speed stat (100 → "Recovery: Instant")
 
 	DualWieldDelayPenalty = 1.33 // equipping an off-hand multiplies each weapon's auto-attack delay ×1.33 (measured 1.32–1.34 across two haste levels; documented +33%)

@@ -121,11 +121,11 @@ func writeAssumptions(b *strings.Builder, fightLen float64) {
 		constants.CritMultiplier, constants.FlurryMultiplier)
 	fmt.Fprintf(b, "- haste & dps-mod: fitted quadratic %.6f·s − %.8f·s², hard cap %.0f stat → %.0f%%\n",
 		model.HasteDpsModA, model.HasteDpsModB, constants.HasteStatCap, model.HasteDpsModEffect(constants.HasteStatCap))
-	fmt.Fprintf(b, "- main stat (AGI): interpolated 13-reading curve, hard cap 1100 → %.0f%%; multiplies BOTH CA and auto-attack damage (same curve)\n",
-		model.MainStatEffect(1100))
+	fmt.Fprintf(b, "- main stat (AGI): interpolated live-reading curve — 65%% at 1100, flat plateau ~1100–1200, then a second regime to %.0f%% at 1661 (clamps above); multiplies BOTH CA and auto-attack damage (same curve)\n",
+		model.MainStatEffect(1661))
 	b.WriteString("- CA potency pool includes a calibrated `potency_bonus` (~24.6) — a Wuoshi TLE server damage adjustment (survives naked/AA-less/buff-less; captured empirically, spec §12)\n")
-	fmt.Fprintf(b, "- reuse: 1%%/pt to the %.0f-stat cap, sharing each art's %.0f%%-of-base recast ceiling with AA art mods; cast speed divides cast times; recovery base %.2fs (reduced by recovery speed); fight target = %.0fs (smoothed)\n",
-		constants.ReuseCapStat, constants.RecastReductionCeiling*100, constants.CARecoveryBaseSecs, fightLen)
+	fmt.Fprintf(b, "- reuse: DIVIDES recast by (1 + reuse/100), floored at each art's %.0f%%-of-base recast (reached at 100%% reuse; AA art mods sit at that floor — Assassinate/Mortal Blade); cast speed divides cast times; recovery base %.2fs (reduced by recovery speed); fight target = %.0fs (smoothed)\n",
+		constants.RecastReductionCeiling*100, constants.CARecoveryBaseSecs, fightLen)
 	b.WriteString("- Set built by coordinate-ascent to convergence (caps/interactions resolved at the live set baseline).\n")
 	b.WriteString("- Main-hand is fixed (Soulfire Sabre); its weapon damage AND full stat line are included in the baseline.\n")
 }

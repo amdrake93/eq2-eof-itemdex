@@ -180,11 +180,12 @@ The **detonate/termination component is conditional**: counted iff the DoT compl
 - **Overtime-potency / per-skill behavior AAs** (the ~×1.14 Gushing Wound DoT bump) — build-state modifier, ranking-neutral; future "AA type-system" spec.
 - **AoE multi-target** components (`… on targets in Area of Effect`).
 
-### Reuse (combat-art recast %) — measured 2026-06, replaces the halved-coefficient guess
-- **Conversion is full-strength: 1 point of reuse = 1% recast reduction, capping at 50 stat** (= the 50% ceiling). Measured: Eviscerate 60s base → **57.8s tooltip at 3.8 reuse** — the half-strength rule (`ReuseHalveCoeff = 0.50`, never directly verified) would have shown 58.9s; disproven and removed.
-- **Each art has a 50% recast-reduction ceiling shared by ALL reduction sources.** Per-art AA reductions pre-fill it: Assassinate (AA-halved 300→150s) tooltips **exactly 2m30s with reuse gear equipped** — reuse adds nothing to an art already at its ceiling. `effRecast = base × (1 − min(0.50, artModReduction + min(reuse,50)/100))`. Supersedes the old "AA ×0.5, *then* reuse" stacking, which would have produced an impossible 75s Assassinate at high reuse.
-- Affects the **CA timeline only** (recast → cast count). Consequence for weights: reuse's marginal now touches only arts below their ceiling (the 60s-and-under pool) — and since reuse can no longer shift Assassinate/Mortal Blade cast timing, the **boundary-drift quantization artifact** (converged-set reuse reading negative) should shrink or vanish; verify on the post-change report.
-- **Reuse remains the most gear-state-dependent stat**: large on a bare character (fills idle), saturating as the rotation fills. Gear reuse is scarce in the EoF pool (~2/item).
+### Reuse (combat-art recast %) — RECALIBRATED 2026-06-18: a DIVISOR (not subtractive), floored at 50% of base
+- **Reuse is a DIVISOR, like haste and cast speed:** `recast = base / (1 + reuse/100)`. Measured across six Eviscerate (60s base) tooltip points from 2.4%→61.8% reuse — all fit `60/(1+reuse/100)` to a hundredth of a second (2.4→58.6, 10.3→54.4, **61.8→37.1** = 60/1.618). Supersedes the old subtractive "1 pt = 1% reduction, cap 50 stat" rule, which had a single low data point (3.8→57.8) where divisor and subtractive are indistinguishable (`60/1.038 = 57.80`); the 61.8% point breaks the tie (divisor 37.1 vs capped-subtractive 30.0).
+- **Hard floor at 50% of base recast, reached at reuse = 100%** (`base/(1+100/100) = base/2`). Confirmed by Assassinate: its cooldown AA alone drops 300→150s (= exactly 50% of base = the floor) and it stays pinned there regardless of reuse ("capped to all hell"); Mortal Blade likewise (180→90). The AA recast reduction puts those arts at the floor; reuse cannot go below it.
+- **Combined:** `effRecast = max(0.5·base, base·(1 − artModReduction) / (1 + reuse/100))`. (The AA-reduction × reuse interaction for a *partial* AA art is uncalibrated — only the endpoints are measured: no-AA Eviscerate, and full-AA-floored Assassinate/Mortal Blade. No real art is partial today.)
+- **No reuse-stat cap.** Reuse never hard-saturates below 100% reuse — it keeps cutting recast with diminishing returns (divisor) until the 50% floor. A near-floor raid build still gains a small positive marginal from reuse; only at/above 100% reuse is non-AA reuse value dead. *(Corrects the earlier "reuse weight collapses at the 50-stat cap" claim — there is no 50-stat cap; the cap is 50% of base recast at 100% reuse.)*
+- Affects the **CA timeline only** (recast → cast count). Reuse remains the most gear-state-dependent stat.
 
 ### Cast speed & recovery speed (CA timeline stats) — added 2026-06, measured live
 Two stats the model previously baked into constants; both now first-class `StatBlock` fields:
@@ -203,7 +204,7 @@ AutoDPS(w)   = (w.avgDmg/effDelay) · (1 + curveMA(MA)/100) · autoFactor · cri
 AutoDPSDual  = AutoDPS(main×1.33dly) + AutoDPS(off×1.33dly)   # dual-wield delay penalty on BOTH hands (§ below)
 potPool      = potency + potencyBonus + artPotencyAdd   # potencyBonus: calibrated, ⚠ §12 mystery
 CAeffective  = ((min+max)/2 · (1+potPool/100) · (1+curveMS(mainstat)/100) + abilityMod) · critFactor
-effRecast    = base · (1 − min(0.50, artMod + min(reuse,50)/100))   # shared per-art ceiling
+effRecast    = max(0.5·base, base·(1 − artMod) / (1 + reuse/100))   # reuse DIVISOR (recalibrated 2026-06-18), floored at 50% of base
 slot         = baseCast/(1 + castSpeed/100) + 0.5·(1 − min(recoverySpeed,100)/100)
 CADPS        = mean over K lengths in [L−R/2, L+R/2] of cumCA(t)/t   # fight-length smoothed (§ below); L=target (default 600), R=longest eff recast
 TotalDPS     = AutoDPSDual + CADPS                    # PARALLEL — CA casting costs zero auto swings

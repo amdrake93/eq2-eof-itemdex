@@ -55,13 +55,18 @@ func CAEffectiveDamage(sb StatBlock, ca spell.CombatArt) float64 {
 	return total * critFactor(sb)
 }
 
-// effRecast applies the measured recast rules: every reduction source (per-art
-// AA mods + the reuse stat at 1%/pt, stat-capped at 50) shares one per-art
-// ceiling of 50% of base. An AA-halved art (Assassinate, Mortal Blade) arrives
-// with the ceiling already full, so reuse does nothing for it.
+// effRecast applies the measured recast rules (recalibrated 2026-06-18, spec §3.1):
+// reuse is a DIVISOR like haste — recast = base/(1+reuse/100) — applied after the
+// per-art AA reduction (a multiplier), and floored at 50% of base
+// (RecastReductionCeiling). The divisor reaches that floor at 100% reuse. An
+// AA-halved art (Assassinate 300→150, Mortal Blade 180→90) lands exactly on the
+// floor, so reuse can't reduce it further. (The old subtractive 1%/pt + 50-stat
+// cap was an under-determined fit from one low reuse point — disproven by six
+// Eviscerate readings to 61.8%.)
 func effRecast(sb StatBlock, ca spell.CombatArt) float64 {
-	reduction := ca.RecastReduction + math.Min(sb.Reuse, constants.ReuseCapStat)/100
-	return ca.RecastSecs * (1 - math.Min(constants.RecastReductionCeiling, reduction))
+	reduced := ca.RecastSecs * (1 - ca.RecastReduction) / (1 + sb.Reuse/100)
+	floor := ca.RecastSecs * (1 - constants.RecastReductionCeiling)
+	return math.Max(floor, reduced)
 }
 
 // hasTermination reports whether the art carries an on-termination detonate
