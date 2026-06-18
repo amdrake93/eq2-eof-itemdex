@@ -1,3 +1,5 @@
+> **HISTORICAL — superseded by `docs/SPEC.md` (the source of truth). Kept as timeline history; do not treat as current.**
+
 # Plan 2 Design: EoF Assassin Best-in-Slot — DPS Model & Analysis
 
 **Date:** 2026-06-03

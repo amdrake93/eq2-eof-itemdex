@@ -1,3 +1,5 @@
+> **HISTORICAL — the spec↔sim drift audit that motivated the `docs/SPEC.md` rebuild (plan 2t). Live items carried into `docs/SPEC.md` §16.**
+
 # Spec ↔ Sim Audit + Fix Checklist (2026-06-18)
 
 Audit of `docs/design-plan2.md` (spec) against the actual simulator (`internal/model/{dps,rotation,curve,stats,weights}.go`, `internal/constants`, `internal/spell`, `internal/store`). **Principle: trust neither source where they diverge — resolve with data, then fix.** Most divergences are the spec lagging data-backed code; one (crit) is both sources wrong vs the raid log.

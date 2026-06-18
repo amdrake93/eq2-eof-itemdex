@@ -1,3 +1,5 @@
+> **HISTORICAL — superseded by `docs/SPEC.md` (the source of truth). Kept as timeline history; do not treat as current.**
+
 # EoF Assassin Best-in-Slot via a Derived-Weight DPS Model
 
 **Date:** 2026-06-02
