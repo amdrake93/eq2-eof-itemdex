@@ -166,7 +166,8 @@ Items are split across four CSV files based on their first slot:
 | Table | Purpose |
 |---|---|
 | `items` | One row per gear item: identity fields (id, name, slot, tier, itemlevel), armor_type, weapon damage/delay fields (0 for non-weapons), class list, gamelink. |
-| `item_stats` | One row per (item_id, stat) pair — the modifier key/value pairs from Census, normalized out of the wide CSV into a two-column table. |
+| `item_stats` | One row per (item_id, stat, source) triple — PRIMARY KEY `(item_id, stat, source)`. Modifier rows (source `modifier`) come from the Census modifiers block; effect rows (source `effect`) come from `effect_list` static grants. Rows with the same stat but different sources coexist and are summed when building a `StatBlock`. |
+| `item_procs` | One row per cataloged gear proc: `(item_id, trigger, per_minute, dmg_type, min_dmg, max_dmg, raw)`. Captures triggered effects from `effect_list` — rate, damage, and the raw trigger text. Procs are cataloged but not yet scored. |
 | `combat_arts` | One row per combat art: name (PK), level, damage range (min/max), recast_secs, cast_secs_hundredths, duration_secs (effect duration; 0 if none). |
 | `combat_art_components` | One row per parsed damage component: art_name + idx form the PK; kind (integer-encoded `ComponentKind`), dmg_type, damage range, interval_secs, has_instant, aoe, triggered_spell, triggers, per_minute. |
 | `scores` | One row per (item_id, baseline) pair: the item's in-context ΔDPS score and the slot it was evaluated for. |
@@ -187,6 +188,12 @@ Items are split across four CSV files based on their first slot:
 | `all` | `AbilityMod` | displayname "All" = Ability Modifier |
 | `spelltimecastpct` | `CastSpeed` | |
 | `strength` | `MainStat` | Game encoding for "+N to all primary attributes" — EQ2 files all-primary-attribute bonuses under the `strength` key. For a scout the relevant primary attribute is Agility, and the game grants it point-for-point from items keyed `strength`. Explicit single-attribute keys (`agility`, `wisdom`, `intelligence`) are excluded as data-suspicious (see §11). |
+
+### Effect-list ingestion
+
+An item's stats aggregate across multiple **sources**: `modifier` rows come from the Census `modifiers` block (the stats the catalog has always tracked); `effect` rows come from the item's `effect_list`, specifically "When Equipped: Increases/Decreases \<stat\> of caster by N" lines — static grants only (signed, point-values only, of-caster only). When building a `StatBlock` for a scored item, rows from all sources are summed. Adornments are a future source and are not yet ingested.
+
+The shared parser `internal/catalog/effects.go ParseEffects` extracts static of-caster grants (mapped to census stat keys via `modifierToField`; non-mapped keys such as combat skills and single attributes are captured but not scored) and routes triggered effects to a proc record. Parsed effect-stats persist in `data/item-effects.csv`; gear procs persist in `data/item-procs.csv`; an `effect-audit.md` report summarizes the review. Triggered effects are cataloged as procs and are not folded into the item's stat totals.
 
 ## 5. Combat-Art Pipeline
 
@@ -449,7 +456,7 @@ A critical hit re-rolls as the **higher of** the range ceiling and a flat multip
 crit = max( rangeMax + 1 , (1.50 + critBonus) · roll )
 ```
 
-applied to the **final** per-hit damage — after potency × AGI **and** ability-mod (ability-mod rides the crit). `critBonus` is a buff/gear term (0 at baseline; raid-context, §16). The model computes the **expected** crit multiplier per source from its final range `[lo,hi]` (`critFactor`, `dps.go`), assuming uniform rolls:
+applied to the **final** per-hit damage — after potency × AGI **and** ability-mod (ability-mod rides the crit). `critBonus` is structurally present in the formula but is inert on this server (vestigial field; see §16.5). The model computes the **expected** crit multiplier per source from its final range `[lo,hi]` (`critFactor`, `dps.go`), assuming uniform rolls:
 
 - range ratio ≤ 1.5:1 (single-valued, narrow CAs) → the `1.50×` branch always wins → **×1.50**
 - 1.667:1 (the typical CA range) → the floor grazes the low rolls → **~×1.51**
@@ -691,6 +698,10 @@ This section is the forward worklist. Items are grouped by kind; each gives the 
 
 **Unmodeled procs and poisons (~7% of raid damage).** Caustic Poison (3.1%), Vampiric Requiem (2.8%), Greater Rune of Blasting (0.5%), Incinerate Blood (0.5%), Shock (0.3%), and similar sources form a flat, non-critting damage class the sim does not model. Because these are not gear-driven they have little effect on stat-weight *ordering* — but they pull absolute DPS down by ~7% versus a parse. Next step: decide whether a proc/poison scoring layer is worth adding (likely only valuable once absolute calibration is needed, not for relative BiS ranking).
 
+**Gear procs captured, not scored.** Triggered gear effects (from `effect_list`) are now cataloged in `item_procs` (`data/item-procs.csv`) with rate, damage range, damage type, and raw trigger text. Scoring them (rate × expected damage, 0%-crit class) is deferred — procs do not affect current BiS rankings until a scoring layer is added.
+
+**Combat-skill and single-attribute effects captured, not scored.** Static `effect_list` grants whose Census key does not appear in `modifierToField` (e.g. combat-skill lines, explicit single-attribute grants like `agility`) are captured under source `effect` but silently skipped when building a `StatBlock`. The model holds attack rating constant and scores only the keys `modifierToField` maps; deciding whether and how to score combat skills or individual attributes is a separate modeling decision.
+
 **`potencyBonus` placement.** Both spec and code (`internal/model/dps.go`) add `PotencyBonus` into the potency pool alongside displayed `Potency` and per-art AA riders. An alternative interpretation is that it is a final after-everything multiplier (equivalent if no cross-terms exist, non-equivalent if it does). The two forms are distinguishable with reads at two different potency levels — the cross-term `potency × potencyBonus/100` only appears in the additive-pool version. Next step: run two reads (one low-potency, one high-potency) and check which form fits.
 
 ### 16.3 Modeling Decisions
@@ -712,7 +723,7 @@ Note: the `strength` → `MainStat` mapping (`internal/stats` / Census item stat
 
 ### 16.5 Data Wishlist
 
-- **`critBonus` raid stat.** Raid buffs raise the crit factor above 1.50 (auto crit read ~1.64 in the buffed raid log). A `StatBlock.CritBonus` field exists (0 today); wire it into `[contexts.raid]` when measured.
+- **`critBonus` is inert on this server.** `StatBlock.CritBonus` is vestigial on the Varsoon TLE server — no crit-bonus gear or buff has been observed in practice. The raid auto-crit multiplier of ~1.64 is the **wide-weapon range-shift floor** (§11): Modinthalis's 139–775 range lifts most low auto rolls, not a crit-bonus addend. The field remains in `StatBlock` as a zero no-op; do not wire it into `[contexts.raid]` — it would silently double-count the range-shift effect.
 - **AGI reading above 1661.** The main-stat curve (`internal/model/curve.go`) clamps above 1661 (the highest measured reading). Raid AGI is ~1800, so the clamped regime covers real play. A reading at ~1800+ would anchor whether the second-regime slope continues, flattens further, or caps before 1800.
 - **Haste/dps-mod gap fills.** The fitted curve has measurement gaps at haste/dps-mod 153–238 and 281–300. These are low-priority (the current fit is smooth through the gaps) but a pair of readings per gap would tighten the curve residuals.
 - **Cast-speed cap.** The current model treats cast-speed as uncapped above ~37%. If a cap exists, an overcapped read would reveal it as a tooltip plateau. Low probability of binding in EoF gear, but worth confirming if cast-speed items appear in BiS contention.
