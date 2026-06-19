@@ -30,8 +30,9 @@ func TestCritAbilityModRides(t *testing.T) {
 }
 
 // TestCritCalibration2026_06_19 pins the crit model to the live tooltip/log reads.
-// Range-shift floor confirmed via the auto-attack pile-up at max+1 (data/autoattacktest.txt:
-// 11/14 crits exactly 776 on a 139–775 weapon; empirical avg crit/non-crit = 1.85).
+// Range-shift floor confirmed via the auto-attack pile-up at max+1 (data/autoattacktest*.txt,
+// ~230 swings: 23/35 crits exactly 776 on a 139–775 weapon; rolls uniform, χ²=5.86 over 194
+// non-crit hits; empirical avg crit/non-crit = 1.84 vs 1.87 modeled).
 func TestCritCalibration2026_06_19(t *testing.T) {
 	full := func(lo, hi float64) float64 { return critFactor(StatBlock{CritChance: 100}, lo, hi) }
 
@@ -45,7 +46,7 @@ func TestCritCalibration2026_06_19(t *testing.T) {
 	// Typical CA 1.667:1 (Quick Strike 285–475): floor grazes bottom → ~×1.511.
 	require.InDelta(t, 1.511, full(285, 475), 1e-3)
 
-	// Wide weapon (Modinthalis 139–775): floor dominates → ~×1.868 (measured 1.85,
-	// within ~1% — the modeled value is conservative vs the slightly low-skewed log).
-	require.InDelta(t, 1.85, full(139, 775), 0.03)
+	// Wide weapon (Modinthalis 139–775): floor dominates → ×1.868 modeled; empirical 1.84
+	// over ~230 auto swings (rolls confirmed uniform, χ²=5.86).
+	require.InDelta(t, 1.84, full(139, 775), 0.05)
 }

@@ -457,7 +457,7 @@ applied to the **final** per-hit damage — after potency × AGI **and** ability
 
 Combat arts apply it per component on each component's ability-mod-inclusive scaled range (§13); auto-attack applies it on the weapon's damage range (`Weapon.MinDamage/MaxDamage`). Crit chance is clamped at 100% (a crit can't happen more than every hit).
 
-**Provenance:** flat ×1.30 disproven; range-shift-only disproven (Hilt Strike crits exceeded its ceiling); the `max(...)` hybrid confirmed by the auto-attack floor pile-up (11/14 crits exactly `max+1` on a 5.58:1 weapon) and validated at critMult 1.85 measured vs 1.87 modeled (`data/autoattacktest.txt`). Uniform rolls is the one documented assumption (distribution consistent with uniform at the measured sample size).
+**Provenance:** flat ×1.30 disproven; range-shift-only disproven (Hilt Strike crits exceeded its ceiling); the `max(...)` hybrid confirmed by the auto-attack floor pile-up. Validated on ~230 auto swings (`data/autoattacktest.txt` + `autoattacktest2.txt`; 194 non-crit + 35 crit): rolls are **uniform** (χ²=5.86 over the 194 non-crit hits, well under the 15.5 rejection threshold), the auto average equals the range midpoint (451 ≈ 457), 23/35 crits land exactly on the `max+1` floor (≈ uniform's expected 59%), and **critMult = 1.84 measured vs 1.87 modeled** (~1.7%). Uniform rolls — the model's lone assumption — is confirmed; it applies identically to every component (DirectHit, DoT, Termination, TriggerProc) and to auto-attack.
 
 ### Flurry
 
@@ -712,7 +712,6 @@ Note: the `strength` → `MainStat` mapping (`internal/stats` / Census item stat
 
 ### 16.5 Data Wishlist
 
-- **Auto roll-distribution / auto average damage.** `data/autoattacktest.txt` (106 non-crit swings) is consistent with uniform rolls (χ²≈0.11) but hints a mild low-lean (mean ~6% under the midpoint). More swings would confirm uniform and check whether the model's `(min+max)/2` average auto damage runs slightly high. Auto-damage, not crit.
 - **`critBonus` raid stat.** Raid buffs raise the crit factor above 1.50 (auto crit read ~1.64 in the buffed raid log). A `StatBlock.CritBonus` field exists (0 today); wire it into `[contexts.raid]` when measured.
 - **AGI reading above 1661.** The main-stat curve (`internal/model/curve.go`) clamps above 1661 (the highest measured reading). Raid AGI is ~1800, so the clamped regime covers real play. A reading at ~1800+ would anchor whether the second-regime slope continues, flattens further, or caps before 1800.
 - **Haste/dps-mod gap fills.** The fitted curve has measurement gaps at haste/dps-mod 153–238 and 281–300. These are low-priority (the current fit is smooth through the gaps) but a pair of readings per gap would tighten the curve residuals.
