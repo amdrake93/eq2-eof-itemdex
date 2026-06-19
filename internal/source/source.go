@@ -4,9 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"os"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -147,7 +149,82 @@ func FreshPull(ctx context.Context, c *census.Client, dir string, pageSize int) 
 	if err := writeFile(filepath.Join(dir, "maxlife.csv"), catalog.WithMaxLife(gear)); err != nil {
 		return nil, err
 	}
+	if err := WriteEffectArtifacts(gear, dir); err != nil {
+		return nil, err
+	}
 	return gear, nil
+}
+
+// WriteEffectArtifacts parses each item's effect_list and writes the three effect
+// catalog files into dir: item-effects.csv (static stats, source "effect"),
+// item-procs.csv (cataloged procs), and effect-audit.md (the human-review report).
+func WriteEffectArtifacts(items []census.Item, dir string) error {
+	var stats []catalog.EffectStat
+	var procs []catalog.ItemProc
+	audit := map[int][]catalog.AuditLine{}
+	for _, it := range items {
+		if len(it.EffectList) == 0 {
+			continue
+		}
+		s, ps, a := catalog.ParseEffects(it.EffectList)
+		for k, v := range s {
+			stats = append(stats, catalog.EffectStat{ItemID: int(it.ID), Stat: k, Value: v})
+		}
+		for _, p := range ps {
+			procs = append(procs, catalog.ItemProc{
+				ItemID:    int(it.ID),
+				Trigger:   p.Trigger,
+				PerMinute: p.PerMinute,
+				DmgType:   p.DmgType,
+				MinDmg:    p.MinDmg,
+				MaxDmg:    p.MaxDmg,
+				Raw:       p.Raw,
+			})
+		}
+		if len(a) > 0 {
+			audit[int(it.ID)] = a
+		}
+	}
+
+	sort.Slice(stats, func(i, j int) bool {
+		if stats[i].ItemID != stats[j].ItemID {
+			return stats[i].ItemID < stats[j].ItemID
+		}
+		return stats[i].Stat < stats[j].Stat
+	})
+	sort.Slice(procs, func(i, j int) bool {
+		if procs[i].ItemID != procs[j].ItemID {
+			return procs[i].ItemID < procs[j].ItemID
+		}
+		return procs[i].Trigger < procs[j].Trigger
+	})
+
+	if err := writeEffectFile(filepath.Join(dir, "item-effects.csv"), func(w io.Writer) error {
+		return catalog.WriteEffectStatsCSV(w, stats)
+	}); err != nil {
+		return err
+	}
+	if err := writeEffectFile(filepath.Join(dir, "item-procs.csv"), func(w io.Writer) error {
+		return catalog.WriteProcsCSV(w, procs)
+	}); err != nil {
+		return err
+	}
+	return writeEffectFile(filepath.Join(dir, "effect-audit.md"), func(w io.Writer) error {
+		return catalog.WriteAuditReport(w, audit)
+	})
+}
+
+func writeEffectFile(path string, fn func(io.Writer) error) (err error) {
+	f, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if cerr := f.Close(); cerr != nil && err == nil {
+			err = cerr
+		}
+	}()
+	return fn(f)
 }
 
 func writeFile(path string, items []census.Item) (err error) {
