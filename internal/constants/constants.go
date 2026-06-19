@@ -3,7 +3,7 @@
 // (internal/charconfig), not here.
 package constants
 
-// Locked combat constants (docs/design-plan2.md §11). Single source of truth.
+// Locked combat constants — the source of truth for these values (docs/SPEC.md §15 mirrors them).
 // Values tagged "confirm vs guild leader / Varsoon parse" where uncertain.
 const (
 	CritMultiplier   = 1.30  // a crit deals +30%

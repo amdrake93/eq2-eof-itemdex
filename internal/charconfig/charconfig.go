@@ -1,4 +1,4 @@
-// Package charconfig loads per-character TOML config (docs/design-plan2.md §4):
+// Package charconfig loads per-character TOML config (docs/SPEC.md §6):
 // AA/innate stats, per-art AA modifiers, and buff-package contexts. Server-wide
 // combat mechanics stay in internal/constants — config is everything about one
 // player and their group. Validation is strict: unknown keys are errors, so a
@@ -137,7 +137,7 @@ func Load(path string) (Config, error) {
 	return cfg, nil
 }
 
-// ClassData holds class-intrinsic constants (docs/design-plan2.md §4): values
+// ClassData holds class-intrinsic constants (docs/SPEC.md §6): values
 // identical for every character of a class but differing between classes.
 // Uniform schema — every classes/<class>.toml defines the same fields.
 type ClassData struct {

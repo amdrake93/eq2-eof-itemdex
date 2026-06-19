@@ -1,4 +1,4 @@
-# Character config — per-player inputs (docs/design-plan2.md §4).
+# Character config — per-player inputs (docs/SPEC.md §6).
 # [stats] = AA/innate bonuses; [contexts.X] = the FULL buff package on you in
 # that situation (self-buffs listed in every context they're up); gear is the
 # optimizer's output, never config.
