@@ -47,7 +47,7 @@ func (s *Set) restBase(exclude string) model.StatBlock {
 func (s *Set) offWeapon() model.Weapon {
 	for _, it := range s.Equipped[offHandSlot] {
 		if it.IsWeapon() {
-			return model.Weapon{AvgDamage: it.WeaponAvg, DelaySecs: it.WeaponDelay}
+			return model.Weapon{AvgDamage: it.WeaponAvg, MinDamage: it.WeaponMin, MaxDamage: it.WeaponMax, DelaySecs: it.WeaponDelay}
 		}
 	}
 	return model.Weapon{}
@@ -72,7 +72,7 @@ func (s *Set) CandidateDelta(slot string, c store.ScorableItem) float64 {
 	rb := s.restBase(slot)
 	ro := s.restOff(slot)
 	if slot == offHandSlot && c.IsWeapon() {
-		w := model.Weapon{AvgDamage: c.WeaponAvg, DelaySecs: c.WeaponDelay}
+		w := model.Weapon{AvgDamage: c.WeaponAvg, MinDamage: c.WeaponMin, MaxDamage: c.WeaponMax, DelaySecs: c.WeaponDelay}
 		return model.ItemDelta(rb, s.Main, ro, s.Arts, c.Stats, &w, s.AutoMult, s.FightLen)
 	}
 	return model.ItemDelta(rb, s.Main, ro, s.Arts, c.Stats, nil, s.AutoMult, s.FightLen)

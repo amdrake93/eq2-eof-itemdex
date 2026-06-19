@@ -43,7 +43,7 @@ func loadWeapon(db *sql.DB, query string, args ...any) (model.Weapon, string, er
 	if err := db.QueryRow(query, args...).Scan(&name, &mn, &mx, &delay); err != nil {
 		return model.Weapon{}, "", err
 	}
-	return model.Weapon{AvgDamage: (mn + mx) / 2, DelaySecs: delay}, name, nil
+	return model.Weapon{AvgDamage: (mn + mx) / 2, MinDamage: mn, MaxDamage: mx, DelaySecs: delay}, name, nil
 }
 
 func main() {

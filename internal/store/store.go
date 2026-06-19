@@ -225,7 +225,7 @@ func (d *DB) loadWeapon(query string, args ...any) (model.Weapon, string, error)
 	if err := d.db.QueryRow(query, args...).Scan(&name, &mn, &mx, &delay); err != nil {
 		return model.Weapon{}, "", err
 	}
-	return model.Weapon{AvgDamage: (mn + mx) / 2, DelaySecs: delay}, name, nil
+	return model.Weapon{AvgDamage: (mn + mx) / 2, MinDamage: mn, MaxDamage: mx, DelaySecs: delay}, name, nil
 }
 
 // LoadLoadout reads the Soulfire main-hand and the Assassin combat arts collapsed
@@ -255,6 +255,8 @@ type ScorableItem struct {
 	WieldStyle  string
 	GameLink    string
 	WeaponAvg   float64
+	WeaponMin   float64
+	WeaponMax   float64
 	WeaponDelay float64
 	Stats       model.StatBlock
 	Mods        map[string]float64
@@ -282,6 +284,8 @@ func (d *DB) LoadScorableItems() ([]ScorableItem, error) {
 		}
 		if delay > 0 {
 			it.WeaponAvg = (mn + mx) / 2
+			it.WeaponMin = mn
+			it.WeaponMax = mx
 			it.WeaponDelay = delay
 		}
 		it.Mods = map[string]float64{}

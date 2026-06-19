@@ -10,6 +10,8 @@ import (
 // Weapon is the auto-attack-relevant view of an equipped weapon.
 type Weapon struct {
 	AvgDamage float64 // (min+max)/2 of the weapon's base damage
+	MinDamage float64 // weapon base damage range low (for the range-shift crit, §11)
+	MaxDamage float64 // weapon base damage range high
 	DelaySecs float64 // attack delay in seconds
 }
 
