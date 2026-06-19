@@ -5,7 +5,9 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"path/filepath"
 
+	"github.com/amdrake93/eq2-eof-itemdex/internal/catalog"
 	"github.com/amdrake93/eq2-eof-itemdex/internal/census"
 	"github.com/amdrake93/eq2-eof-itemdex/internal/source"
 	"github.com/amdrake93/eq2-eof-itemdex/internal/spell"
@@ -56,5 +58,44 @@ func main() {
 		fmt.Fprintln(os.Stderr, "load CAs -> db:", err)
 		os.Exit(1)
 	}
-	fmt.Printf("built %s: %d gear items, %d combat arts\n", *dbPath, len(gear), len(arts))
+
+	// Item effect_list ingestion (plan 2v): static effect-stats + cataloged procs.
+	// Both files are optional — absent before the first `itemdex --effects` backfill.
+	effectCount, procCount := 0, 0
+	if f, err := os.Open(filepath.Join(*dataDir, "item-effects.csv")); err == nil {
+		stats, rerr := catalog.ReadEffectStatsCSV(f)
+		_ = f.Close()
+		if rerr != nil {
+			fmt.Fprintln(os.Stderr, "read item-effects.csv:", rerr)
+			os.Exit(1)
+		}
+		if err := db.LoadItemEffects(stats); err != nil {
+			fmt.Fprintln(os.Stderr, "load item effects:", err)
+			os.Exit(1)
+		}
+		effectCount = len(stats)
+	} else if !os.IsNotExist(err) {
+		fmt.Fprintln(os.Stderr, "open item-effects.csv:", err)
+		os.Exit(1)
+	}
+
+	if f, err := os.Open(filepath.Join(*dataDir, "item-procs.csv")); err == nil {
+		procs, rerr := catalog.ReadProcsCSV(f)
+		_ = f.Close()
+		if rerr != nil {
+			fmt.Fprintln(os.Stderr, "read item-procs.csv:", rerr)
+			os.Exit(1)
+		}
+		if err := db.LoadItemProcs(procs); err != nil {
+			fmt.Fprintln(os.Stderr, "load item procs:", err)
+			os.Exit(1)
+		}
+		procCount = len(procs)
+	} else if !os.IsNotExist(err) {
+		fmt.Fprintln(os.Stderr, "open item-procs.csv:", err)
+		os.Exit(1)
+	}
+
+	fmt.Printf("built %s: %d gear items, %d combat arts, %d effect-stats, %d procs\n",
+		*dbPath, len(gear), len(arts), effectCount, procCount)
 }
