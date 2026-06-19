@@ -24,8 +24,9 @@ func CAEffectiveDamage(sb StatBlock, ca spell.CombatArt) float64 {
 	scaling := potPool * mainStat
 
 	if len(ca.Components) == 0 {
-		avgBase := (ca.MinDamage + ca.MaxDamage) / 2 * scaling
-		return (avgBase + sb.AbilityMod) * critFactor(sb)
+		lo := ca.MinDamage*scaling + sb.AbilityMod
+		hi := ca.MaxDamage*scaling + sb.AbilityMod
+		return (lo + hi) / 2 * critFactor(sb, lo, hi)
 	}
 
 	hold := hasTermination(ca)
@@ -36,23 +37,26 @@ func CAEffectiveDamage(sb StatBlock, ca spell.CombatArt) float64 {
 
 	var total float64
 	for _, c := range ca.Components {
-		base := (c.MinDamage + c.MaxDamage) / 2 * scaling
+		loBase := c.MinDamage * scaling
+		hiBase := c.MaxDamage * scaling
 		switch c.Kind {
 		case spell.DirectHit:
-			total += base + sb.AbilityMod
+			lo, hi := loBase+sb.AbilityMod, hiBase+sb.AbilityMod
+			total += (lo + hi) / 2 * critFactor(sb, lo, hi)
 		case spell.DoT:
-			total += base * dotTicks(c, window)
+			total += (loBase + hiBase) / 2 * dotTicks(c, window) * critFactor(sb, loBase, hiBase)
 		case spell.Termination:
-			if hold { // detonate fires only when the DoT runs to termination
-				total += base
+			if hold {
+				total += (loBase + hiBase) / 2 * critFactor(sb, loBase, hiBase)
 			}
 		case spell.TriggerProc:
-			total += (base + 0.5*sb.AbilityMod) * float64(c.Triggers)
+			lo, hi := loBase+0.5*sb.AbilityMod, hiBase+0.5*sb.AbilityMod
+			total += (lo + hi) / 2 * float64(c.Triggers) * critFactor(sb, lo, hi)
 		case spell.RateProc:
-			// deferred — proc-rate scoring not modeled (spec §3.1 deferred)
+			// deferred — proc-rate scoring not modeled (spec §13 deferred)
 		}
 	}
-	return total * critFactor(sb)
+	return total
 }
 
 // effRecast applies the measured recast rules (recalibrated 2026-06-18, spec §3.1):

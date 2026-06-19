@@ -6,7 +6,7 @@ package constants
 // Locked combat constants — the source of truth for these values (docs/SPEC.md §15 mirrors them).
 // Values tagged "confirm vs guild leader / Varsoon parse" where uncertain.
 const (
-	CritMultiplier   = 1.30  // a crit deals +30%
+	CritMultiplier   = 1.50  // base crit factor: a crit is max(rangeMax+1, 1.50·roll) (measured 2026-06-19, spec §11)
 	FlurryMultiplier = 4.0   // a flurry proc does +100%–500% more (2×–6×), averaging 4× — use the mean for expected DPS
 	HasteStatCap     = 300.0 // haste stat hard cap; fitted curve gives f(300) ≈ 125.56 → shows 125%; overcap wasted (no flurry)
 	DPSModCap        = 300.0 // dps-mod stat hard cap — shares the haste curve and cap

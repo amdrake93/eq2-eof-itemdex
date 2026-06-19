@@ -15,8 +15,28 @@ type Weapon struct {
 	DelaySecs float64 // attack delay in seconds
 }
 
-func critFactor(sb StatBlock) float64 {
-	return 1 + (sb.CritChance/100)*(constants.CritMultiplier-1)
+// critFactor is the expected crit damage multiplier for a hit whose final damage
+// range is [lo, hi] (after potency, AGI, and any ability-mod). A crit re-rolls as
+// max(hi, c·roll) — the higher of the range ceiling (a floor a crit can't fall
+// below) and c× the roll — where c = 1.50 + crit bonus (measured 2026-06-19, §11).
+// Narrow ranges → the c× branch always wins (flat ×c); wide ranges (weapons) →
+// the ceiling lifts low rolls, pushing the average above c. Uniform rolls assumed
+// (data-validated, data/autoattacktest.txt). Crit chance clamps at 100%.
+func critFactor(sb StatBlock, lo, hi float64) float64 {
+	p := math.Min(sb.CritChance, 100) / 100
+	if p <= 0 {
+		return 1
+	}
+	c := constants.CritMultiplier + sb.CritBonus/100
+	m := c
+	if hi > lo {
+		t := hi / c
+		if lo < t {
+			avg := (lo + hi) / 2
+			m = (hi*(t-lo) + c*(hi*hi-t*t)/2) / ((hi - lo) * avg)
+		}
+	}
+	return 1 + p*(m-1)
 }
 
 // flurryFactor is gear flurry only (haste overcap no longer converts to flurry).
@@ -57,7 +77,7 @@ func AutoDPS(sb StatBlock, w Weapon) float64 {
 		return 0
 	}
 	swings := w.AvgDamage / effDelay(sb, w)
-	return swings * (1 + MultiAttackEffect(sb.MultiAttack)/100) * autoDamageMult(sb) * critFactor(sb) * flurryFactor(sb)
+	return swings * (1 + MultiAttackEffect(sb.MultiAttack)/100) * autoDamageMult(sb) * critFactor(sb, w.MinDamage, w.MaxDamage) * flurryFactor(sb)
 }
 
 // CADPS is the fight-length-smoothed combat-art DPS for a target fight length.

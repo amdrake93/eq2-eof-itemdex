@@ -14,11 +14,11 @@ func approx(t *testing.T, want, got float64) {
 }
 
 func TestAutoDPS(t *testing.T) {
-	w := Weapon{AvgDamage: 100, DelaySecs: 2.0}
+	w := Weapon{AvgDamage: 100, MinDamage: 50, MaxDamage: 150, DelaySecs: 2.0} // 3:1 range
 	approx(t, 50.0, AutoDPS(StatBlock{}, w))                     // 100/2, all factors 1
 	approx(t, 50.0*1.67, AutoDPS(StatBlock{Haste: 100}, w))      // haste 100 → effect 67 → /1.67 delay
 	approx(t, 50.0*1.52, AutoDPS(StatBlock{MultiAttack: 50}, w)) // MA 50 → effect 52 → ×1.52
-	approx(t, 65.0, AutoDPS(StatBlock{CritChance: 100}, w))      // ×1.30
+	approx(t, 84.375, AutoDPS(StatBlock{CritChance: 100}, w))    // 3:1 hybrid crit → ×1.6875
 }
 
 func TestEffDelayHasteFittedCurve(t *testing.T) {
