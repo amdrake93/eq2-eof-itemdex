@@ -3,6 +3,7 @@ package store
 import (
 	"testing"
 
+	"github.com/amdrake93/eq2-eof-itemdex/internal/catalog"
 	"github.com/amdrake93/eq2-eof-itemdex/internal/census"
 	"github.com/amdrake93/eq2-eof-itemdex/internal/spell"
 	"github.com/stretchr/testify/require"
@@ -32,6 +33,53 @@ func TestLoadGear(t *testing.T) {
 	var n int
 	require.NoError(t, db.SQL().QueryRow(`SELECT COUNT(*) FROM item_stats WHERE item_id=1`).Scan(&n))
 	require.Equal(t, 2, n)
+}
+
+func TestLoadItemEffectsCoexistsWithModifier(t *testing.T) {
+	db, err := Open(":memory:")
+	require.NoError(t, err)
+	defer func() { require.NoError(t, db.Close()) }()
+	require.NoError(t, db.Init())
+
+	require.NoError(t, db.LoadGear([]census.Item{{
+		ID: 1, DisplayName: "Cloak", Tier: "LEGENDARY",
+		Slots:     []census.Slot{{Name: "Cloak"}},
+		TypeInfo:  census.TypeInfo{Classes: map[string]census.ClassReq{"assassin": {}}},
+		Modifiers: map[string]census.Modifier{"attackspeed": {Value: 10}},
+	}}))
+	require.NoError(t, db.LoadItemEffects([]catalog.EffectStat{{ItemID: 1, Stat: "attackspeed", Value: 25}}))
+
+	var n int
+	require.NoError(t, db.SQL().QueryRow(`SELECT COUNT(*) FROM item_stats WHERE item_id=1 AND stat='attackspeed'`).Scan(&n))
+	require.Equal(t, 2, n) // modifier + effect rows coexist
+
+	items, err := db.LoadScorableItems()
+	require.NoError(t, err)
+	require.Len(t, items, 1)
+	require.InDelta(t, 35.0, items[0].Stats.Haste, 1e-9)
+}
+
+func TestLoadItemProcs(t *testing.T) {
+	db, err := Open(":memory:")
+	require.NoError(t, err)
+	defer func() { require.NoError(t, db.Close()) }()
+	require.NoError(t, db.Init())
+
+	require.NoError(t, db.LoadItemProcs([]catalog.ItemProc{
+		{ItemID: 1, Trigger: "on melee hit", PerMinute: 3.5, DmgType: "poison", MinDmg: 100, MaxDmg: 200, Raw: "raw text"},
+	}))
+
+	var trigger, dmgType, raw string
+	var perMinute, minDmg, maxDmg float64
+	require.NoError(t, db.SQL().QueryRow(
+		`SELECT trigger, per_minute, dmg_type, min_dmg, max_dmg, raw FROM item_procs WHERE item_id=1`).
+		Scan(&trigger, &perMinute, &dmgType, &minDmg, &maxDmg, &raw))
+	require.Equal(t, "on melee hit", trigger)
+	require.InDelta(t, 3.5, perMinute, 1e-9)
+	require.Equal(t, "poison", dmgType)
+	require.InDelta(t, 100.0, minDmg, 1e-9)
+	require.InDelta(t, 200.0, maxDmg, 1e-9)
+	require.Equal(t, "raw text", raw)
 }
 
 func TestCombatArtsRoundTripComponents(t *testing.T) {

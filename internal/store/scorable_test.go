@@ -49,3 +49,20 @@ func TestLoadScorableItems(t *testing.T) {
 	require.Equal(t, "One-Handed", dirk.WieldStyle)
 	require.Equal(t, "", chest.WieldStyle) // armor has no wield style
 }
+
+func TestStatsAggregateAcrossSources(t *testing.T) {
+	d, err := Open(":memory:")
+	require.NoError(t, err)
+	defer func() { require.NoError(t, d.Close()) }()
+	require.NoError(t, d.Init())
+
+	_, err = d.SQL().Exec(`INSERT INTO items (id,name,slot,tier,wieldstyle,gamelink,classes,weapon_min_dmg,weapon_max_dmg,delay) VALUES (1,'X','Cloak','LEGENDARY','','','assassin',0,0,0)`)
+	require.NoError(t, err)
+	_, err = d.SQL().Exec(`INSERT INTO item_stats (item_id,stat,value,source) VALUES (1,'attackspeed',10,'modifier'),(1,'attackspeed',25,'effect')`)
+	require.NoError(t, err)
+
+	items, err := d.LoadScorableItems()
+	require.NoError(t, err)
+	require.Len(t, items, 1)
+	require.InDelta(t, 35.0, items[0].Stats.Haste, 1e-9)
+}

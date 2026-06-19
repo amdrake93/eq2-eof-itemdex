@@ -38,7 +38,12 @@ CREATE TABLE IF NOT EXISTS items (
 );
 CREATE TABLE IF NOT EXISTS item_stats (
   item_id INTEGER, stat TEXT, value REAL,
-  PRIMARY KEY (item_id, stat)
+  source TEXT NOT NULL DEFAULT 'modifier',
+  PRIMARY KEY (item_id, stat, source)
+);
+CREATE TABLE IF NOT EXISTS item_procs (
+  item_id INTEGER, trigger TEXT, per_minute REAL,
+  dmg_type TEXT, min_dmg REAL, max_dmg REAL, raw TEXT
 );
 CREATE TABLE IF NOT EXISTS combat_arts (
   name TEXT PRIMARY KEY, level INTEGER, min_dmg REAL, max_dmg REAL,
@@ -307,7 +312,7 @@ func (d *DB) LoadScorableItems() ([]ScorableItem, error) {
 				_ = sr.Close()
 				return nil, err
 			}
-			items[i].Mods[stat] = val
+			items[i].Mods[stat] += val
 		}
 		if err := sr.Err(); err != nil {
 			_ = sr.Close()
@@ -347,11 +352,61 @@ func (d *DB) LoadGear(items []census.Item) (err error) {
 
 		for stat, m := range it.Modifiers {
 			if _, err = tx.Exec(
-				`INSERT OR REPLACE INTO item_stats (item_id, stat, value) VALUES (?, ?, ?)`,
+				`INSERT OR REPLACE INTO item_stats (item_id, stat, value, source) VALUES (?, ?, ?, 'modifier')`,
 				it.ID, stat, m.Value,
 			); err != nil {
 				return err
 			}
+		}
+	}
+
+	return tx.Commit()
+}
+
+// LoadItemEffects inserts effect-derived stats tagged source='effect' so they
+// coexist with (and sum alongside) the modifier rows for the same item+stat.
+func (d *DB) LoadItemEffects(stats []catalog.EffectStat) (err error) {
+	tx, err := d.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err != nil {
+			_ = tx.Rollback()
+		}
+	}()
+
+	for _, s := range stats {
+		if _, err = tx.Exec(
+			`INSERT OR REPLACE INTO item_stats (item_id, stat, value, source) VALUES (?, ?, ?, 'effect')`,
+			s.ItemID, s.Stat, s.Value,
+		); err != nil {
+			return err
+		}
+	}
+
+	return tx.Commit()
+}
+
+// LoadItemProcs inserts triggered item procs into the item_procs catalog.
+func (d *DB) LoadItemProcs(procs []catalog.ItemProc) (err error) {
+	tx, err := d.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err != nil {
+			_ = tx.Rollback()
+		}
+	}()
+
+	for _, p := range procs {
+		if _, err = tx.Exec(
+			`INSERT INTO item_procs (item_id, trigger, per_minute, dmg_type, min_dmg, max_dmg, raw)
+			 VALUES (?, ?, ?, ?, ?, ?, ?)`,
+			p.ItemID, p.Trigger, p.PerMinute, p.DmgType, p.MinDmg, p.MaxDmg, p.Raw,
+		); err != nil {
+			return err
 		}
 	}
 
