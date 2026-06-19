@@ -29,6 +29,12 @@ type Slot struct {
 	Name string `json:"name"`
 }
 
+// Effect is one line of an item's effect_list (raw text + nesting depth).
+type Effect struct {
+	Description string `json:"description"`
+	Indentation int    `json:"indentation"`
+}
+
 type Modifier struct {
 	DisplayName FlexString `json:"displayname"`
 	Type        string     `json:"type"`
@@ -78,6 +84,7 @@ type Item struct {
 	Slots       []Slot              `json:"slot_list"`
 	TypeInfo    TypeInfo            `json:"typeinfo"`
 	Modifiers   map[string]Modifier `json:"modifiers"`
+	EffectList  []Effect            `json:"effect_list"`
 	Extended    Extended            `json:"_extended"`
 }
 

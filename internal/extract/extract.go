@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	showFields   = "displayname,id,tier,itemlevel,gamelink,slot_list,typeinfo,modifiers,_extended.discovered.world_list"
+	showFields   = "displayname,id,tier,itemlevel,gamelink,slot_list,typeinfo,modifiers,effect_list,_extended.discovered.world_list"
 	maxItemLevel = 72
 )
 

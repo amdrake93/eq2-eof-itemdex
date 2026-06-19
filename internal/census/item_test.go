@@ -43,6 +43,18 @@ func TestDecodeItemsError(t *testing.T) {
 	require.Error(t, err, "expected error on SERVER_ERROR payload")
 }
 
+func TestDecodeItemsEffectList(t *testing.T) {
+	body := []byte(`{"item_list":[{"id":1,"displayname":"Cloak of Flames","effect_list":[
+		{"description":"When Equipped:","indentation":0},
+		{"description":"Increases Haste of caster by 25.0.","indentation":1}]}]}`)
+	items, err := DecodeItems(body)
+	require.NoError(t, err)
+	require.Len(t, items, 1)
+	require.Len(t, items[0].EffectList, 2)
+	require.Equal(t, "Increases Haste of caster by 25.0.", items[0].EffectList[1].Description)
+	require.Equal(t, 1, items[0].EffectList[1].Indentation)
+}
+
 func TestDecodeWeaponSkillAndWieldStyle(t *testing.T) {
 	body := `{"item_list":[{
 	  "id":701979186,"displayname":"Grinning Dirk of Horror","type":"Weapon",
