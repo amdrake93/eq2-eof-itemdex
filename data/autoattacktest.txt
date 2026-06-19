@@ -1,0 +1,562 @@
+(1781888094)[Fri Jun 19 11:54:54 2026] YOU try to slash  Adjustable Training Monkey, but miss.
+(1781888100)[Fri Jun 19 11:55:00 2026] YOU hit  Adjustable Training Monkey for 485 slashing damage.
+(1781888100)[Fri Jun 19 11:55:00 2026] Your caustic poison afflicts  Adjustable Training Monkey!
+(1781888100)[Fri Jun 19 11:55:00 2026] YOUR Caustic Poison hits  Adjustable Training Monkey for 298 poison damage.
+(1781888101)[Fri Jun 19 11:55:01 2026] \aPC -1 Haznoboots:Haznoboots\/a tells General (3), "Shiiiiiiniiiiiiies"
+(1781888103)[Fri Jun 19 11:55:03 2026] \aPC -1 Deathcap:Deathcap\/a tells General (3), "I made 5 plat yesterday just bein a dumb little newbie"
+(1781888104)[Fri Jun 19 11:55:04 2026] \aPC -1 Zhanguine:Zhanguine\/a tells General (3), "pssst you can get them while any lv"
+(1781888106)[Fri Jun 19 11:55:06 2026] YOU hit  Adjustable Training Monkey for 253 slashing damage.
+(1781888112)[Fri Jun 19 11:55:12 2026] YOU try to slash  Adjustable Training Monkey, but miss.
+(1781888112)[Fri Jun 19 11:55:12 2026] YOU multi attack  Adjustable Training Monkey for a critical of 860 slashing damage.
+(1781888118)[Fri Jun 19 11:55:18 2026] YOU hit  Adjustable Training Monkey for 439 slashing damage.
+(1781888118)[Fri Jun 19 11:55:18 2026] Your caustic poison afflicts  Adjustable Training Monkey!
+(1781888118)[Fri Jun 19 11:55:18 2026] YOUR Caustic Poison hits  Adjustable Training Monkey for 298 poison damage.
+(1781888122)[Fri Jun 19 11:55:22 2026] \aPC -1 Leibitan:Leibitan\/a tells General (3), "I mean...you're right...they glow.  But, they have a name.  Shinies.  Mmmmm."
+(1781888123)[Fri Jun 19 11:55:23 2026] YOU hit  Adjustable Training Monkey for 337 slashing damage.
+(1781888123)[Fri Jun 19 11:55:23 2026] Your caustic poison afflicts  Adjustable Training Monkey!
+(1781888123)[Fri Jun 19 11:55:23 2026] YOUR Caustic Poison hits  Adjustable Training Monkey for 298 poison damage.
+(1781888127)[Fri Jun 19 11:55:27 2026] \aPC -1 Truepower:Truepower\/a tells LFG (4), "19 Templar LFG!"
+(1781888129)[Fri Jun 19 11:55:29 2026] YOU hit  Adjustable Training Monkey for 166 slashing damage.
+(1781888129)[Fri Jun 19 11:55:29 2026] Your caustic poison afflicts  Adjustable Training Monkey!
+(1781888129)[Fri Jun 19 11:55:29 2026] YOUR Caustic Poison hits  Adjustable Training Monkey for 298 poison damage.
+(1781888130)[Fri Jun 19 11:55:30 2026] Guildmate: Glimble has logged in.
+(1781888135)[Fri Jun 19 11:55:35 2026] \aPC -1 Bepis:Bepis\/a tells General (3), " excuse me, they're collectibles"
+(1781888135)[Fri Jun 19 11:55:35 2026] YOU hit  Adjustable Training Monkey for 460 slashing damage.
+(1781888135)[Fri Jun 19 11:55:35 2026] Your caustic poison afflicts  Adjustable Training Monkey!
+(1781888135)[Fri Jun 19 11:55:35 2026] YOUR Caustic Poison hits  Adjustable Training Monkey for 298 poison damage.
+(1781888137)[Fri Jun 19 11:55:37 2026] \aPC -1 Releaf:Releaf\/a tells General (3), "You can get shinys at any level"
+(1781888141)[Fri Jun 19 11:55:41 2026] YOU hit  Adjustable Training Monkey for 663 slashing damage.
+(1781888143)[Fri Jun 19 11:55:43 2026] \aPC -1 Deathcap:Deathcap\/a tells General (3), "I'm killing low level named stuff too though, they only drop the chests if your char is low too"
+(1781888147)[Fri Jun 19 11:55:47 2026] YOU hit  Adjustable Training Monkey for 525 slashing damage.
+(1781888153)[Fri Jun 19 11:55:53 2026] YOU hit  Adjustable Training Monkey for 486 slashing damage.
+(1781888153)[Fri Jun 19 11:55:53 2026] \aPC -1 Tibb:Tibb\/a tells General (3), "aren't they just "?"s ?? ;D"
+(1781888156)[Fri Jun 19 11:55:56 2026] \aPC -1 Busewee:Busewee\/a tells LFG (4), "48 Coercer LFG"
+(1781888158)[Fri Jun 19 11:55:58 2026] YOU hit  Adjustable Training Monkey for 402 slashing damage.
+(1781888158)[Fri Jun 19 11:55:58 2026] Your caustic poison afflicts  Adjustable Training Monkey!
+(1781888158)[Fri Jun 19 11:55:58 2026] YOUR Caustic Poison hits  Adjustable Training Monkey for 298 poison damage.
+(1781888160)[Fri Jun 19 11:56:00 2026] \aPC -1 Psalmus:Psalmus\/a tells LFG (4), "51 troub lfg!"
+(1781888164)[Fri Jun 19 11:56:04 2026] YOU try to slash  Adjustable Training Monkey, but miss.
+(1781888169)[Fri Jun 19 11:56:09 2026] \aPC -1 Deathcap:Deathcap\/a tells General (3), "It's like 5-10g per named mob"
+(1781888169)[Fri Jun 19 11:56:09 2026] \aPC -1 Haznoboots:Haznoboots\/a tells General (3), "yes, but shiny glowy ?'s"
+(1781888170)[Fri Jun 19 11:56:10 2026] \aPC -1 Swamp:Swamp\/a tells LFG (4), "56 Defiler LFG"
+(1781888170)[Fri Jun 19 11:56:10 2026] YOU hit  Adjustable Training Monkey for a critical of 776 slashing damage.
+(1781888170)[Fri Jun 19 11:56:10 2026] Your caustic poison afflicts  Adjustable Training Monkey!
+(1781888170)[Fri Jun 19 11:56:10 2026] YOUR Caustic Poison hits  Adjustable Training Monkey for 298 poison damage.
+(1781888176)[Fri Jun 19 11:56:16 2026] YOU hit  Adjustable Training Monkey for 306 slashing damage.
+(1781888176)[Fri Jun 19 11:56:16 2026] Your caustic poison afflicts  Adjustable Training Monkey!
+(1781888176)[Fri Jun 19 11:56:16 2026] YOUR Caustic Poison hits  Adjustable Training Monkey for 298 poison damage.
+(1781888182)[Fri Jun 19 11:56:22 2026] YOU try to slash  Adjustable Training Monkey, but miss.
+(1781888187)[Fri Jun 19 11:56:27 2026] YOU try to slash  Adjustable Training Monkey, but miss.
+(1781888193)[Fri Jun 19 11:56:33 2026] YOU hit  Adjustable Training Monkey for 187 slashing damage.
+(1781888193)[Fri Jun 19 11:56:33 2026] YOUR Greater Rune of Blasting hits  Adjustable Training Monkey for 623 magic damage.
+(1781888193)[Fri Jun 19 11:56:33 2026] Your caustic poison afflicts  Adjustable Training Monkey!
+(1781888193)[Fri Jun 19 11:56:33 2026] YOUR Caustic Poison hits  Adjustable Training Monkey for 298 poison damage.
+(1781888195)[Fri Jun 19 11:56:35 2026] \aPC -1 Grecon:Grecon\/a tells Auction (2), "cheaps ,g,o,l,d , kr, pl 1-70 only 3.5-5 hours fast delivery ,on ,[eqviper]-c0m---2339"
+(1781888199)[Fri Jun 19 11:56:39 2026] YOU try to slash  Adjustable Training Monkey, but miss.
+(1781888205)[Fri Jun 19 11:56:45 2026] YOU try to slash  Adjustable Training Monkey, but miss.
+(1781888208)[Fri Jun 19 11:56:48 2026] \aPC -1 Rylder:Rylder\/a tells General (3), "Hullo! How are trobadours in this game? Needed and wanted?"
+(1781888211)[Fri Jun 19 11:56:51 2026] YOU hit  Adjustable Training Monkey for 769 slashing damage.
+(1781888211)[Fri Jun 19 11:56:51 2026] Your caustic poison afflicts  Adjustable Training Monkey!
+(1781888211)[Fri Jun 19 11:56:51 2026] YOUR Caustic Poison hits  Adjustable Training Monkey for 298 poison damage.
+(1781888217)[Fri Jun 19 11:56:57 2026] YOU try to slash  Adjustable Training Monkey, but miss.
+(1781888219)[Fri Jun 19 11:56:59 2026] \aPC -1 Damien:Damien\/a tells General (3), "bards are always needed and wanted"
+(1781888219)[Fri Jun 19 11:56:59 2026] \aPC -1 Deathcap:Deathcap\/a tells General (3), "Yeah, ttroubs are good for caster-heavy groups"
+(1781888221)[Fri Jun 19 11:57:01 2026] \aPC -1 Tibb:Tibb\/a tells General (3), "some named respawn stupidly fast in the noob zones... saw someone camping a named that respawned every 30-60 seconds... dropping a chest each time"
+(1781888221)[Fri Jun 19 11:57:01 2026] \aPC -1 Psalmus:Psalmus\/a tells General (3), "fun!"
+(1781888222)[Fri Jun 19 11:57:02 2026] YOU hit  Adjustable Training Monkey for 761 slashing damage.
+(1781888228)[Fri Jun 19 11:57:08 2026] YOU hit  Adjustable Training Monkey for 231 slashing damage.
+(1781888228)[Fri Jun 19 11:57:08 2026] Your caustic poison afflicts  Adjustable Training Monkey!
+(1781888228)[Fri Jun 19 11:57:08 2026] YOUR Caustic Poison hits  Adjustable Training Monkey for 298 poison damage.
+(1781888234)[Fri Jun 19 11:57:14 2026] YOU hit  Adjustable Training Monkey for 236 slashing damage.
+(1781888234)[Fri Jun 19 11:57:14 2026] Your caustic poison afflicts  Adjustable Training Monkey!
+(1781888234)[Fri Jun 19 11:57:14 2026] YOUR Caustic Poison hits  Adjustable Training Monkey for 298 poison damage.
+(1781888240)[Fri Jun 19 11:57:20 2026] YOU hit  Adjustable Training Monkey for 327 slashing damage.
+(1781888240)[Fri Jun 19 11:57:20 2026] Your caustic poison afflicts  Adjustable Training Monkey!
+(1781888240)[Fri Jun 19 11:57:20 2026] YOUR Caustic Poison hits  Adjustable Training Monkey for 298 poison damage.
+(1781888242)[Fri Jun 19 11:57:22 2026] \aPC -1 Deathcap:Deathcap\/a tells General (3), "Yeah I'm cycling around beetween 5 named mobs in darklight levels 2-9"
+(1781888246)[Fri Jun 19 11:57:26 2026] YOU hit  Adjustable Training Monkey for 474 slashing damage.
+(1781888246)[Fri Jun 19 11:57:26 2026] YOUR Greater Rune of Blasting hits  Adjustable Training Monkey for 623 magic damage.
+(1781888246)[Fri Jun 19 11:57:26 2026] Your caustic poison afflicts  Adjustable Training Monkey!
+(1781888246)[Fri Jun 19 11:57:26 2026] YOUR Caustic Poison hits  Adjustable Training Monkey for 298 poison damage.
+(1781888252)[Fri Jun 19 11:57:32 2026] YOU hit  Adjustable Training Monkey for 552 slashing damage.
+(1781888252)[Fri Jun 19 11:57:32 2026] Your caustic poison afflicts  Adjustable Training Monkey!
+(1781888252)[Fri Jun 19 11:57:32 2026] YOUR Caustic Poison hits  Adjustable Training Monkey for 298 poison damage.
+(1781888257)[Fri Jun 19 11:57:37 2026] YOU hit  Adjustable Training Monkey for 700 slashing damage.
+(1781888257)[Fri Jun 19 11:57:37 2026] Your caustic poison afflicts  Adjustable Training Monkey!
+(1781888257)[Fri Jun 19 11:57:37 2026] YOUR Caustic Poison hits  Adjustable Training Monkey for 298 poison damage.
+(1781888263)[Fri Jun 19 11:57:43 2026] YOU try to slash  Adjustable Training Monkey, but miss.
+(1781888269)[Fri Jun 19 11:57:49 2026] YOU hit  Adjustable Training Monkey for 674 slashing damage.
+(1781888269)[Fri Jun 19 11:57:49 2026] YOUR Greater Rune of Blasting hits  Adjustable Training Monkey for 623 magic damage.
+(1781888269)[Fri Jun 19 11:57:49 2026] Your caustic poison afflicts  Adjustable Training Monkey!
+(1781888269)[Fri Jun 19 11:57:49 2026] YOUR Caustic Poison hits  Adjustable Training Monkey for 298 poison damage.
+(1781888272)[Fri Jun 19 11:57:52 2026] \aPC -1 Zhanguine:Zhanguine\/a tells General (3), "welp rip devs gunna nerf that now"
+(1781888275)[Fri Jun 19 11:57:55 2026] YOU try to slash  Adjustable Training Monkey, but miss.
+(1781888281)[Fri Jun 19 11:58:01 2026] YOU try to slash  Adjustable Training Monkey, but miss.
+(1781888282)[Fri Jun 19 11:58:02 2026] \aPC -1 Kappy:Kappy\/a tells LFG (4), "64 Defiler LFG "
+(1781888284)[Fri Jun 19 11:58:04 2026] \aPC -1 Rylder:Rylder\/a tells General (3), "Can troubadors do well on their own? Just in case I dont end up doing to much grouped stuff."
+(1781888286)[Fri Jun 19 11:58:06 2026] YOU hit  Adjustable Training Monkey for 264 slashing damage.
+(1781888286)[Fri Jun 19 11:58:06 2026] YOUR Greater Rune of Blasting hits  Adjustable Training Monkey for 623 magic damage.
+(1781888286)[Fri Jun 19 11:58:06 2026] YOU try to slash  Adjustable Training Monkey, but YOUR multi attack misses.
+(1781888289)[Fri Jun 19 11:58:09 2026] Nathaniel gained a tradeskill level and is now a level 12 Craftsman.
+(1781888292)[Fri Jun 19 11:58:12 2026] YOU hit  Adjustable Training Monkey for 468 slashing damage.
+(1781888292)[Fri Jun 19 11:58:12 2026] Your caustic poison afflicts  Adjustable Training Monkey!
+(1781888292)[Fri Jun 19 11:58:12 2026] YOUR Caustic Poison hits  Adjustable Training Monkey for 298 poison damage.
+(1781888298)[Fri Jun 19 11:58:18 2026] YOU hit  Adjustable Training Monkey for 255 slashing damage.
+(1781888304)[Fri Jun 19 11:58:24 2026] YOU try to slash  Adjustable Training Monkey, but miss.
+(1781888310)[Fri Jun 19 11:58:30 2026] YOU try to slash  Adjustable Training Monkey, but miss.
+(1781888313)[Fri Jun 19 11:58:33 2026] \aPC -1 Squigs:Squigs\/a tells General (3), "they're a group class"
+(1781888316)[Fri Jun 19 11:58:36 2026] YOU try to slash  Adjustable Training Monkey, but miss.
+(1781888316)[Fri Jun 19 11:58:36 2026] \aPC -1 Deathcap:Deathcap\/a tells General (3), "It's not 30 sec respawn, it's like 5-10 mins here, but that's fast enough if you're moving around a lot"
+(1781888316)[Fri Jun 19 11:58:36 2026] \aPC -1 Zoxxopg:Zoxxopg\/a tells General (3), "youre gonna have to work for it"
+(1781888321)[Fri Jun 19 11:58:41 2026] YOU try to slash  Adjustable Training Monkey, but miss.
+(1781888327)[Fri Jun 19 11:58:47 2026] YOU hit  Adjustable Training Monkey for a critical of 776 slashing damage.
+(1781888328)[Fri Jun 19 11:58:48 2026] \aPC -1 Elanthius:Elanthius\/a tells General (3), "yeah they not a t1 thats for sure"
+(1781888331)[Fri Jun 19 11:58:51 2026] \aPC -1 Cotillion:Cotillion\/a tells General (3), "they are ok, as a util it will be a bit harder tbh"
+(1781888333)[Fri Jun 19 11:58:53 2026] YOU hit  Adjustable Training Monkey for 154 slashing damage.
+(1781888337)[Fri Jun 19 11:58:57 2026] \aPC -1 Psalmus:Psalmus\/a tells General (3), "not impossible to solo with"
+(1781888337)[Fri Jun 19 11:58:57 2026] \aPC -1 Jethro:Jethro\/a tells General (3), "i don't think they care about someone's first 100 pts of transmute when they're handing us 1-70 in under 2 days with no xp pots"
+(1781888338)[Fri Jun 19 11:58:58 2026] \aPC -1 Kaos:Kaos\/a tells LFG (4), "61 Necro LFG"
+(1781888339)[Fri Jun 19 11:58:59 2026] YOU hit  Adjustable Training Monkey for 186 slashing damage.
+(1781888339)[Fri Jun 19 11:58:59 2026] Your caustic poison afflicts  Adjustable Training Monkey!
+(1781888339)[Fri Jun 19 11:58:59 2026] YOUR Caustic Poison hits  Adjustable Training Monkey for 298 poison damage.
+(1781888345)[Fri Jun 19 11:59:05 2026] YOU hit  Adjustable Training Monkey for 267 slashing damage.
+(1781888347)[Fri Jun 19 11:59:07 2026] \aPC -1 Tibb:Tibb\/a tells General (3), "the named croc in the river would like to bite you about every min. Just hang out with im."
+(1781888350)[Fri Jun 19 11:59:10 2026] YOU hit  Adjustable Training Monkey for 633 slashing damage.
+(1781888350)[Fri Jun 19 11:59:10 2026] YOU try to zap  Adjustable Training Monkey with Greater Rune of Blasting, but  Adjustable Training Monkey resists.
+(1781888350)[Fri Jun 19 11:59:10 2026] Your caustic poison afflicts  Adjustable Training Monkey!
+(1781888350)[Fri Jun 19 11:59:10 2026] YOUR Caustic Poison hits  Adjustable Training Monkey for 298 poison damage.
+(1781888356)[Fri Jun 19 11:59:16 2026] YOU hit  Adjustable Training Monkey for 609 slashing damage.
+(1781888356)[Fri Jun 19 11:59:16 2026] Your caustic poison afflicts  Adjustable Training Monkey!
+(1781888356)[Fri Jun 19 11:59:16 2026] YOUR Caustic Poison hits  Adjustable Training Monkey for 298 poison damage.
+(1781888361)[Fri Jun 19 11:59:21 2026] \aPC -1 Pich:Pich\/a tells General (3), "I wear crocs"
+(1781888362)[Fri Jun 19 11:59:22 2026] YOU hit  Adjustable Training Monkey for 275 slashing damage.
+(1781888362)[Fri Jun 19 11:59:22 2026] Your caustic poison afflicts  Adjustable Training Monkey!
+(1781888362)[Fri Jun 19 11:59:22 2026] YOUR Caustic Poison hits  Adjustable Training Monkey for 298 poison damage.
+(1781888364)[Fri Jun 19 11:59:24 2026] \aPC -1 Deathcap:Deathcap\/a tells General (3), "I didn't know the river had a named croc in it :p"
+(1781888365)[Fri Jun 19 11:59:25 2026] \aPC -1 Cotillion:Cotillion\/a tells General (3), "a healer buddy would awesome and pretty easy to get a group in that combo"
+(1781888365)[Fri Jun 19 11:59:25 2026] \aPC -1 Psalmus:Psalmus\/a tells LFG (4), "51 troub lfg"
+(1781888368)[Fri Jun 19 11:59:28 2026] YOU hit  Adjustable Training Monkey for 241 slashing damage.
+(1781888368)[Fri Jun 19 11:59:28 2026] YOUR Greater Rune of Blasting hits  Adjustable Training Monkey for 623 magic damage.
+(1781888368)[Fri Jun 19 11:59:28 2026] Iaint gained an adventure level and is now a level 57 Ranger.
+(1781888372)[Fri Jun 19 11:59:32 2026] \aPC -1 Jethro:Jethro\/a tells General (3), "WHAT ARE THOOSSEEE"
+(1781888373)[Fri Jun 19 11:59:33 2026] You consume a \aITEM -434100053 802226704:Flock of Seagulls\/a.
+(1781888374)[Fri Jun 19 11:59:34 2026] YOU try to slash  Adjustable Training Monkey, but miss.
+(1781888379)[Fri Jun 19 11:59:39 2026] YOU hit  Adjustable Training Monkey for 288 slashing damage.
+(1781888379)[Fri Jun 19 11:59:39 2026] Your caustic poison afflicts  Adjustable Training Monkey!
+(1781888379)[Fri Jun 19 11:59:39 2026] YOUR Caustic Poison hits  Adjustable Training Monkey for 298 poison damage.
+(1781888380)[Fri Jun 19 11:59:40 2026] \aPC -1 Dunkin:Dunkin\/a tells General (3), "if u report bots do they do anything about it?"
+(1781888382)[Fri Jun 19 11:59:42 2026] \aPC -1 Ysera:Ysera\/a tells General (3), "Fury + Troub sounds good"
+(1781888385)[Fri Jun 19 11:59:45 2026] \aPC -1 Tibb:Tibb\/a tells General (3), "there ya go! another to your rotation... sit there long enough and you'll be up to your eyeballs in noob gear"
+(1781888385)[Fri Jun 19 11:59:45 2026] YOU try to slash  Adjustable Training Monkey, but miss.
+(1781888391)[Fri Jun 19 11:59:51 2026] YOU try to slash  Adjustable Training Monkey, but miss.
+(1781888395)[Fri Jun 19 11:59:55 2026] \aPC -1 Elanthius:Elanthius\/a tells General (3), "money talks here"
+(1781888397)[Fri Jun 19 11:59:57 2026] YOU try to slash  Adjustable Training Monkey, but miss.
+(1781888400)[Fri Jun 19 12:00:00 2026] \aPC -1 Szath:Szath\/a tells Auction (2), "WTB Pal & Fury spells 60+, need all, offering rare + 15g"
+(1781888403)[Fri Jun 19 12:00:03 2026] YOU hit  Adjustable Training Monkey for 719 slashing damage.
+(1781888403)[Fri Jun 19 12:00:03 2026] YOU try to zap  Adjustable Training Monkey with Greater Rune of Blasting, but  Adjustable Training Monkey resists.
+(1781888403)[Fri Jun 19 12:00:03 2026] Your caustic poison afflicts  Adjustable Training Monkey!
+(1781888403)[Fri Jun 19 12:00:03 2026] YOUR Caustic Poison hits  Adjustable Training Monkey for 298 poison damage.
+(1781888408)[Fri Jun 19 12:00:08 2026] YOU try to slash  Adjustable Training Monkey, but miss.
+(1781888409)[Fri Jun 19 12:00:09 2026] \aPC -1 Busewee:Busewee\/a tells LFG (4), "48 Coercer LFG"
+(1781888414)[Fri Jun 19 12:00:14 2026] YOU hit  Adjustable Training Monkey for 694 slashing damage.
+(1781888419)[Fri Jun 19 12:00:19 2026] \aPC -1 Jethro:Jethro\/a tells General (3), "they probably roll their eyes because they already have investigated every box in the game, but keep their interns busy"
+(1781888420)[Fri Jun 19 12:00:20 2026] YOU try to slash  Adjustable Training Monkey, but miss.
+(1781888424)[Fri Jun 19 12:00:24 2026] \aPC -1 Andlin:Andlin\/a tells General (3), "CoV seeks chanter / +1 pst"
+(1781888426)[Fri Jun 19 12:00:26 2026] YOU try to slash  Adjustable Training Monkey, but miss.
+(1781888432)[Fri Jun 19 12:00:32 2026] YOU try to slash  Adjustable Training Monkey, but miss.
+(1781888435)[Fri Jun 19 12:00:35 2026] \aPC -1 Damien:Damien\/a tells General (3), "interns? I thought they used AI"
+(1781888435)[Fri Jun 19 12:00:35 2026] \aPC -1 Dunkin:Dunkin\/a tells General (3), "not boxes bots"
+(1781888436)[Fri Jun 19 12:00:36 2026] \aPC -1 Taktar:Taktar\/a tells General (3), "Troub LF EU Guild pst"
+(1781888437)[Fri Jun 19 12:00:37 2026] Veilcura gained an adventure level and is now a level 63 Mystic.
+(1781888438)[Fri Jun 19 12:00:38 2026] YOU hit  Adjustable Training Monkey for 174 slashing damage.
+(1781888438)[Fri Jun 19 12:00:38 2026] YOUR Greater Rune of Blasting hits  Adjustable Training Monkey for 623 magic damage.
+(1781888443)[Fri Jun 19 12:00:43 2026] \aPC -1 Nastrosin:Nastrosin\/a tells LFG (4), "47 Sin LFG"
+(1781888443)[Fri Jun 19 12:00:43 2026] YOU hit  Adjustable Training Monkey for 247 slashing damage.
+(1781888443)[Fri Jun 19 12:00:43 2026] Your caustic poison afflicts  Adjustable Training Monkey!
+(1781888443)[Fri Jun 19 12:00:43 2026] YOUR Caustic Poison hits  Adjustable Training Monkey for 298 poison damage.
+(1781888447)[Fri Jun 19 12:00:47 2026] \aPC -1 Deathcap:Deathcap\/a tells General (3), "Is that what people are buying them for?  To grind transmute skill?"
+(1781888449)[Fri Jun 19 12:00:49 2026] YOU hit  Adjustable Training Monkey for 252 slashing damage.
+(1781888454)[Fri Jun 19 12:00:54 2026] \aPC -1 Dunkin:Dunkin\/a tells General (3), "a full group harvesting in ts"
+(1781888455)[Fri Jun 19 12:00:55 2026] YOU hit  Adjustable Training Monkey for 143 slashing damage.
+(1781888455)[Fri Jun 19 12:00:55 2026] Your caustic poison afflicts  Adjustable Training Monkey!
+(1781888455)[Fri Jun 19 12:00:55 2026] YOUR Caustic Poison hits  Adjustable Training Monkey for 298 poison damage.
+(1781888457)[Fri Jun 19 12:00:57 2026] \aPC -1 Tibb:Tibb\/a tells General (3), "most likely"
+(1781888461)[Fri Jun 19 12:01:01 2026] YOU hit  Adjustable Training Monkey for 170 slashing damage.
+(1781888461)[Fri Jun 19 12:01:01 2026] Your caustic poison afflicts  Adjustable Training Monkey!
+(1781888461)[Fri Jun 19 12:01:01 2026] YOUR Caustic Poison hits  Adjustable Training Monkey for 298 poison damage.
+(1781888467)[Fri Jun 19 12:01:07 2026] YOU try to slash  Adjustable Training Monkey, but miss.
+(1781888468)[Fri Jun 19 12:01:08 2026] \aPC -1 Sneaky:Sneaky\/a tells General (3), "there's a russian guild lol"
+(1781888472)[Fri Jun 19 12:01:12 2026] YOU try to slash  Adjustable Training Monkey, but miss.
+(1781888474)[Fri Jun 19 12:01:14 2026] \aPC -1 Mahado:Mahado\/a tells LFG (4), "TEMPLAR 70 lfg"
+(1781888477)[Fri Jun 19 12:01:17 2026] \aPC -1 Atis:Atis\/a tells LFG (4), "63 Inq LFG"
+(1781888477)[Fri Jun 19 12:01:17 2026] \aPC -1 Fizzleboxer:Fizzleboxer\/a tells LFG (4), "14 FURY LFG"
+(1781888478)[Fri Jun 19 12:01:18 2026] YOU hit  Adjustable Training Monkey for 572 slashing damage.
+(1781888481)[Fri Jun 19 12:01:21 2026] \aPC -1 Kappy:Kappy\/a tells LFG (4), "64 Defiler LFG "
+(1781888484)[Fri Jun 19 12:01:24 2026] YOU hit  Adjustable Training Monkey for 736 slashing damage.
+(1781888487)[Fri Jun 19 12:01:27 2026] \aPC -1 Jethro:Jethro\/a tells General (3), "you think a person running around with 5 groupmates in tow harvesting is botting."
+(1781888488)[Fri Jun 19 12:01:28 2026] \aPC -1 Cotillion:Cotillion\/a tells General (3), "probably a few tbh lol"
+(1781888490)[Fri Jun 19 12:01:30 2026] YOU hit  Adjustable Training Monkey for 699 slashing damage.
+(1781888490)[Fri Jun 19 12:01:30 2026] Your caustic poison afflicts  Adjustable Training Monkey!
+(1781888490)[Fri Jun 19 12:01:30 2026] YOUR Caustic Poison hits  Adjustable Training Monkey for 298 poison damage.
+(1781888493)[Fri Jun 19 12:01:33 2026] \aPC -1 Killtoad:Killtoad\/a tells Auction (2), "wts \aITEM -1024117740 -1521139472 0 0 0:(10 Pack) Potion of Crafting Progress\/a pst"
+(1781888496)[Fri Jun 19 12:01:36 2026] YOU try to slash  Adjustable Training Monkey, but miss.
+(1781888499)[Fri Jun 19 12:01:39 2026] \aPC -1 Psalmus:Psalmus\/a tells LFG (4), "51 troub lfg"
+(1781888499)[Fri Jun 19 12:01:39 2026] \aPC -1 Jethro:Jethro\/a tells General (3), "see, this is why they have interns."
+(1781888501)[Fri Jun 19 12:01:41 2026] YOU try to slash  Adjustable Training Monkey, but miss.
+(1781888504)[Fri Jun 19 12:01:44 2026] \aPC -1 Wildrichy:Wildrichy\/a tells LFG (4), "LFG dirge 22"
+(1781888507)[Fri Jun 19 12:01:47 2026] YOU try to slash  Adjustable Training Monkey, but miss.
+(1781888509)[Fri Jun 19 12:01:49 2026] \aPC -1 Oyolo:Oyolo\/a tells General (3), "WTS Powewlvling -70 pst"
+(1781888513)[Fri Jun 19 12:01:53 2026] YOU try to slash  Adjustable Training Monkey, but miss.
+(1781888516)[Fri Jun 19 12:01:56 2026] \aPC -1 Mondo:Mondo\/a tells General (3), "As an Inquisitor, can crafting make me more powerful in PvE? Like is there a certain vocation that adds to my power? (like craftable no-drio gear)"
+(1781888519)[Fri Jun 19 12:01:59 2026] YOU try to slash  Adjustable Training Monkey, but miss.
+(1781888525)[Fri Jun 19 12:02:05 2026] YOU hit  Adjustable Training Monkey for 521 slashing damage.
+(1781888525)[Fri Jun 19 12:02:05 2026] Your caustic poison afflicts  Adjustable Training Monkey!
+(1781888525)[Fri Jun 19 12:02:05 2026] YOUR Caustic Poison hits  Adjustable Training Monkey for 298 poison damage.
+(1781888525)[Fri Jun 19 12:02:05 2026] The poison dissipates from your weapons.
+(1781888525)[Fri Jun 19 12:02:05 2026] You coat your weapons with poison.
+(1781888525)[Fri Jun 19 12:02:05 2026] You consume a \aITEM 205060089 -519196129:Superior Caustic Poison\/a.
+(1781888527)[Fri Jun 19 12:02:07 2026] \aPC -1 Dunkin:Dunkin\/a tells General (3), "ya cause normal folks dont run over u and harvest the node u are harvesting"
+(1781888528)[Fri Jun 19 12:02:08 2026] \aPC -1 Raii:Raii\/a tells LFG (4), "66 troub lfg"
+(1781888530)[Fri Jun 19 12:02:10 2026] YOU hit  Adjustable Training Monkey for 273 slashing damage.
+(1781888530)[Fri Jun 19 12:02:10 2026] YOU try to zap  Adjustable Training Monkey with Greater Rune of Blasting, but  Adjustable Training Monkey resists.
+(1781888530)[Fri Jun 19 12:02:10 2026] Your caustic poison afflicts  Adjustable Training Monkey!
+(1781888531)[Fri Jun 19 12:02:11 2026] YOUR Caustic Poison hits  Adjustable Training Monkey for 298 poison damage.
+(1781888536)[Fri Jun 19 12:02:16 2026] YOU hit  Adjustable Training Monkey for 240 slashing damage.
+(1781888542)[Fri Jun 19 12:02:22 2026] YOU try to slash  Adjustable Training Monkey, but miss.
+(1781888548)[Fri Jun 19 12:02:28 2026] YOU try to slash  Adjustable Training Monkey, but miss.
+(1781888549)[Fri Jun 19 12:02:29 2026] \aPC -1 Jethro:Jethro\/a tells General (3), "people try to do that often. i just click faster"
+(1781888554)[Fri Jun 19 12:02:34 2026] YOU try to slash  Adjustable Training Monkey, but miss.
+(1781888554)[Fri Jun 19 12:02:34 2026] \aPC -1 Truepower:Truepower\/a tells LFG (4), "19 Templar LFG!"
+(1781888559)[Fri Jun 19 12:02:39 2026] YOU hit  Adjustable Training Monkey for 622 slashing damage.
+(1781888559)[Fri Jun 19 12:02:39 2026] Your caustic poison afflicts  Adjustable Training Monkey!
+(1781888559)[Fri Jun 19 12:02:39 2026] YOUR Caustic Poison hits  Adjustable Training Monkey for 298 poison damage.
+(1781888561)[Fri Jun 19 12:02:41 2026] \aPC -1 Kaos:Kaos\/a tells LFG (4), "61 Necro LFG"
+(1781888565)[Fri Jun 19 12:02:45 2026] YOU hit  Adjustable Training Monkey for 674 slashing damage.
+(1781888565)[Fri Jun 19 12:02:45 2026] YOUR Greater Rune of Blasting hits  Adjustable Training Monkey for 623 magic damage.
+(1781888571)[Fri Jun 19 12:02:51 2026] YOU hit  Adjustable Training Monkey for 164 slashing damage.
+(1781888571)[Fri Jun 19 12:02:51 2026] Your caustic poison afflicts  Adjustable Training Monkey!
+(1781888571)[Fri Jun 19 12:02:51 2026] YOUR Caustic Poison hits  Adjustable Training Monkey for 298 poison damage.
+(1781888575)[Fri Jun 19 12:02:55 2026] \aPC -1 Dunkin:Dunkin\/a tells General (3), "oh first time i saw it happen to me"
+(1781888576)[Fri Jun 19 12:02:56 2026] \aPC -1 Haznoboots:Haznoboots\/a tells LFG (4), "45 wiz lf xp :)"
+(1781888577)[Fri Jun 19 12:02:57 2026] YOU try to slash  Adjustable Training Monkey, but miss.
+(1781888580)[Fri Jun 19 12:03:00 2026] \aPC -1 Jethro:Jethro\/a tells General (3), "and so because a person, with other characters autofollowing, tried to click your node, you're going to report that as botting."
+(1781888583)[Fri Jun 19 12:03:03 2026] YOU try to slash  Adjustable Training Monkey, but miss.
+(1781888584)[Fri Jun 19 12:03:04 2026] \aPC -1 Alchardeen:Alchardeen\/a tells LFG (4), "70 Illy LFG"
+(1781888589)[Fri Jun 19 12:03:09 2026] YOU try to slash  Adjustable Training Monkey, but miss.
+(1781888594)[Fri Jun 19 12:03:14 2026] YOU hit  Adjustable Training Monkey for 622 slashing damage.
+(1781888594)[Fri Jun 19 12:03:14 2026] Your caustic poison afflicts  Adjustable Training Monkey!
+(1781888594)[Fri Jun 19 12:03:14 2026] YOUR Caustic Poison hits  Adjustable Training Monkey for 298 poison damage.
+(1781888595)[Fri Jun 19 12:03:15 2026] \aPC -1 Sonder:Sonder\/a tells LFG (4), "42 Coe LFG"
+(1781888599)[Fri Jun 19 12:03:19 2026] \aPC -1 Volk:Volk\/a tells LFG (4), "15 zerk lfg"
+(1781888600)[Fri Jun 19 12:03:20 2026] YOU hit  Adjustable Training Monkey for 207 slashing damage.
+(1781888600)[Fri Jun 19 12:03:20 2026] YOU try to confound  Adjustable Training Monkey with Stun V, but  Adjustable Training Monkey resists.
+(1781888600)[Fri Jun 19 12:03:20 2026] Your caustic poison afflicts  Adjustable Training Monkey!
+(1781888600)[Fri Jun 19 12:03:20 2026] YOUR Caustic Poison hits  Adjustable Training Monkey for 298 poison damage.
+(1781888606)[Fri Jun 19 12:03:26 2026] YOU hit  Adjustable Training Monkey for 363 slashing damage.
+(1781888606)[Fri Jun 19 12:03:26 2026] YOU try to zap  Adjustable Training Monkey with Greater Rune of Blasting, but  Adjustable Training Monkey resists.
+(1781888606)[Fri Jun 19 12:03:26 2026] Your caustic poison afflicts  Adjustable Training Monkey!
+(1781888606)[Fri Jun 19 12:03:26 2026] YOUR Caustic Poison hits  Adjustable Training Monkey for 298 poison damage.
+(1781888612)[Fri Jun 19 12:03:32 2026] YOU hit  Adjustable Training Monkey for 567 slashing damage.
+(1781888612)[Fri Jun 19 12:03:32 2026] Your caustic poison afflicts  Adjustable Training Monkey!
+(1781888612)[Fri Jun 19 12:03:32 2026] YOUR Caustic Poison hits  Adjustable Training Monkey for 298 poison damage.
+(1781888616)[Fri Jun 19 12:03:36 2026] \aPC -1 Nathenial:Nathenial\/a tells General (3), "They probably had the same name, just different versions."
+(1781888618)[Fri Jun 19 12:03:38 2026] YOU try to slash  Adjustable Training Monkey, but miss.
+(1781888624)[Fri Jun 19 12:03:44 2026] YOU try to slash  Adjustable Training Monkey, but miss.
+(1781888629)[Fri Jun 19 12:03:49 2026] YOU try to slash  Adjustable Training Monkey, but miss.
+(1781888630)[Fri Jun 19 12:03:50 2026] \aPC -1 Kappy:Kappy\/a tells LFG (4), "64 Defiler LFG "
+(1781888635)[Fri Jun 19 12:03:55 2026] YOU try to slash  Adjustable Training Monkey, but miss.
+(1781888637)[Fri Jun 19 12:03:57 2026] \aPC -1 Dunkin:Dunkin\/a tells General (3), "i didnt know folks loved botters so much sorry to hurt your feelings jethro"
+(1781888639)[Fri Jun 19 12:03:59 2026] \aPC -1 Mahado:Mahado\/a tells LFG (4), "TEMPLAR 70 lfg"
+(1781888641)[Fri Jun 19 12:04:01 2026] YOU try to slash  Adjustable Training Monkey, but miss.
+(1781888647)[Fri Jun 19 12:04:07 2026] YOU hit  Adjustable Training Monkey for 167 slashing damage.
+(1781888650)[Fri Jun 19 12:04:10 2026] \aPC -1 Sitama:Sitama\/a tells LFG (4), "Scornfeather Roost LF1 DPS or Util 50 ish"
+(1781888650)[Fri Jun 19 12:04:10 2026] \aPC -1 Darkskye:Darkskye\/a tells LFG (4), "50 Necro LFG"
+(1781888653)[Fri Jun 19 12:04:13 2026] YOU hit  Adjustable Training Monkey for 627 slashing damage.
+(1781888653)[Fri Jun 19 12:04:13 2026] YOUR Greater Rune of Blasting hits  Adjustable Training Monkey for 623 magic damage.
+(1781888654)[Fri Jun 19 12:04:14 2026] \aPC -1 Rami:Rami\/a tells General (3), "He always takes up for them, just ignore him and move on."
+(1781888659)[Fri Jun 19 12:04:19 2026] YOU try to slash  Adjustable Training Monkey, but miss.
+(1781888664)[Fri Jun 19 12:04:24 2026] \aPC -1 Andlin:Andlin\/a tells LFG (4), "CoV las tspot pst"
+(1781888664)[Fri Jun 19 12:04:24 2026] YOU hit  Adjustable Training Monkey for 443 slashing damage.
+(1781888669)[Fri Jun 19 12:04:29 2026] \aPC -1 Dunkin:Dunkin\/a tells General (3), "lol"
+(1781888670)[Fri Jun 19 12:04:30 2026] YOU try to slash  Adjustable Training Monkey, but miss.
+(1781888671)[Fri Jun 19 12:04:31 2026] \aPC -1 Jethro:Jethro\/a tells General (3), "how do i always do anything, it's the first time i've discussed it"
+(1781888676)[Fri Jun 19 12:04:36 2026] YOU try to slash  Adjustable Training Monkey, but miss.
+(1781888682)[Fri Jun 19 12:04:42 2026] \aPC -1 Kyram:Kyram\/a tells LFG (4), "53 Fury LFG CT. Will mentor."
+(1781888682)[Fri Jun 19 12:04:42 2026] YOU hit  Adjustable Training Monkey for 661 slashing damage.
+(1781888682)[Fri Jun 19 12:04:42 2026] Your caustic poison afflicts  Adjustable Training Monkey!
+(1781888682)[Fri Jun 19 12:04:42 2026] YOUR Caustic Poison hits  Adjustable Training Monkey for 298 poison damage.
+(1781888682)[Fri Jun 19 12:04:42 2026] \aPC -1 Veryrare:Veryrare\/a tells LFG (4), "63 necro lfg"
+(1781888687)[Fri Jun 19 12:04:47 2026] YOU hit  Adjustable Training Monkey for 512 slashing damage.
+(1781888687)[Fri Jun 19 12:04:47 2026] Your caustic poison afflicts  Adjustable Training Monkey!
+(1781888687)[Fri Jun 19 12:04:47 2026] YOUR Caustic Poison hits  Adjustable Training Monkey for 298 poison damage.
+(1781888689)[Fri Jun 19 12:04:49 2026] \aPC -1 Psalmus:Psalmus\/a tells LFG (4), "mid 40s low 50 xp group lfm, need heal and tank"
+(1781888691)[Fri Jun 19 12:04:51 2026] \aPC -1 Jethro:Jethro\/a tells General (3), "and why are you telling people to ignore me when i'm pointing out this person's obviously a rube"
+(1781888693)[Fri Jun 19 12:04:53 2026] YOU hit  Adjustable Training Monkey for a critical of 776 slashing damage.
+(1781888699)[Fri Jun 19 12:04:59 2026] YOU hit  Adjustable Training Monkey for 690 slashing damage.
+(1781888699)[Fri Jun 19 12:04:59 2026] YOUR Greater Rune of Blasting hits  Adjustable Training Monkey for 623 magic damage.
+(1781888699)[Fri Jun 19 12:04:59 2026] Your caustic poison afflicts  Adjustable Training Monkey!
+(1781888699)[Fri Jun 19 12:04:59 2026] YOUR Caustic Poison hits  Adjustable Training Monkey for 298 poison damage.
+(1781888705)[Fri Jun 19 12:05:05 2026] YOU try to slash  Adjustable Training Monkey, but miss.
+(1781888711)[Fri Jun 19 12:05:11 2026] YOU hit  Adjustable Training Monkey for 153 slashing damage.
+(1781888711)[Fri Jun 19 12:05:11 2026] Your caustic poison afflicts  Adjustable Training Monkey!
+(1781888711)[Fri Jun 19 12:05:11 2026] YOUR Caustic Poison hits  Adjustable Training Monkey for 298 poison damage.
+(1781888717)[Fri Jun 19 12:05:17 2026] YOU try to slash  Adjustable Training Monkey, but miss.
+(1781888719)[Fri Jun 19 12:05:19 2026] \aPC -1 Dunkin:Dunkin\/a tells General (3), "SKs are supposed to be rude but hey whatever"
+(1781888722)[Fri Jun 19 12:05:22 2026] YOU hit  Adjustable Training Monkey for 744 slashing damage.
+(1781888722)[Fri Jun 19 12:05:22 2026] YOU try to confound  Adjustable Training Monkey with Stun V, but  Adjustable Training Monkey resists.
+(1781888722)[Fri Jun 19 12:05:22 2026] Your caustic poison afflicts  Adjustable Training Monkey!
+(1781888722)[Fri Jun 19 12:05:22 2026] YOUR Caustic Poison hits  Adjustable Training Monkey for 298 poison damage.
+(1781888724)[Fri Jun 19 12:05:24 2026] \aPC -1 Squeakles:Squeakles\/a tells LFG (4), "59 brig, 57 coercer, or 25 dirge LFG"
+(1781888728)[Fri Jun 19 12:05:28 2026] \aPC -1 Truepower:Truepower\/a tells LFG (4), "19 Templar LFG!"
+(1781888728)[Fri Jun 19 12:05:28 2026] \aPC -1 Jethro:Jethro\/a tells General (3), "rube"
+(1781888728)[Fri Jun 19 12:05:28 2026] YOU hit  Adjustable Training Monkey for a critical of 776 slashing damage.
+(1781888728)[Fri Jun 19 12:05:28 2026] YOUR Greater Rune of Blasting hits  Adjustable Training Monkey for 623 magic damage.
+(1781888732)[Fri Jun 19 12:05:32 2026] \aPC -1 Blackjack:Blackjack\/a tells LFG (4), "Lv 70 Troub LFG CMM"
+(1781888734)[Fri Jun 19 12:05:34 2026] YOU hit  Adjustable Training Monkey for a critical of 906 slashing damage.
+(1781888734)[Fri Jun 19 12:05:34 2026] Your caustic poison afflicts  Adjustable Training Monkey!
+(1781888734)[Fri Jun 19 12:05:34 2026] YOUR Caustic Poison hits  Adjustable Training Monkey for 298 poison damage.
+(1781888734)[Fri Jun 19 12:05:34 2026] YOU multi attack  Adjustable Training Monkey for 697 slashing damage.
+(1781888738)[Fri Jun 19 12:05:38 2026] \aPC -1 Elanthius:Elanthius\/a tells General (3), "whats rube mena"
+(1781888740)[Fri Jun 19 12:05:40 2026] YOU try to slash  Adjustable Training Monkey, but miss.
+(1781888745)[Fri Jun 19 12:05:45 2026] \aPC -1 Inosi:Inosi\/a tells General (3), "i do love botters. they're gonna contribute more to the server than the 90% of people reporting them who'll quit in a month lol"
+(1781888746)[Fri Jun 19 12:05:46 2026] YOU try to slash  Adjustable Training Monkey, but miss.
+(1781888746)[Fri Jun 19 12:05:46 2026] \aPC -1 Nefarious:Nefarious\/a tells General (3), "I like potatos"
+(1781888751)[Fri Jun 19 12:05:51 2026] \aPC -1 Psalmus:Psalmus\/a tells LFG (4), "CT lf tank"
+(1781888752)[Fri Jun 19 12:05:52 2026] YOU hit  Adjustable Training Monkey for 567 slashing damage.
+(1781888752)[Fri Jun 19 12:05:52 2026] YOUR Greater Rune of Blasting hits  Adjustable Training Monkey for 623 magic damage.
+(1781888752)[Fri Jun 19 12:05:52 2026] Your caustic poison afflicts  Adjustable Training Monkey!
+(1781888752)[Fri Jun 19 12:05:52 2026] YOUR Caustic Poison hits  Adjustable Training Monkey for 298 poison damage.
+(1781888757)[Fri Jun 19 12:05:57 2026] \aPC -1 Cotillion:Cotillion\/a tells General (3), "new or ineperienced person"
+(1781888757)[Fri Jun 19 12:05:57 2026] YOU hit  Adjustable Training Monkey for 204 slashing damage.
+(1781888757)[Fri Jun 19 12:05:57 2026] YOU try to zap  Adjustable Training Monkey with Greater Rune of Blasting, but  Adjustable Training Monkey resists.
+(1781888757)[Fri Jun 19 12:05:57 2026] Your caustic poison afflicts  Adjustable Training Monkey!
+(1781888757)[Fri Jun 19 12:05:57 2026] YOUR Caustic Poison hits  Adjustable Training Monkey for 298 poison damage.
+(1781888759)[Fri Jun 19 12:05:59 2026] \aPC -1 Jethro:Jethro\/a tells General (3), "A rube is an informal, somewhat derogatory term for an unsophisticated, uneducated, or naive person, especially someone from a rural area who lacks urban polish."
+(1781888763)[Fri Jun 19 12:06:03 2026] \aPC -1 Visenya:Visenya\/a tells General (3), "i like trains"
+(1781888763)[Fri Jun 19 12:06:03 2026] YOU hit  Adjustable Training Monkey for 183 slashing damage.
+(1781888763)[Fri Jun 19 12:06:03 2026] Your caustic poison afflicts  Adjustable Training Monkey!
+(1781888763)[Fri Jun 19 12:06:03 2026] YOUR Caustic Poison hits  Adjustable Training Monkey for 298 poison damage.
+(1781888769)[Fri Jun 19 12:06:09 2026] YOU hit  Adjustable Training Monkey for 250 slashing damage.
+(1781888769)[Fri Jun 19 12:06:09 2026] Your caustic poison afflicts  Adjustable Training Monkey!
+(1781888769)[Fri Jun 19 12:06:09 2026] YOUR Caustic Poison hits  Adjustable Training Monkey for 298 poison damage.
+(1781888775)[Fri Jun 19 12:06:15 2026] YOU hit  Adjustable Training Monkey for 769 slashing damage.
+(1781888775)[Fri Jun 19 12:06:15 2026] Your caustic poison afflicts  Adjustable Training Monkey!
+(1781888775)[Fri Jun 19 12:06:15 2026] YOUR Caustic Poison hits  Adjustable Training Monkey for 298 poison damage.
+(1781888778)[Fri Jun 19 12:06:18 2026] Nathaniel gained a tradeskill level and is now a level 13 Craftsman.
+(1781888781)[Fri Jun 19 12:06:21 2026] YOU try to slash  Adjustable Training Monkey, but miss.
+(1781888784)[Fri Jun 19 12:06:24 2026] \aPC -1 Atis:Atis\/a tells LFG (4), "63 Inq LFG"
+(1781888785)[Fri Jun 19 12:06:25 2026] \aPC -1 Cotillion:Cotillion\/a tells General (3), "i like PIE"
+(1781888786)[Fri Jun 19 12:06:26 2026] \aPC -1 Nefarious:Nefarious\/a tells General (3), "Wait so urban means polish?"
+(1781888786)[Fri Jun 19 12:06:26 2026] YOU try to slash  Adjustable Training Monkey, but miss.
+(1781888792)[Fri Jun 19 12:06:32 2026] YOU hit  Adjustable Training Monkey for 186 slashing damage.
+(1781888792)[Fri Jun 19 12:06:32 2026] YOU try to confound  Adjustable Training Monkey with Stun V, but  Adjustable Training Monkey resists.
+(1781888792)[Fri Jun 19 12:06:32 2026] Your caustic poison afflicts  Adjustable Training Monkey!
+(1781888792)[Fri Jun 19 12:06:32 2026] YOUR Caustic Poison hits  Adjustable Training Monkey for 298 poison damage.
+(1781888798)[Fri Jun 19 12:06:38 2026] \aPC -1 Nefarious:Nefarious\/a tells General (3), "I thought it mean gunshot victim"
+(1781888798)[Fri Jun 19 12:06:38 2026] YOU hit  Adjustable Training Monkey for a critical of 776 slashing damage.
+(1781888799)[Fri Jun 19 12:06:39 2026] \aPC -1 Cotillion:Cotillion\/a tells General (3), "urbane"
+(1781888804)[Fri Jun 19 12:06:44 2026] YOU hit  Adjustable Training Monkey for 494 slashing damage.
+(1781888808)[Fri Jun 19 12:06:48 2026] \aPC -1 Fizzleboxer:Fizzleboxer\/a tells LFG (4), "14 FURY LFG"
+(1781888810)[Fri Jun 19 12:06:50 2026] YOU try to slash  Adjustable Training Monkey, but miss.
+(1781888812)[Fri Jun 19 12:06:52 2026] \aPC -1 Bmine:Bmine\/a tells General (3), "trains with faces, trains without faces"
+(1781888816)[Fri Jun 19 12:06:56 2026] YOU try to slash  Adjustable Training Monkey, but miss.
+(1781888817)[Fri Jun 19 12:06:57 2026] \aPC -1 Batt:Batt\/a tells General (3), "Looking for a 70 Jeweler for some dirge experts PST"
+(1781888819)[Fri Jun 19 12:06:59 2026] \aPC -1 Jethro:Jethro\/a tells General (3), "he called a person, with characters autofollowing, who tried to click his harvest node, a bot"
+(1781888822)[Fri Jun 19 12:07:02 2026] YOU hit  Adjustable Training Monkey for 390 slashing damage.
+(1781888822)[Fri Jun 19 12:07:02 2026] YOUR Greater Rune of Blasting hits  Adjustable Training Monkey for 623 magic damage.
+(1781888824)[Fri Jun 19 12:07:04 2026] \aPC -1 Birdzerker:Birdzerker\/a tells General (3), "Starting MMC in a few mins - LF Bard, and DPS, or Non Plate heals. pst"
+(1781888827)[Fri Jun 19 12:07:07 2026] \aPC -1 Nathenial:Nathenial\/a tells General (3), "Trains weith faces are nightmare fuel."
+(1781888827)[Fri Jun 19 12:07:07 2026] YOU hit  Adjustable Training Monkey for 373 slashing damage.
+(1781888827)[Fri Jun 19 12:07:07 2026] YOU try to zap  Adjustable Training Monkey with Greater Rune of Blasting, but  Adjustable Training Monkey resists.
+(1781888828)[Fri Jun 19 12:07:08 2026] \aPC -1 Tibb:Tibb\/a tells General (3), "snakes on a plane"
+(1781888832)[Fri Jun 19 12:07:12 2026] \aPC -1 Mountain:Mountain\/a tells General (3), "can i mentor rq someone level 25"
+(1781888833)[Fri Jun 19 12:07:13 2026] YOU try to slash  Adjustable Training Monkey, but miss.
+(1781888838)[Fri Jun 19 12:07:18 2026] \aPC -1 Cotillion:Cotillion\/a tells General (3), "and he could be, let it go FFS"
+(1781888839)[Fri Jun 19 12:07:19 2026] YOU hit  Adjustable Training Monkey for 590 slashing damage.
+(1781888839)[Fri Jun 19 12:07:19 2026] YOU try to confound  Adjustable Training Monkey with Stun V, but  Adjustable Training Monkey resists.
+(1781888840)[Fri Jun 19 12:07:20 2026] \aPC -1 Wildrichy:Wildrichy\/a tells LFG (4), "LFM Fallen Gate"
+(1781888845)[Fri Jun 19 12:07:25 2026] YOU hit  Adjustable Training Monkey for 374 slashing damage.
+(1781888845)[Fri Jun 19 12:07:25 2026] Your caustic poison afflicts  Adjustable Training Monkey!
+(1781888845)[Fri Jun 19 12:07:25 2026] YOUR Caustic Poison hits  Adjustable Training Monkey for 298 poison damage.
+(1781888851)[Fri Jun 19 12:07:31 2026] YOU try to slash  Adjustable Training Monkey, but miss.
+(1781888856)[Fri Jun 19 12:07:36 2026] \aPC -1 Jethro:Jethro\/a tells General (3), "could be as much as you could be i guess?"
+(1781888856)[Fri Jun 19 12:07:36 2026] YOU hit  Adjustable Training Monkey for 650 slashing damage.
+(1781888856)[Fri Jun 19 12:07:36 2026] YOUR Greater Rune of Blasting hits  Adjustable Training Monkey for 623 magic damage.
+(1781888862)[Fri Jun 19 12:07:42 2026] \aPC -1 Batt:Batt\/a tells General (3), "Buls is a Rube"
+(1781888862)[Fri Jun 19 12:07:42 2026] YOU try to slash  Adjustable Training Monkey, but miss.
+(1781888866)[Fri Jun 19 12:07:46 2026] \aPC -1 Cotillion:Cotillion\/a tells General (3), "exactly"
+(1781888868)[Fri Jun 19 12:07:48 2026] YOU hit  Adjustable Training Monkey for 443 slashing damage.
+(1781888868)[Fri Jun 19 12:07:48 2026] YOU try to zap  Adjustable Training Monkey with Greater Rune of Blasting, but  Adjustable Training Monkey resists.
+(1781888868)[Fri Jun 19 12:07:48 2026] Your caustic poison afflicts  Adjustable Training Monkey!
+(1781888868)[Fri Jun 19 12:07:48 2026] YOUR Caustic Poison hits  Adjustable Training Monkey for 298 poison damage.
+(1781888868)[Fri Jun 19 12:07:48 2026] YOU try to slash  Adjustable Training Monkey, but YOUR multi attack misses.
+(1781888871)[Fri Jun 19 12:07:51 2026] \aPC -1 Grizes:Grizes\/a tells Auction (2), "wts \aITEM 1614374125 2017158128 0 0 0:Tap Essence IV (Master)\/a \aITEM -1755145479 540246196 0 0 0:Holy Salvation III (Master)\/a \aITEM -118006283 -1171403121 0 0 0:Regalia III (Master)\/a"
+(1781888874)[Fri Jun 19 12:07:54 2026] YOU hit  Adjustable Training Monkey for a critical of 776 slashing damage.
+(1781888874)[Fri Jun 19 12:07:54 2026] Your caustic poison afflicts  Adjustable Training Monkey!
+(1781888874)[Fri Jun 19 12:07:54 2026] YOUR Caustic Poison hits  Adjustable Training Monkey for 298 poison damage.
+(1781888880)[Fri Jun 19 12:08:00 2026] YOU try to slash  Adjustable Training Monkey, but miss.
+(1781888880)[Fri Jun 19 12:08:00 2026] \aPC -1 Inosi:Inosi\/a tells General (3), "that's obviously a botter. still don't care tho, let 'em be :P"
+(1781888883)[Fri Jun 19 12:08:03 2026] \aPC -1 Vert:Vert\/a tells LFG (4), "16 warden lfg"
+(1781888886)[Fri Jun 19 12:08:06 2026] YOU hit  Adjustable Training Monkey for a critical of 776 slashing damage.
+(1781888891)[Fri Jun 19 12:08:11 2026] YOU try to slash  Adjustable Training Monkey, but miss.
+(1781888897)[Fri Jun 19 12:08:17 2026] YOU hit  Adjustable Training Monkey for 609 slashing damage.
+(1781888898)[Fri Jun 19 12:08:18 2026] \aPC -1 Batt:Batt\/a tells General (3), "Looking for a 70 Jeweler for some dirge experts PST"
+(1781888902)[Fri Jun 19 12:08:22 2026] \aPC -1 Tenshi:Tenshi\/a tells General (3), "multboxers and botters are the same thing anyways"
+(1781888903)[Fri Jun 19 12:08:23 2026] YOU try to slash  Adjustable Training Monkey, but miss.
+(1781888903)[Fri Jun 19 12:08:23 2026] \aPC -1 Birdzerker:Birdzerker\/a tells General (3), "MMC Named, and SOD updates. LF 1 DPS, ( Mage Perfer ) or Non plate heals. pst"
+(1781888905)[Fri Jun 19 12:08:25 2026] Guildmate: Surrillian has logged out.
+(1781888909)[Fri Jun 19 12:08:29 2026] YOU hit  Adjustable Training Monkey for 472 slashing damage.
+(1781888915)[Fri Jun 19 12:08:35 2026] YOU hit  Adjustable Training Monkey for 191 slashing damage.
+(1781888915)[Fri Jun 19 12:08:35 2026] YOU try to zap  Adjustable Training Monkey with Greater Rune of Blasting, but  Adjustable Training Monkey resists.
+(1781888918)[Fri Jun 19 12:08:38 2026] Veilcura gained an adventure level and is now a level 64 Mystic.
+(1781888921)[Fri Jun 19 12:08:41 2026] YOU hit  Adjustable Training Monkey for 284 slashing damage.
+(1781888921)[Fri Jun 19 12:08:41 2026] YOUR Greater Rune of Blasting hits  Adjustable Training Monkey for 623 magic damage.
+(1781888922)[Fri Jun 19 12:08:42 2026] \aPC -1 Obin:Obin\/a tells General (3), "boxer =/= botters."
+(1781888922)[Fri Jun 19 12:08:42 2026] \aPC -1 Cotillion:Cotillion\/a tells General (3), "he gets paid 8K a month to defend them on TikTok    lmfao"
+(1781888923)[Fri Jun 19 12:08:43 2026] \aPC -1 Mountain:Mountain\/a tells General (3), "Anyone, can i mentor you rq level 25"
+(1781888923)[Fri Jun 19 12:08:43 2026] \aPC -1 Batt:Batt\/a tells General (3), "Boxers can not stay on a named pop 24hrs a day "
+(1781888927)[Fri Jun 19 12:08:47 2026] YOU try to slash  Adjustable Training Monkey, but miss.
+(1781888932)[Fri Jun 19 12:08:52 2026] YOU hit  Adjustable Training Monkey for 680 slashing damage.
+(1781888938)[Fri Jun 19 12:08:58 2026] YOU try to slash  Adjustable Training Monkey, but miss.
+(1781888944)[Fri Jun 19 12:09:04 2026] YOU try to slash  Adjustable Training Monkey, but miss.
+(1781888945)[Fri Jun 19 12:09:05 2026] \aPC -1 Tenshi:Tenshi\/a tells General (3), "boxers are input broadcasting therefore automation therefore bots"
+(1781888950)[Fri Jun 19 12:09:10 2026] YOU hit  Adjustable Training Monkey for 307 slashing damage.
+(1781888950)[Fri Jun 19 12:09:10 2026] Your caustic poison afflicts  Adjustable Training Monkey!
+(1781888950)[Fri Jun 19 12:09:10 2026] YOUR Caustic Poison hits  Adjustable Training Monkey for 298 poison damage.
+(1781888955)[Fri Jun 19 12:09:15 2026] YOU hit  Adjustable Training Monkey for 177 slashing damage.
+(1781888955)[Fri Jun 19 12:09:15 2026] Your caustic poison afflicts  Adjustable Training Monkey!
+(1781888955)[Fri Jun 19 12:09:15 2026] YOUR Caustic Poison hits  Adjustable Training Monkey for 298 poison damage.
+(1781888956)[Fri Jun 19 12:09:16 2026] \aPC -1 Zenji:Zenji\/a tells General (3), "if you think they are a bot, report it and move one. let CS figure it out. If they decide to do anything at all anyways"
+(1781888961)[Fri Jun 19 12:09:21 2026] \aPC -1 Totya:Totya\/a tells General (3), "claude plays eq2 for me"
+(1781888961)[Fri Jun 19 12:09:21 2026] \aPC -1 Obin:Obin\/a tells General (3), "Boxers are not input broadcasters."
+(1781888961)[Fri Jun 19 12:09:21 2026] YOU hit  Adjustable Training Monkey for 654 slashing damage.
+(1781888961)[Fri Jun 19 12:09:21 2026] Your caustic poison afflicts  Adjustable Training Monkey!
+(1781888961)[Fri Jun 19 12:09:21 2026] YOUR Caustic Poison hits  Adjustable Training Monkey for 298 poison damage.
+(1781888967)[Fri Jun 19 12:09:27 2026] YOU hit  Adjustable Training Monkey for 729 slashing damage.
+(1781888971)[Fri Jun 19 12:09:31 2026] \aPC -1 Batt:Batt\/a tells General (3), "Nope .. i do not use a 3rd party program and 3 box just fine"
+(1781888972)[Fri Jun 19 12:09:32 2026] \aPC -1 Ladussy:Ladussy\/a tells LFG (4), "RE LF1M heal PST"
+(1781888973)[Fri Jun 19 12:09:33 2026] YOU try to slash  Adjustable Training Monkey, but miss.
+(1781888979)[Fri Jun 19 12:09:39 2026] YOU try to slash  Adjustable Training Monkey, but miss.
+(1781888985)[Fri Jun 19 12:09:45 2026] YOU hit  Adjustable Training Monkey for 238 slashing damage.
+(1781888987)[Fri Jun 19 12:09:47 2026] \aPC -1 Inosi:Inosi\/a tells General (3), "and you're as likely to be banned as a full botter lol"
+(1781888988)[Fri Jun 19 12:09:48 2026] \aPC -1 Psalmus:Psalmus\/a tells LFG (4), "CT lf tank"
+(1781888989)[Fri Jun 19 12:09:49 2026] \aPC -1 Nakaeh:Nakaeh\/a tells LFG (4), "wts powerleveling1-70 pst"
+(1781888990)[Fri Jun 19 12:09:50 2026] The bold guild <Halasian Empire> has attained level 10
+(1781888990)[Fri Jun 19 12:09:50 2026] YOU hit  Adjustable Training Monkey for a critical of 776 slashing damage.
+(1781888990)[Fri Jun 19 12:09:50 2026] Your caustic poison afflicts  Adjustable Training Monkey!
+(1781888990)[Fri Jun 19 12:09:50 2026] YOUR Caustic Poison hits  Adjustable Training Monkey for 298 poison damage.
+(1781888996)[Fri Jun 19 12:09:56 2026] YOU hit  Adjustable Training Monkey for 593 slashing damage.
+(1781888996)[Fri Jun 19 12:09:56 2026] YOUR Greater Rune of Blasting hits  Adjustable Training Monkey for 623 magic damage.
+(1781888996)[Fri Jun 19 12:09:56 2026] Your caustic poison afflicts  Adjustable Training Monkey!
+(1781888996)[Fri Jun 19 12:09:56 2026] YOUR Caustic Poison hits  Adjustable Training Monkey for 298 poison damage.
+(1781889002)[Fri Jun 19 12:10:02 2026] YOU hit  Adjustable Training Monkey for 234 slashing damage.
+(1781889003)[Fri Jun 19 12:10:03 2026] \aPC -1 Jethro:Jethro\/a tells General (3), "holy smokes. someone running around with characters on autofollow isn't, at that time, botting, and clicking a harvest node while same is going on isn't botting. have i walked into idiocracy"
+(1781889006)[Fri Jun 19 12:10:06 2026] \aPC -1 Evilkingsolo:Evilkingsolo\/a tells LFG (4), "70 sin lf SoF,unrest,CMM"
+(1781889008)[Fri Jun 19 12:10:08 2026] YOU hit  Adjustable Training Monkey for 288 slashing damage.
+(1781889008)[Fri Jun 19 12:10:08 2026] \aPC -1 Dunkin:Dunkin\/a tells General (3), "o lol i asked a simple question and then it all blew up i am just watching and eating popcorn"
+(1781889009)[Fri Jun 19 12:10:09 2026] \aPC -1 Gamb:Gamb\/a tells LFG (4), "51 illy LFG"
+(1781889014)[Fri Jun 19 12:10:14 2026] YOU hit  Adjustable Training Monkey for 562 slashing damage.
+(1781889014)[Fri Jun 19 12:10:14 2026] YOU try to zap  Adjustable Training Monkey with Greater Rune of Blasting, but  Adjustable Training Monkey resists.
+(1781889014)[Fri Jun 19 12:10:14 2026] Your caustic poison afflicts  Adjustable Training Monkey!
+(1781889014)[Fri Jun 19 12:10:14 2026] YOUR Caustic Poison hits  Adjustable Training Monkey for 298 poison damage.
+(1781889014)[Fri Jun 19 12:10:14 2026] \aPC -1 Obin:Obin\/a tells General (3), "this game is super easy to true box for have multiple clients open on a large screen right up until the expansions with huge knock abouts. "
+(1781889015)[Fri Jun 19 12:10:15 2026] Guildmate: Iaint has logged out.
+(1781889017)[Fri Jun 19 12:10:17 2026] \aPC -1 Truepower:Truepower\/a tells LFG (4), "19 Templar LFG!"
+(1781889019)[Fri Jun 19 12:10:19 2026] YOU hit  Adjustable Training Monkey for 495 slashing damage.
+(1781889019)[Fri Jun 19 12:10:19 2026] YOUR Greater Rune of Blasting hits  Adjustable Training Monkey for 623 magic damage.
+(1781889019)[Fri Jun 19 12:10:19 2026] Your caustic poison afflicts  Adjustable Training Monkey!
+(1781889019)[Fri Jun 19 12:10:19 2026] YOUR Caustic Poison hits  Adjustable Training Monkey for 298 poison damage.
+(1781889025)[Fri Jun 19 12:10:25 2026] YOU try to slash  Adjustable Training Monkey, but miss.
+(1781889027)[Fri Jun 19 12:10:27 2026] \aPC -1 Batt:Batt\/a tells General (3), "i use the official way on the EQ2 forums tips and tricks section. there is a primer thread on how to Box legally. people need to go read it and do it the right way"
+(1781889029)[Fri Jun 19 12:10:29 2026] \aPC -1 Raii:Raii\/a tells LFG (4), "66 troub lfg"
+(1781889031)[Fri Jun 19 12:10:31 2026] YOU hit  Adjustable Training Monkey for 335 slashing damage.
+(1781889033)[Fri Jun 19 12:10:33 2026] \aPC -1 Pishie:Pishie\/a tells LFG (4), "Looking for MMC Ankh updates 70 illy"
+(1781889037)[Fri Jun 19 12:10:37 2026] YOU try to slash  Adjustable Training Monkey, but miss.
+(1781889043)[Fri Jun 19 12:10:43 2026] YOU hit  Adjustable Training Monkey for a critical of 776 slashing damage.
+(1781889043)[Fri Jun 19 12:10:43 2026] Your caustic poison afflicts  Adjustable Training Monkey!
+(1781889043)[Fri Jun 19 12:10:43 2026] YOUR Caustic Poison hits  Adjustable Training Monkey for 298 poison damage.
+(1781889045)[Fri Jun 19 12:10:45 2026] \aPC -1 Dart:Dart\/a tells LFG (4), "60 ranger lfg"
+(1781889049)[Fri Jun 19 12:10:49 2026] YOU try to slash  Adjustable Training Monkey, but miss.
+(1781889055)[Fri Jun 19 12:10:55 2026] YOU hit  Adjustable Training Monkey for 289 slashing damage.
+(1781889056)[Fri Jun 19 12:10:56 2026] \aPC -1 Inosi:Inosi\/a tells General (3), "the devs are lying manchildren. they absolutely ban people for boxing with zero software"
+(1781889058)[Fri Jun 19 12:10:58 2026] \aPC -1 Jethro:Jethro\/a tells General (3), "it's not simple. you asked if the devs were going to do anything since you reported them, then you admitted you reported them because they tried to click your harvest node"
+(1781889060)[Fri Jun 19 12:11:00 2026] YOU try to slash  Adjustable Training Monkey, but miss.
+(1781889063)[Fri Jun 19 12:11:03 2026] \aPC -1 Maeve:Maeve\/a tells General (3), "so you're saying if someone autofollows you, you're a botter?  Because when I box, I press the buttons on my secondary "
+(1781889066)[Fri Jun 19 12:11:06 2026] \aPC -1 Jethro:Jethro\/a tells General (3), "people are fucking insane"
+(1781889066)[Fri Jun 19 12:11:06 2026] YOU hit  Adjustable Training Monkey for 586 slashing damage.
+(1781889066)[Fri Jun 19 12:11:06 2026] Your caustic poison afflicts  Adjustable Training Monkey!
+(1781889066)[Fri Jun 19 12:11:06 2026] YOUR Caustic Poison hits  Adjustable Training Monkey for 298 poison damage.
+(1781889072)[Fri Jun 19 12:11:12 2026] YOU try to slash  Adjustable Training Monkey, but miss.
+(1781889078)[Fri Jun 19 12:11:18 2026] YOU hit  Adjustable Training Monkey for 692 slashing damage.
+(1781889079)[Fri Jun 19 12:11:19 2026] \aPC -1 Zhek:Zhek\/a tells LFG (4), "RE LF1M Healer 30+"
+(1781889082)[Fri Jun 19 12:11:22 2026] \aPC -1 Ladussy:Ladussy\/a tells LFG (4), "RE LF1M heal PST"
+(1781889084)[Fri Jun 19 12:11:24 2026] YOU hit  Adjustable Training Monkey for 463 slashing damage.
+(1781889084)[Fri Jun 19 12:11:24 2026] YOU try to zap  Adjustable Training Monkey with Greater Rune of Blasting, but  Adjustable Training Monkey resists.
+(1781889084)[Fri Jun 19 12:11:24 2026] Your caustic poison afflicts  Adjustable Training Monkey!
+(1781889084)[Fri Jun 19 12:11:24 2026] YOUR Caustic Poison hits  Adjustable Training Monkey for 298 poison damage.
+(1781889089)[Fri Jun 19 12:11:29 2026] YOU try to slash  Adjustable Training Monkey, but miss.
+(1781889092)[Fri Jun 19 12:11:32 2026] \aPC -1 Dunkin:Dunkin\/a tells General (3), "it seems to be an obcession with u jethro get a real life"
+(1781889095)[Fri Jun 19 12:11:35 2026] YOU try to slash  Adjustable Training Monkey, but miss.
+(1781889099)[Fri Jun 19 12:11:39 2026] \aPC -1 Warpath:Warpath\/a tells General (3), "If Daybreak wanted to stop boxer or botters all they have to do is disable auto follow.  but they don't becasue they need boxer / botter cash.  other wise this game would be closed down."
+(1781889101)[Fri Jun 19 12:11:41 2026] YOU try to slash  Adjustable Training Monkey, but miss.
+(1781889102)[Fri Jun 19 12:11:42 2026] \aPC -1 Maninorbit:Maninorbit\/a tells General (3), "i really love when people say things like LEGALLY! when if you don't follow their way you definately won't end up in jail. you aren't breaking a law made my congress my dude"
+(1781889107)[Fri Jun 19 12:11:47 2026] YOU hit  Adjustable Training Monkey for a critical of 858 slashing damage.
+(1781889113)[Fri Jun 19 12:11:53 2026] YOU try to slash  Adjustable Training Monkey, but miss.
+(1781889117)[Fri Jun 19 12:11:57 2026] \aPC -1 Batt:Batt\/a tells General (3), "Looking for a 70 Jeweler for some dirge experts PST"
+(1781889118)[Fri Jun 19 12:11:58 2026] YOU hit  Adjustable Training Monkey for 368 slashing damage.
+(1781889118)[Fri Jun 19 12:11:58 2026] YOUR Greater Rune of Blasting hits  Adjustable Training Monkey for 623 magic damage.
+(1781889118)[Fri Jun 19 12:11:58 2026] Your caustic poison afflicts  Adjustable Training Monkey!
+(1781889118)[Fri Jun 19 12:11:58 2026] YOUR Caustic Poison hits  Adjustable Training Monkey for 298 poison damage.
+(1781889119)[Fri Jun 19 12:11:59 2026] \aPC -1 Zhek:Zhek\/a tells LFG (4), "RE LF1M Healer 30+"
+(1781889124)[Fri Jun 19 12:12:04 2026] YOU hit  Adjustable Training Monkey for a critical of 776 slashing damage.
+(1781889124)[Fri Jun 19 12:12:04 2026] Your caustic poison afflicts  Adjustable Training Monkey!
+(1781889124)[Fri Jun 19 12:12:04 2026] YOUR Caustic Poison hits  Adjustable Training Monkey for 298 poison damage.
+(1781889124)[Fri Jun 19 12:12:04 2026] YOU multi attack  Adjustable Training Monkey for 187 slashing damage.
+(1781889129)[Fri Jun 19 12:12:09 2026] \aPC -1 Fizzleboxer:Fizzleboxer\/a tells LFG (4), "15  FURY LFG"
+(1781889130)[Fri Jun 19 12:12:10 2026] YOU hit  Adjustable Training Monkey for 183 slashing damage.
+(1781889133)[Fri Jun 19 12:12:13 2026] \aPC -1 Tenshi:Tenshi\/a tells General (3), "i mean, it's illegal in South Korea"
+(1781889135)[Fri Jun 19 12:12:15 2026] \aPC -1 Annatar:Annatar\/a tells Auction (2), "wtb krono 21p"
+(1781889136)[Fri Jun 19 12:12:16 2026] YOU try to slash  Adjustable Training Monkey, but miss.
+(1781889138)[Fri Jun 19 12:12:18 2026] \aPC -1 Mondo:Mondo\/a tells General (3), "what;s the best way to find a newbie friendly guild?"
+(1781889139)[Fri Jun 19 12:12:19 2026] \aPC -1 Ahimas:Ahimas\/a tells General (3), "MOTHER RUSSIA IS RECRUITING PLAYERS! Raid times and days: Raids will take place every day starting June 20. 6:00 PM to 9:00 PM UTC time."
+(1781889140)[Fri Jun 19 12:12:20 2026] The gallant guild <Revive Sickness Crew> has attained level 30
+(1781889142)[Fri Jun 19 12:12:22 2026] YOU hit  Adjustable Training Monkey for 721 slashing damage.
+(1781889142)[Fri Jun 19 12:12:22 2026] YOU try to confound  Adjustable Training Monkey with Stun V, but  Adjustable Training Monkey resists.
+(1781889147)[Fri Jun 19 12:12:27 2026] YOU hit  Adjustable Training Monkey for 214 slashing damage.
+(1781889147)[Fri Jun 19 12:12:27 2026] YOU try to confound  Adjustable Training Monkey with Stun V, but  Adjustable Training Monkey resists.
+(1781889149)[Fri Jun 19 12:12:29 2026] \aPC -1 Radagast:Radagast\/a tells General (3), "grats"
+(1781889152)[Fri Jun 19 12:12:32 2026] \aPC -1 Rainer:Rainer\/a tells General (3), "Meddl !"
+(1781889153)[Fri Jun 19 12:12:33 2026] YOU hit  Adjustable Training Monkey for 186 slashing damage.
+(1781889158)[Fri Jun 19 12:12:38 2026] \aPC -1 Psalmus:Psalmus\/a tells LFG (4), "CT lf tank"
+(1781889159)[Fri Jun 19 12:12:39 2026] YOU hit  Adjustable Training Monkey for 689 slashing damage.
+(1781889159)[Fri Jun 19 12:12:39 2026] Your caustic poison afflicts  Adjustable Training Monkey!
+(1781889159)[Fri Jun 19 12:12:39 2026] YOUR Caustic Poison hits  Adjustable Training Monkey for 298 poison damage.
+(1781889163)[Fri Jun 19 12:12:43 2026] \aPC -1 Dagger:Dagger\/a tells General (3), "ask me, Mondo"
+(1781889165)[Fri Jun 19 12:12:45 2026] YOU hit  Adjustable Training Monkey for 611 slashing damage.
+(1781889165)[Fri Jun 19 12:12:45 2026] YOU try to confound  Adjustable Training Monkey with Stun V, but  Adjustable Training Monkey resists.
+(1781889165)[Fri Jun 19 12:12:45 2026] Your caustic poison afflicts  Adjustable Training Monkey!
+(1781889165)[Fri Jun 19 12:12:45 2026] YOUR Caustic Poison hits  Adjustable Training Monkey for 298 poison damage.
+(1781889169)[Fri Jun 19 12:12:49 2026] \aPC -1 Wildrichy:Wildrichy\/a tells LFG (4), "LFM 20 ish"
+(1781889169)[Fri Jun 19 12:12:49 2026] \aPC -1 Breauxstorm:Breauxstorm\/a tells General (3), "any inquisitor gamers able to reccomend what AAs I should focus on first"
+(1781889171)[Fri Jun 19 12:12:51 2026] YOU try to slash  Adjustable Training Monkey, but miss.
+(1781889171)[Fri Jun 19 12:12:51 2026] \aPC -1 Batt:Batt\/a tells General (3), "Mondo press the U botton and it will bring up a Guild UI"
+(1781889175)[Fri Jun 19 12:12:55 2026] \aPC -1 Zhek:Zhek\/a tells LFG (4), "RE LF1M Healer 30+"
+(1781889177)[Fri Jun 19 12:12:57 2026] YOU hit  Adjustable Training Monkey for 472 slashing damage.
+(1781889177)[Fri Jun 19 12:12:57 2026] Your caustic poison afflicts  Adjustable Training Monkey!
+(1781889177)[Fri Jun 19 12:12:57 2026] YOUR Caustic Poison hits  Adjustable Training Monkey for 298 poison damage.
+(1781889182)[Fri Jun 19 12:13:02 2026] YOU hit  Adjustable Training Monkey for 506 slashing damage.
+(1781889188)[Fri Jun 19 12:13:08 2026] YOU try to slash  Adjustable Training Monkey, but miss.
+(1781889194)[Fri Jun 19 12:13:14 2026] YOU hit  Adjustable Training Monkey for 205 slashing damage.
+(1781889194)[Fri Jun 19 12:13:14 2026] Your caustic poison afflicts  Adjustable Training Monkey!
+(1781889194)[Fri Jun 19 12:13:14 2026] YOUR Caustic Poison hits  Adjustable Training Monkey for 298 poison damage.
+(1781889194)[Fri Jun 19 12:13:14 2026] \aPC -1 Mondo:Mondo\/a tells General (3), "many thanks"
+(1781889197)[Fri Jun 19 12:13:17 2026] \aPC -1 Annatar:Annatar\/a tells Auction (2), "wtb krono 21p"
+(1781889200)[Fri Jun 19 12:13:20 2026] YOU hit  Adjustable Training Monkey for 536 slashing damage.
+(1781889200)[Fri Jun 19 12:13:20 2026] Your caustic poison afflicts  Adjustable Training Monkey!
+(1781889200)[Fri Jun 19 12:13:20 2026] YOUR Caustic Poison hits  Adjustable Training Monkey for 298 poison damage.
+(1781889206)[Fri Jun 19 12:13:26 2026] YOU hit  Adjustable Training Monkey for a critical of 776 slashing damage.
+(1781889206)[Fri Jun 19 12:13:26 2026] YOU try to zap  Adjustable Training Monkey with Greater Rune of Blasting, but  Adjustable Training Monkey resists.
+(1781889206)[Fri Jun 19 12:13:26 2026] Your caustic poison afflicts  Adjustable Training Monkey!
+(1781889206)[Fri Jun 19 12:13:26 2026] YOUR Caustic Poison hits  Adjustable Training Monkey for 298 poison damage.
+(1781889209)[Fri Jun 19 12:13:29 2026] \aPC -1 Defiledkat:Defiledkat\/a tells General (3), "Legally"
+(1781889211)[Fri Jun 19 12:13:31 2026] You stop fighting.
