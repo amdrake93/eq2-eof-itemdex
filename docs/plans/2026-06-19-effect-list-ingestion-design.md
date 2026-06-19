@@ -1,77 +1,67 @@
-# Design: Item `effect_list` Stat Ingestion
+# Design: Item `effect_list` Ingestion (Stat Sources + Procs)
 
 **Date:** 2026-06-19
 **Status:** Design — approved, pre-implementation
-**Motivation:** SPEC §16 coverage gap — items granting stats via "When Equipped:" effects are undervalued.
+**Motivation:** SPEC §16 coverage gap — items granting stats via "When Equipped:" effects are undervalued; gear procs are unmodeled.
 
 ## Problem
 
-The catalog ingests only an item's `modifiers` map. Stats granted through the census `effect_list` (e.g. `"When Equipped: Increases Haste of caster by 25.0"`) are never read — `census.Item` has no `effect_list` field and `extract.showFields` doesn't request it. So any item delivering DPS stats via an equipped effect is scored too low.
+The catalog ingests only an item's `modifiers` map. Stats and procs delivered through the census `effect_list` are never read (`census.Item` has no `effect_list`; `extract.showFields` omits it). So items that grant DPS stats via an equipped effect are scored too low, and gear procs are invisible.
 
-**Confirmed impact:** Cloak of Flames carries +25 Haste via `effect_list` (not in its modifiers). With it counted, the item goes from +175.5 DPS (3rd) to **+291.4 (PRE-RAID BiS Cloak)**, beating V'Ncenzi's Voluminous Cape — a real BiS change, not just absolute DPS. It is a *class* of items, not one cloak.
+**Confirmed impact:** Cloak of Flames grants +25 Haste via `effect_list` (not in its modifiers). Counted, it goes from +175.5 (3rd) to **+291.4 — PRE-RAID BiS Cloak**, beating V'Ncenzi's. It's a *class* of items, not one cloak.
 
-## The interpretation hazard (the real risk)
+## Principle: parse faithfully, model separately
 
-The parsing is trivial; correctly **interpreting** each wording is not. Confirmed pitfalls from live census reads:
+Ingestion **captures everything the item grants, by source**; the model layer decides what to score. We do **not** pre-filter by DPS-relevance and do **not** flatten effect-stats into the raw modifier stats. This preserves provenance, avoids a brittle whitelist, and means future modeling changes (or new sources like adornments) need no re-ingestion.
 
-- **Procs masquerading as stats.** Cloak of Unrest's `effect_list`: `When Equipped: → On a spell cast … may cast … Triggers about 1.8 times per minute → Decrease the caster's spell reuse time by 10%`. A naive "10% reuse" credit is triple-wrong: it's a proc, spell-cast-gated, temporary, and *spell* reuse. (Its real flat reuse is already in the modifiers.)
-- **Increases vs Decreases** (items self-debuff as a tradeoff: "Decreases Weapon Damage of caster").
-- **Points vs percent** ("by 25.0" = stat points like gear; "by N%" is a different quantity).
-- **Conditionals** ("If profession other than Fighter, …").
-- **Stat identity** — confirm the effect's "Haste" is the melee `attackspeed` haste the model curves, not a lookalike; don't double-count a stat that's also in modifiers.
-- **Inert stats** — Crit Bonus (confirmed stripped on this TLE server), Fervor (inert), combat/spell skills, attributes — all excluded.
+## Data model: item stats have multiple sources
 
-## Design
+An item's effective stats aggregate across distinct **sources**:
+- `modifier` — the census `modifiers` block (existing).
+- `effect` — static `Increases/Decreases <stat> of caster by N` grants from `effect_list` (new).
+- *(future:* `adornment` *— slots in as just another source, same aggregation, no rework.)*
 
-### Approach
-Fold effect-granted stats into the item's catalog stats at ingestion (downstream `builddb`/`store`/`model` unchanged — effect stats become indistinguishable from modifiers). One **shared parser**, used by both the main pull (future-proof) and a fast by-ID backfill (current data without a slow full re-scan).
+Plus **procs** — triggered effects from `effect_list`, captured separately and **not scored yet** (the deferred proc layer reads them later).
 
-### Classification rule — indentation + trigger keywords
-Mirrors the combat-art component parser. Walk the `effect_list` (each entry has `description` + `indentation`):
+### Storage
+- **`item_stats` gains a `source` column** → `(item_id, stat, value, source)`. Existing rows = `modifier`; effect grants written as `effect`. **Nothing is pre-summed** — provenance survives in the data.
+- **New `item_procs` table** keyed by `item_id`: `trigger` (raw text), `per_minute` (rate, nullable), `dmg_type` / `min_dmg` / `max_dmg` (nullable, for damage procs), `raw_effect` (full text so nothing is lost). Unscored.
 
-- **CREDIT** a line iff it is a **direct child of `When Equipped:`** (indentation 1) of the form **`Increases <Stat> of caster by <N>`** — `Increases` (not `Decreases`), no `%`, `<Stat>` in the whitelist, `of caster` (not `of target`/`of group members`).
-- **SKIP** (and skip its whole subtree) any line that is — or sits under — a **proc/trigger**: contains `may cast`, `Triggers about N times per minute`, `On a spell cast`, `On a successful`, a `Lasts for`/duration, or a chance clause. These are the deferred proc class (SPEC §16).
-- **SKIP + log** anything unrecognized, conditional, `%`-valued, a Decrease, or a non-whitelisted stat. **Under-credit (safe), never guess.**
+### Aggregation (explicit calc step, source-agnostic)
+Where the item's `StatBlock` is built (`store.LoadScorableItems` / `loadWeapon`), sum **all** `item_stats` rows for the item across sources (the existing `AddModifiers` path, now fed every source). The model gets the correct total; the source tag is available for reporting/audit. **Model code is unchanged.** Adornments later: same aggregation includes `source=adornment` rows.
 
-### Whitelist (effect stat display-name → modifier key)
-| effect "Increases ___ of caster" | modifier key | model field |
-|---|---|---|
-| Haste | `attackspeed` | Haste |
-| Multi Attack | `doubleattackchance` | MultiAttack |
-| Crit Chance | `critchance` | CritChance |
-| Potency | `basemodifier` | Potency |
-| DPS | `dps` | DPSMod |
-| Flurry | `flurry` | Flurry |
-| Ability Modifier | `all` | AbilityMod |
-| Reuse* | `spelltimereusepct` | Reuse |
-| Casting Speed* | `spelltimecastpct` | CastSpeed |
+## Parser (`internal/catalog/effects.go`, shared by both ingestion paths)
 
-\* exact display strings (Reuse / Casting Speed and their variants) to be **confirmed against real census wordings during the audit** before mapping. Excluded: Crit Bonus, Combat Skills, Focus/Disruption/Ministration/Subjugation/Ordination, Slashing/Piercing/Crushing/Aggression/Ranged, STR/STA/attributes, regen, mitigation, Fervor, run/mount speed.
+Walks the `effect_list` (each entry: `description` + `indentation`), mirroring the combat-art component parser. Classifies each `When Equipped:` subtree:
 
-### Interpretation-audit gate (human-reviewed, before crediting)
-The implementation first produces an **audit report**: every distinct ind-1 `When Equipped` wording across the full catalog, each tagged **static-stat → proposed (key, value, unit)** or **proc/skip / unrecognized**. The user reviews and confirms/corrects the mapping table. The parser is then built from the **confirmed** table; unrecognized lines stay logged-and-skipped.
+- **Static stat-grant** — a *direct* child (`indentation 1`) of the form `Increases|Decreases <Stat> of caster by N` with **no `%`** and **no trigger keyword**. Emit `(statKey, signedValue, source=effect)`. `<Stat>` is mapped to a census stat key via a **confirmed name→key table** (Haste→attackspeed, Multi Attack→doubleattackchance, Crit Chance→critchance, Potency→basemodifier, DPS→dps, Flurry→flurry, Ability Modifier→all, Reuse→spelltimereusepct, Casting Speed→spelltimecastpct, Agility / all-primary-attributes→strength, Combat Skills→combatskills, …). **No DPS-whitelist** — capture all named stats; the model's `modifierToField` is the sole filter for what's *scored* (so skills/attributes are captured but simply unused until modeling adds them).
+- **Proc** — a line that is, or sits under, a trigger (`may cast`, `Triggers about N times per minute`, `On a spell cast`, `On a successful…`, a `Lasts for`/duration or chance clause). Capture as an `item_procs` record (reuse `spell/parse.go` `damageRe` / `perMinuteRe` for damage + rate; keep `raw_effect`). **Not folded into stats.**
+- **Skip + log** anything unrecognized, `%`-valued, `of target`/`of group members`, or otherwise unmapped — **under-capture is safe; never guess.**
 
-### Components / files
+### Conservative-by-construction (the interpretation safeguard)
+The genuine risk is *interpreting* wordings (e.g. Cloak of Unrest's "10% reuse" is a spell-cast **proc**, not a flat stat — correctly routed to `item_procs`, not stats). The parser only credits **confirmed** name→key mappings; everything else is logged. It emits an **audit report** — every distinct `When Equipped` wording, tagged static-stat (proposed key/value/sign/unit) vs proc vs skipped — as a committed artifact for human review. Mappings are corrected there and the backfill re-run (cheap).
+
+## Components / files
 - `internal/census/item.go` — add `EffectList []Effect` (`{Description string; Indentation int}`) to `Item`.
-- `internal/extract/extract.go` — add `effect_list` to `showFields`.
-- `internal/catalog/effects.go` (new) — `ParseEffectStats(effects []census.Effect) map[string]float64` (the shared parser) + an audit/classify helper that returns the per-line tagging for the report.
-- `internal/source/source.go` — `FreshPull` applies `ParseEffectStats` and merges results into each item's stats before writing CSVs (so future pulls capture effects natively).
-- `cmd/itemdex` — an `--effects` backfill mode: read the catalog's item IDs, by-ID fetch `effect_list` via the existing throttled client, apply the **same** `ParseEffectStats`, rewrite the catalog CSVs.
-- `builddb` + `bis` — unchanged; rebuild + re-score.
-
-### Data flow
-census `effect_list` → `ParseEffectStats` (classify + whitelist + of-caster/Increases/points/static) → stats merged into the item → catalog CSV → `builddb` → `store` → `model` → `bis` re-score.
+- `internal/extract/extract.go` — add `effect_list` to `showFields` (future pulls capture it natively).
+- `internal/catalog/effects.go` (new) — `ParseEffects(effects []census.Effect) (stats map[string]float64, procs []Proc, audit []AuditLine)`; the shared name→key table; classification.
+- `internal/source/source.go` — `FreshPull` applies `ParseEffects`, writing effect-stats (tagged) + procs (so the main pull captures both going forward).
+- `cmd/itemdex` — `--effects` backfill mode: read catalog item IDs, by-ID fetch `effect_list` via the throttled census client (resume on quota like `FreshPull`), apply the **same** `ParseEffects`, write the audit report + effect-stats + procs.
+- `internal/store/store.go` — `item_stats` gains `source`; new `item_procs` table + load/write; `LoadScorableItems`/`loadWeapon` aggregate across sources.
+- `builddb` + `bis` — rebuild + re-score (model unchanged).
 
 ## Validation
-- **Parser unit tests** over real wordings: Cloak of Flames → `{attackspeed: 25}`; Cloak of Unrest → `{}` (proc skipped); a Decrease line → skipped; a `%` line → skipped; an `of target` line → skipped; an unrecognized stat → skipped + logged.
-- **Audit report** reviewed by the user (the interpretation gate).
-- **Integration:** after backfill + rebuild, Cloak of Flames carries +25 haste and takes the PRE-RAID BiS Cloak slot; review the broader set of items that re-rank.
+- **Parser unit tests** over real wordings: Cloak of Flames → stat `{attackspeed:25, source:effect}`, no proc; Cloak of Unrest → no stat, one `item_procs` record (spell-cast, ~1.8/min, spell-reuse buff); a `Decreases` line → negative stat; a `%` line → skipped/logged; `of target` → skipped; an unrecognized stat → skipped + audit line.
+- **Aggregation test:** an item with the same stat in modifier + effect sources sums correctly into the `StatBlock`.
+- **Audit report** generated + reviewed post-hoc (parser conservative meanwhile).
+- **Integration:** after backfill + rebuild, Cloak of Flames carries +25 haste (`source=effect`) and takes the PRE-RAID BiS Cloak slot; review the broader set of items that re-rank, plus the proc catalog.
 
 ## Out of scope
-- **Proc scoring** (`Inflicts …damage`, spell-cast procs) — the deferred RateProc/unmodeled-proc class (SPEC §16).
-- **Crit bonus** — confirmed inert on this TLE server; excluded.
-- **Single-attribute / non-DPS effects** — excluded.
+- **Proc scoring** — `item_procs` is captured-not-scored; the proc-layer (rate × damage, 0%-crit class) is a separate future feature (SPEC §16).
+- **Crit bonus** — confirmed inert on this TLE server; captured if present but the model ignores `critbonus` (unchanged).
+- **Combat-skill / attribute modeling** — captured, but the model doesn't score them yet (attack rating held constant; that's a separate modeling decision, SPEC §16).
 
 ## Spec updates
-- **§4** (Catalog & Persistence) — document item `effect_list` ingestion (shared parser, whitelist, of-caster static stat-grants folded into item stats).
-- **§16** — add "unmodeled gear procs (`Inflicts…` / spell-cast procs in item `effect_list`)" to the deferred-procs class; **correct the `critBonus` raid-stat item** (crit bonus confirmed inert; the raid auto-crit ~1.64 is the wide-weapon range-shift floor, not crit bonus — the `CritBonus` field is vestigial on this server).
+- **§4** (Catalog & Persistence) — document item `effect_list` ingestion: multi-source item stats (`modifier`/`effect`, aggregated), and `item_procs` capture.
+- **§6** (Schema) — `item_stats.source` column; new `item_procs` table.
+- **§16** — proc-scoring reads `item_procs` (deferred); **correct the `critBonus` item** (crit bonus inert; raid auto-crit ~1.64 is the wide-weapon range-shift floor, not crit bonus); note combat-skill/attribute effects captured-but-unscored.
