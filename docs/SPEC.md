@@ -443,13 +443,21 @@ This is the single authoritative statement of how each combat stat converts to a
 
 ### Crit
 
+A critical hit re-rolls as the **higher of** the range ceiling and a flat multiple of the roll (measured 2026-06-19, naked/controlled tooltip + combat-log reads):
+
 ```
-critFactor = 1 + (crit/100) · (CritMultiplier − 1)        CritMultiplier = 1.30
+crit = max( rangeMax + 1 , (1.50 + critBonus) · roll )
 ```
 
-`critFactor` (`dps.go`) is a flat expected-value multiplier: at 100% crit chance, damage is ×1.30. It multiplies both the auto-swing stack and each combat-art cast's total (§13). `CritMultiplier = 1.30` is locked in `constants.go`.
+applied to the **final** per-hit damage — after potency × AGI **and** ability-mod (ability-mod rides the crit). `critBonus` is a buff/gear term (0 at baseline; raid-context, §16). The model computes the **expected** crit multiplier per source from its final range `[lo,hi]` (`critFactor`, `dps.go`), assuming uniform rolls:
 
-> Known divergence: raid-log validation found this flat ×1.30 model wrong — a crit appears to add the weapon/ability range width (~×1.5) rather than a fixed 30% bonus. §16 tracks the fix. This subsection states the **code** behavior as currently implemented.
+- range ratio ≤ 1.5:1 (single-valued, narrow CAs) → the `1.50×` branch always wins → **×1.50**
+- 1.667:1 (the typical CA range) → the floor grazes the low rolls → **~×1.51**
+- wide weapon ranges (auto-attack) → the floor lifts most low rolls → **>×1.50** (Modinthalis 139–775 → ~×1.87)
+
+Combat arts apply it per component on each component's ability-mod-inclusive scaled range (§13); auto-attack applies it on the weapon's damage range (`Weapon.MinDamage/MaxDamage`). Crit chance is clamped at 100% (a crit can't happen more than every hit).
+
+**Provenance:** flat ×1.30 disproven; range-shift-only disproven (Hilt Strike crits exceeded its ceiling); the `max(...)` hybrid confirmed by the auto-attack floor pile-up (11/14 crits exactly `max+1` on a 5.58:1 weapon) and validated at critMult 1.85 measured vs 1.87 modeled (`data/autoattacktest.txt`). Uniform rolls is the one documented assumption (distribution consistent with uniform at the measured sample size).
 
 ### Flurry
 
@@ -531,7 +539,7 @@ Recovery speed subtractively shrinks the 0.5s server base post-cast recovery; at
 perSwing = weaponAvg · (1 + MainStatEffect(AGI)/100) · dpsModFactor · classAutoMult     (autoDamageMult × classAutoMult)
 ```
 
-`weaponAvg` is the weapon's census `(min+max)/2` base; `autoDamageMult = (1 + MainStatEffect(AGI)/100) · dpsModFactor` (`autoDamageMult`). **AGI scales auto-attack on the same main-stat curve as combat arts** — `MainStatEffect` is the §11 curve, shared verbatim. **Potency does *not* scale auto-attack** — the auto term carries only AGI and dps-mod; folding potency into the per-swing damage was tried and drifts the `/weaponstat` residual, so it is deliberately excluded.
+`weaponAvg` is the weapon's census `(min+max)/2` base; `autoDamageMult = (1 + MainStatEffect(AGI)/100) · dpsModFactor` (`autoDamageMult`). **AGI scales auto-attack on the same main-stat curve as combat arts** — `MainStatEffect` is the §11 curve, shared verbatim. **Potency does *not* scale auto-attack** — the auto term carries only AGI and dps-mod; folding potency into the per-swing damage was tried and drifts the `/weaponstat` residual, so it is deliberately excluded. The weapon's full `MinDamage`/`MaxDamage` range (`Weapon.MinDamage/MaxDamage`, loaded from the `weapon_min_dmg/weapon_max_dmg` catalog columns) feeds the range-shift crit model (§11); for auto-attack the wide weapon range means the `1.50×` floor lifts most low rolls, driving the effective auto crit multiplier well above ×1.50.
 
 `classAutoMult` is the class-intrinsic auto multiplier (Assassin = 2.0, from `classes/<class>.toml`, §6). It is applied **at the `AutoDPSDual` / `TotalDPS` boundary, not as a `StatBlock` field**: a multiplier carried on the stat block would zero auto-attack at the block's zero value (the StatBlock zero value is a valid "no-gear" baseline). `AutoDPS(sb, w)` therefore does **not** apply it and callers must — `AutoDPSDual`, `TotalDPS`, and `TotalDPSDual` all multiply it in. `AutoWeaponMultiplier(sb, classAutoMult) = autoDamageMult · classAutoMult` is the full census-base-to-actual multiplier, used as the `/weaponstat` verification anchor (`TestAutoWeaponMultiplierCalibration`), not a production path.
 
@@ -659,7 +667,7 @@ This table mirrors `internal/constants/constants.go`. **The code is authoritativ
 
 | Constant | Value | Provenance |
 |---|---|---|
-| `CritMultiplier` | `1.30` | A crit deals +30% (flat expected-value model; §11/§16 note the disproven flat model). |
+| `CritMultiplier` | `1.50` | Base crit factor (the `1.50×` branch of the range-shift floor model; measured 2026-06-19, §11). Not a flat expected multiplier. |
 | `FlurryMultiplier` | `4.0` | A flurry proc does +100%–500% (2×–6×); 4× is the mean used for expected DPS. |
 | `HasteStatCap` | `300.0` | Haste stat hard cap; fitted curve gives f(300) ≈ 125.56 → 125%; overcap wasted. |
 | `DPSModCap` | `300.0` | Dps-mod stat hard cap; shares the haste curve and cap. |
@@ -675,8 +683,6 @@ This section is the forward worklist. Items are grouped by kind; each gives the 
 
 ### 16.1 Known Code Divergences
 
-**Crit model (highest impact).** `constants.CritMultiplier = 1.30` (`internal/constants/constants.go`) and the `critFactor = 1 + critChance·0.30` term in `internal/model/dps.go` both implement a flat ×1.30 expected-value model. The 2026-06-16 raid log (`docs/raid-log-analysis-2026-06-16.md` §3) measured effective crit multipliers of 1.47–1.64 per ability, consistent with the community **range-shift** mechanic: a crit re-rolls in `[max+1, 2·max−min+1]`, i.e. it **adds ≈ the range width** to the rolled result. The effective multiplier is therefore `1 + width/avg`, which varies per component — wide-range abilities gain more from crit than narrow ones. Crit bonus is **not** a gear stat here; the correction uses the `MinDamage`/`MaxDamage` already stored per component. The flat model under-estimates the crit portion by ~17–25%, translating to ~10–12% on total raid DPS. Status: documented known bug; fix deferred pending one clean non-crit vs crit tooltip read (no buff noise) to pin the exact form — specifically whether ability-mod participates in the shifted range and whether the `+1` boundary term is literal.
-
 **Reconcile residual on Gushing Wound piercing / detonate bases.** Naked-recovered tooltip bases and the highest-rank census damage lines agree to ~7–11% on the piercing DoT and detonate components. Both directions of read noise are plausible (tooltip noise from hidden buff sources; census inconsistency at tier boundaries). The current code uses census bases; the discrepancy is tracked but not acted on. Status: accepted; re-examine if the crit fix or a fresh naked read changes the picture.
 
 ### 16.2 Coverage Gaps
@@ -688,6 +694,8 @@ This section is the forward worklist. Items are grouped by kind; each gives the 
 **`potencyBonus` placement.** Both spec and code (`internal/model/dps.go`) add `PotencyBonus` into the potency pool alongside displayed `Potency` and per-art AA riders. An alternative interpretation is that it is a final after-everything multiplier (equivalent if no cross-terms exist, non-equivalent if it does). The two forms are distinguishable with reads at two different potency levels — the cross-term `potency × potencyBonus/100` only appears in the additive-pool version. Next step: run two reads (one low-potency, one high-potency) and check which form fits.
 
 ### 16.3 Modeling Decisions
+
+**Crit-adornment question.** Crit chance's derived weight rises under the hybrid model (especially via wide-range auto-attack), so a crit adornment vs other stats becomes a real choice once the adornment layer (backlog) exists. Route through brainstorm when the adornment layer is scoped.
 
 **Residual rotation non-monotonicity.** `CADPS` (`internal/model/dps.go`) is slightly non-monotone in reuse and cast-speed at fine resolution: increasing reuse can locally lower `CADPS` by approximately one mid-art cast, because the greedy lattice re-orders under the shifted cooldown availability. This is intrinsic to the discrete simulation — increasing `fightSmoothingSamples` (`internal/model/rotation.go`) does not fix it, only sampling resolution on a problem that is discrete at the source. Consequence: strict-dominance inversions in the per-slot `ΔDPS` scores, magnitudes ~1.5–29 DPS on near-tied items (~37 inversions found across slot/baseline groups as of 2026-06-13). The converged BiS picks from the coordinate-ascent resim (`internal/bis/build.go`) are a valid local optimum regardless. Options: accept and document (cheapest — inversions only flip near-ties); replace the discrete greedy sim with an analytic expected-fractional-cast model (removes quantization at the source; significant rewrite); note that weight-side smoothing does NOT fix this (the inversions live in the resim `ΔDPS`, not the weight display). Route through brainstorm before implementing.
 
@@ -704,6 +712,8 @@ Note: the `strength` → `MainStat` mapping (`internal/stats` / Census item stat
 
 ### 16.5 Data Wishlist
 
+- **Auto roll-distribution / auto average damage.** `data/autoattacktest.txt` (106 non-crit swings) is consistent with uniform rolls (χ²≈0.11) but hints a mild low-lean (mean ~6% under the midpoint). More swings would confirm uniform and check whether the model's `(min+max)/2` average auto damage runs slightly high. Auto-damage, not crit.
+- **`critBonus` raid stat.** Raid buffs raise the crit factor above 1.50 (auto crit read ~1.64 in the buffed raid log). A `StatBlock.CritBonus` field exists (0 today); wire it into `[contexts.raid]` when measured.
 - **AGI reading above 1661.** The main-stat curve (`internal/model/curve.go`) clamps above 1661 (the highest measured reading). Raid AGI is ~1800, so the clamped regime covers real play. A reading at ~1800+ would anchor whether the second-regime slope continues, flattens further, or caps before 1800.
 - **Haste/dps-mod gap fills.** The fitted curve has measurement gaps at haste/dps-mod 153–238 and 281–300. These are low-priority (the current fit is smooth through the gaps) but a pair of readings per gap would tighten the curve residuals.
 - **Cast-speed cap.** The current model treats cast-speed as uncapped above ~37%. If a cap exists, an overcapped read would reveal it as a tooltip plateau. Low probability of binding in EoF gear, but worth confirming if cast-speed items appear in BiS contention.
