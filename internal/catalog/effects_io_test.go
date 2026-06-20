@@ -28,6 +28,21 @@ func TestProcsCSVRoundTrip(t *testing.T) {
 	require.Equal(t, in, out)
 }
 
+func TestAuditCSVRoundTrip(t *testing.T) {
+	in := map[int][]AuditLine{
+		1: {{Description: "Increases Haste of caster by 25.0.", Kind: "stat", Detail: "attackspeed"}},
+		2: {
+			{Description: "On a spell cast this spell may cast Foo.", Kind: "proc", Detail: "On a spell cast"},
+			{Description: "Increases Bogus of caster by 7.", Kind: "skip", Detail: "unknown stat: bogus"},
+		},
+	}
+	var b bytes.Buffer
+	require.NoError(t, WriteAuditCSV(&b, in))
+	out, err := ReadAuditCSV(&b)
+	require.NoError(t, err)
+	require.Equal(t, in, out)
+}
+
 func TestWriteAuditReport(t *testing.T) {
 	var b bytes.Buffer
 	rep := map[int][]AuditLine{

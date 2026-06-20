@@ -78,6 +78,51 @@ func TestWriteEffectArtifacts(t *testing.T) {
 	require.Contains(t, auditStr, "102")
 }
 
+func TestMergeEffectsAccumulates(t *testing.T) {
+	// Seed with a prior result for item 1 (a haste stat already collected).
+	prior := EffectAccumulator{
+		Stats: []catalog.EffectStat{{ItemID: 1, Stat: "attackspeed", Value: 25}},
+		Procs: nil,
+		Audit: map[int][]catalog.AuditLine{
+			1: {{Description: "Increases Haste of caster by 25.0.", Kind: "stat", Detail: "attackspeed"}},
+		},
+	}
+
+	newItems := []census.Item{
+		{
+			ID: 2,
+			EffectList: []census.Effect{
+				{Description: "When Equipped:", Indentation: 0},
+				{Description: "Increases Haste of caster by 10.0.", Indentation: 1},
+			},
+		},
+		{
+			ID: 3,
+			EffectList: []census.Effect{
+				{Description: "When Equipped:", Indentation: 0},
+				{Description: "On a spell cast this spell may cast Harnessed Power on caster.  Triggers about 1.8 times per minute.", Indentation: 1},
+				{Description: "Inflicts 500 - 900 heat damage on target", Indentation: 2},
+			},
+		},
+	}
+
+	got := MergeEffects(prior, newItems)
+
+	// Stats: prior item 1 haste retained + new item 2 haste appended.
+	require.Contains(t, got.Stats, catalog.EffectStat{ItemID: 1, Stat: "attackspeed", Value: 25})
+	require.Contains(t, got.Stats, catalog.EffectStat{ItemID: 2, Stat: "attackspeed", Value: 10})
+
+	// Procs: the new item 3 spell-cast proc is cataloged.
+	require.Len(t, got.Procs, 1)
+	require.Equal(t, 3, got.Procs[0].ItemID)
+	require.InDelta(t, 1.8, got.Procs[0].PerMinute, 1e-9)
+
+	// Audit: grouped by item, prior item 1 line retained, new items added.
+	require.Contains(t, got.Audit, 1)
+	require.Contains(t, got.Audit, 2)
+	require.Contains(t, got.Audit, 3)
+}
+
 func TestLoadFromCacheWhenPresent(t *testing.T) {
 	dir := t.TempDir()
 	items := []census.Item{

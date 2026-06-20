@@ -146,6 +146,57 @@ func ReadProcsCSV(r io.Reader) ([]ItemProc, error) {
 	return out, nil
 }
 
+var auditCSVHeader = []string{"item_id", "kind", "detail", "description"}
+
+// WriteAuditCSV writes the audit report to w in CSV format (round-trippable with
+// ReadAuditCSV), sorted by item ID for determinism.
+func WriteAuditCSV(w io.Writer, report map[int][]AuditLine) error {
+	ids := make([]int, 0, len(report))
+	for id := range report {
+		ids = append(ids, id)
+	}
+	sort.Ints(ids)
+
+	cw := csv.NewWriter(w)
+	if err := cw.Write(auditCSVHeader); err != nil {
+		return err
+	}
+	for _, id := range ids {
+		for _, line := range report[id] {
+			rec := []string{strconv.Itoa(id), line.Kind, line.Detail, line.Description}
+			if err := cw.Write(rec); err != nil {
+				return err
+			}
+		}
+	}
+	cw.Flush()
+	return cw.Error()
+}
+
+// ReadAuditCSV reads a WriteAuditCSV stream back into a report grouped by item ID.
+func ReadAuditCSV(r io.Reader) (map[int][]AuditLine, error) {
+	cr := csv.NewReader(r)
+	rows, err := cr.ReadAll()
+	if err != nil {
+		return nil, err
+	}
+	if len(rows) <= 1 {
+		return map[int][]AuditLine{}, nil
+	}
+	out := map[int][]AuditLine{}
+	for _, row := range rows[1:] {
+		if len(row) < 4 {
+			continue
+		}
+		id, err := strconv.Atoi(row[0])
+		if err != nil {
+			return nil, fmt.Errorf("audit: bad item_id %q: %w", row[0], err)
+		}
+		out[id] = append(out[id], AuditLine{Kind: row[1], Detail: row[2], Description: row[3]})
+	}
+	return out, nil
+}
+
 // WriteAuditReport writes a markdown audit report to w.
 // Rows are sorted by item ID for determinism.
 func WriteAuditReport(w io.Writer, report map[int][]AuditLine) error {

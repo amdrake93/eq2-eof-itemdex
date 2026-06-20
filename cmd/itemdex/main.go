@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -26,53 +27,7 @@ func main() {
 	c := census.New(*sid)
 
 	if *effects {
-		cached, err := source.LoadCache(*dir)
-		if err != nil {
-			fmt.Fprintln(os.Stderr, "error loading cache:", err)
-			os.Exit(1)
-		}
-
-		const batchSize = 50
-		var results []census.Item
-		for i := 0; i < len(cached); i += batchSize {
-			end := i + batchSize
-			if end > len(cached) {
-				end = len(cached)
-			}
-			batch := cached[i:end]
-
-			ids := make([]string, len(batch))
-			for j, it := range batch {
-				ids[j] = strconv.FormatInt(it.ID, 10)
-			}
-			query := fmt.Sprintf("id=%s&c:show=id,effect_list&c:limit=%d",
-				strings.Join(ids, ","), len(batch))
-
-			body, err := c.Get(context.Background(), "get", "item", query)
-			if err != nil {
-				slog.Error("census fetch failed", "fetched_so_far", len(results), "err", err)
-				os.Exit(1)
-			}
-			batch_items, err := census.DecodeItems(body)
-			if err != nil {
-				slog.Error("census decode failed", "fetched_so_far", len(results), "err", err)
-				os.Exit(1)
-			}
-			results = append(results, batch_items...)
-		}
-
-		withEffects := 0
-		for _, it := range results {
-			if len(it.EffectList) > 0 {
-				withEffects++
-			}
-		}
-		slog.Info("effect backfill complete", "items_fetched", len(results), "items_with_effects", withEffects)
-
-		if err := source.WriteEffectArtifacts(results, *dir); err != nil {
-			fmt.Fprintln(os.Stderr, "error writing effect artifacts:", err)
-			os.Exit(1)
-		}
+		runEffectsBackfill(c, *dir)
 		return
 	}
 
@@ -87,4 +42,84 @@ func main() {
 		srcName = "cache"
 	}
 	fmt.Printf("loaded %d EoF items from %s -> %s/\n", len(items), srcName, *dir)
+}
+
+// runEffectsBackfill resumably fetches effect_list for every cataloged item across
+// rate-limited sessions. It processes a stable, ascending-sorted ID list from a
+// saved offset, seeds its accumulators from the existing CSVs, fetches in batches
+// of 50, and after the loop (whether it completed or a quota error stopped it)
+// rewrites all four effect artifacts plus the progress offset. It exits non-zero
+// when more IDs remain (resume needed) and zero when the backfill is complete.
+func runEffectsBackfill(c *census.Client, dir string) {
+	cached, err := source.LoadCache(dir)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "error loading cache:", err)
+		os.Exit(1)
+	}
+
+	sortedIDs := make([]int64, 0, len(cached))
+	for _, it := range cached {
+		sortedIDs = append(sortedIDs, it.ID)
+	}
+	sort.Slice(sortedIDs, func(i, j int) bool { return sortedIDs[i] < sortedIDs[j] })
+
+	offset := source.ReadEffectProgress(dir)
+	if offset >= len(sortedIDs) {
+		slog.Info("effects backfill already complete", "processed", len(sortedIDs), "total", len(sortedIDs))
+		os.Exit(0)
+	}
+
+	acc, err := source.SeedEffectAccumulator(dir)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "error seeding effect accumulator:", err)
+		os.Exit(1)
+	}
+
+	const batchSize = 50
+	processed := offset
+	for processed < len(sortedIDs) {
+		end := processed + batchSize
+		if end > len(sortedIDs) {
+			end = len(sortedIDs)
+		}
+		batch := sortedIDs[processed:end]
+
+		ids := make([]string, len(batch))
+		for j, id := range batch {
+			ids[j] = strconv.FormatInt(id, 10)
+		}
+		query := fmt.Sprintf("id=%s&c:show=id,effect_list&c:limit=%d",
+			strings.Join(ids, ","), len(batch))
+
+		body, err := c.Get(context.Background(), "get", "item", query)
+		if err != nil {
+			slog.Warn("census fetch stopped (quota?); persisting progress and exiting for resume",
+				"processed", processed, "total", len(sortedIDs), "err", err)
+			break
+		}
+		batchItems, err := census.DecodeItems(body)
+		if err != nil {
+			slog.Warn("census decode stopped; persisting progress and exiting for resume",
+				"processed", processed, "total", len(sortedIDs), "err", err)
+			break
+		}
+
+		acc = source.MergeEffects(acc, batchItems)
+		processed = end
+	}
+
+	if err := source.WriteEffectAccumulator(acc, dir); err != nil {
+		fmt.Fprintln(os.Stderr, "error writing effect artifacts:", err)
+		os.Exit(1)
+	}
+	if err := source.WriteEffectProgress(dir, processed); err != nil {
+		fmt.Fprintln(os.Stderr, "error writing effect progress:", err)
+		os.Exit(1)
+	}
+
+	slog.Info("processed items", "processed", processed, "total", len(sortedIDs))
+
+	if processed < len(sortedIDs) {
+		os.Exit(1)
+	}
 }

@@ -26,6 +26,29 @@ var categoryFiles = []string{"weapons.csv", "armor.csv", "jewelry-charms.csv"}
 // offsetFile stores the next Census page offset for incremental pulls.
 const offsetFile = ".census_next_offset"
 
+// effectProgressFile stores how many sorted catalog IDs the --effects backfill
+// has processed, so it can resume across rate-limited sessions.
+const effectProgressFile = "effect-progress.txt"
+
+// ReadEffectProgress returns the number of IDs the --effects backfill has already
+// processed (0 if the progress file is absent or unreadable).
+func ReadEffectProgress(dir string) int {
+	b, err := os.ReadFile(filepath.Join(dir, effectProgressFile))
+	if err != nil {
+		return 0
+	}
+	n, err := strconv.Atoi(strings.TrimSpace(string(b)))
+	if err != nil {
+		return 0
+	}
+	return n
+}
+
+// WriteEffectProgress records how many sorted catalog IDs have been processed.
+func WriteEffectProgress(dir string, processed int) error {
+	return os.WriteFile(filepath.Join(dir, effectProgressFile), []byte(fmt.Sprintf("%d\n", processed)), 0o644)
+}
+
 func readOffset(dir string) int {
 	b, err := os.ReadFile(filepath.Join(dir, offsetFile))
 	if err != nil {
@@ -155,23 +178,32 @@ func FreshPull(ctx context.Context, c *census.Client, dir string, pageSize int) 
 	return gear, nil
 }
 
-// WriteEffectArtifacts parses each item's effect_list and writes the three effect
-// catalog files into dir: item-effects.csv (static stats, source "effect"),
-// item-procs.csv (cataloged procs), and effect-audit.md (the human-review report).
-func WriteEffectArtifacts(items []census.Item, dir string) error {
-	var stats []catalog.EffectStat
-	var procs []catalog.ItemProc
-	audit := map[int][]catalog.AuditLine{}
-	for _, it := range items {
+// EffectAccumulator holds the parsed effect artifacts collected so far. It is the
+// shared currency between MergeEffects (which grows it) and WriteEffectArtifacts
+// (which persists it), so a resumable backfill can seed it from existing CSVs.
+type EffectAccumulator struct {
+	Stats []catalog.EffectStat
+	Procs []catalog.ItemProc
+	Audit map[int][]catalog.AuditLine
+}
+
+// MergeEffects runs ParseEffects on each new item and appends the results to acc,
+// returning the grown accumulator. It is pure (no IO) so resume logic is testable
+// without a network or filesystem.
+func MergeEffects(acc EffectAccumulator, newItems []census.Item) EffectAccumulator {
+	if acc.Audit == nil {
+		acc.Audit = map[int][]catalog.AuditLine{}
+	}
+	for _, it := range newItems {
 		if len(it.EffectList) == 0 {
 			continue
 		}
 		s, ps, a := catalog.ParseEffects(it.EffectList)
 		for k, v := range s {
-			stats = append(stats, catalog.EffectStat{ItemID: int(it.ID), Stat: k, Value: v})
+			acc.Stats = append(acc.Stats, catalog.EffectStat{ItemID: int(it.ID), Stat: k, Value: v})
 		}
 		for _, p := range ps {
-			procs = append(procs, catalog.ItemProc{
+			acc.Procs = append(acc.Procs, catalog.ItemProc{
 				ItemID:    int(it.ID),
 				Trigger:   p.Trigger,
 				PerMinute: p.PerMinute,
@@ -182,8 +214,29 @@ func WriteEffectArtifacts(items []census.Item, dir string) error {
 			})
 		}
 		if len(a) > 0 {
-			audit[int(it.ID)] = a
+			acc.Audit[int(it.ID)] = append(acc.Audit[int(it.ID)], a...)
 		}
+	}
+	return acc
+}
+
+// WriteEffectArtifacts parses each item's effect_list and writes the four effect
+// catalog files into dir: item-effects.csv (static stats), item-procs.csv
+// (cataloged procs), effect-audit.csv (round-trippable audit for resume seeding),
+// and effect-audit.md (the human-review report). FreshPull calls this with the
+// full item set; the resumable backfill seeds an accumulator and writes it here.
+func WriteEffectArtifacts(items []census.Item, dir string) error {
+	return WriteEffectAccumulator(MergeEffects(EffectAccumulator{}, items), dir)
+}
+
+// WriteEffectAccumulator persists an already-collected accumulator to the four
+// effect catalog files in dir.
+func WriteEffectAccumulator(acc EffectAccumulator, dir string) error {
+	stats := acc.Stats
+	procs := acc.Procs
+	audit := acc.Audit
+	if audit == nil {
+		audit = map[int][]catalog.AuditLine{}
 	}
 
 	sort.Slice(stats, func(i, j int) bool {
@@ -209,9 +262,62 @@ func WriteEffectArtifacts(items []census.Item, dir string) error {
 	}); err != nil {
 		return err
 	}
+	if err := writeEffectFile(filepath.Join(dir, "effect-audit.csv"), func(w io.Writer) error {
+		return catalog.WriteAuditCSV(w, audit)
+	}); err != nil {
+		return err
+	}
 	return writeEffectFile(filepath.Join(dir, "effect-audit.md"), func(w io.Writer) error {
 		return catalog.WriteAuditReport(w, audit)
 	})
+}
+
+// SeedEffectAccumulator reconstructs an accumulator from the effect CSVs in dir,
+// returning an empty (but non-nil) accumulator when the files are absent. Used by
+// the resumable backfill to continue appending across sessions.
+func SeedEffectAccumulator(dir string) (EffectAccumulator, error) {
+	acc := EffectAccumulator{Audit: map[int][]catalog.AuditLine{}}
+
+	if err := readEffectFile(filepath.Join(dir, "item-effects.csv"), func(r io.Reader) error {
+		s, err := catalog.ReadEffectStatsCSV(r)
+		acc.Stats = s
+		return err
+	}); err != nil {
+		return acc, err
+	}
+	if err := readEffectFile(filepath.Join(dir, "item-procs.csv"), func(r io.Reader) error {
+		p, err := catalog.ReadProcsCSV(r)
+		acc.Procs = p
+		return err
+	}); err != nil {
+		return acc, err
+	}
+	if err := readEffectFile(filepath.Join(dir, "effect-audit.csv"), func(r io.Reader) error {
+		a, err := catalog.ReadAuditCSV(r)
+		if a != nil {
+			acc.Audit = a
+		}
+		return err
+	}); err != nil {
+		return acc, err
+	}
+	return acc, nil
+}
+
+func readEffectFile(path string, fn func(io.Reader) error) (err error) {
+	f, err := os.Open(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return err
+	}
+	defer func() {
+		if cerr := f.Close(); cerr != nil && err == nil {
+			err = cerr
+		}
+	}()
+	return fn(f)
 }
 
 func writeEffectFile(path string, fn func(io.Writer) error) (err error) {
