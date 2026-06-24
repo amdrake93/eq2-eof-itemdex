@@ -9,11 +9,14 @@ import (
 // optimizableCatalogSlots are catalog (census item slot_list) slot names that have
 // a candidate pool — the slots bis can suggest upgrades for. Ranged/Ammo/Charm/
 // event carry stats on import but are never swap candidates (SPEC §7, §16).
+// Slot names are the census ITEM slot_list vocabulary, verified against the live
+// catalog (bis.db items.slot): Cloak (not "Back"), plural Shoulders/Hands/Legs/Feet.
+// Charm, Ranged, Ammo and Primary (the fixed main-hand) are intentionally excluded.
 var optimizableCatalogSlots = map[string]bool{
-	"Secondary": true, "Head": true, "Chest": true,
-	"Shoulder": true, "Shoulders": true, "Forearms": true, "Hand": true, "Hands": true,
-	"Leg": true, "Legs": true, "Foot": true, "Feet": true, "Finger": true,
-	"Ear": true, "Wrist": true, "Neck": true, "Back": true, "Waist": true,
+	"Secondary": true, "Head": true, "Chest": true, "Shoulders": true,
+	"Forearms": true, "Hands": true, "Legs": true, "Feet": true,
+	"Finger": true, "Ear": true, "Wrist": true, "Neck": true,
+	"Cloak": true, "Waist": true,
 }
 
 // OptimizableSlot reports whether a catalog slot is a bis swap candidate.

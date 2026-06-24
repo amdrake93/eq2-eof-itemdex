@@ -4,9 +4,11 @@
 # optimizer's output, never config.
 
 [character]
-name     = "Alex"
-class    = "assassin"
-art_tier = "expert"
+name        = "Alex"
+class       = "assassin"
+art_tier    = "expert"
+census_name = "Biffels"
+world       = 618
 
 [stats]
 cast_speed     = 37.4 # AA total (measured: Head Shot 2.0s -> 1.46s tooltip)

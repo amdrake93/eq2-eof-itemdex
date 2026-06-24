@@ -10,7 +10,7 @@ import (
 )
 
 func TestOptimizableSlot(t *testing.T) {
-	for _, s := range []string{"Head", "Chest", "Finger", "Ear", "Wrist", "Back", "Waist", "Secondary"} {
+	for _, s := range []string{"Head", "Chest", "Finger", "Ear", "Wrist", "Cloak", "Waist", "Secondary"} {
 		require.True(t, OptimizableSlot(s), s)
 	}
 	for _, s := range []string{"Charm", "Ranged", "Ammo", "Food", "Primary"} {
@@ -21,16 +21,16 @@ func TestOptimizableSlot(t *testing.T) {
 func TestSetFromLoadoutCountsFixedStats(t *testing.T) {
 	f := loadout.File{
 		Slots: []loadout.SlotEntry{
-			{CatalogSlot: "Back", ItemID: 1, Name: "Cloak", Optimizable: true, Stats: model.StatBlock{Haste: 25}},
+			{CatalogSlot: "Cloak", ItemID: 1, Name: "Cloak", Optimizable: true, Stats: model.StatBlock{Haste: 25}},
 			{CatalogSlot: "Charm", ItemID: 2, Name: "Clicky", Optimizable: false, Stats: model.StatBlock{CritChance: 3}},
 		},
 	}
 	lo := store.Loadout{Main: model.Weapon{AvgDamage: 160, DelaySecs: 4}}
 	set, optimizable := SetFromLoadout(f, model.StatBlock{}, lo, 1.0, 600)
 
-	require.Contains(t, set.Equipped, "Back")
+	require.Contains(t, set.Equipped, "Cloak")
 	require.Contains(t, set.Equipped, "Charm")
-	require.Equal(t, map[string]bool{"Back": true}, optimizable)
+	require.Equal(t, map[string]bool{"Cloak": true}, optimizable)
 	require.Greater(t, set.DPS(), 0.0)
 }
 
