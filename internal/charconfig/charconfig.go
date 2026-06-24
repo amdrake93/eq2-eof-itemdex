@@ -15,9 +15,11 @@ import (
 )
 
 type Character struct {
-	Name    string `toml:"name"`
-	Class   string `toml:"class"`
-	ArtTier string `toml:"art_tier"`
+	Name       string `toml:"name"`
+	Class      string `toml:"class"`
+	ArtTier    string `toml:"art_tier"`
+	CensusName string `toml:"census_name"` // in-game character name for gear import
+	World      int    `toml:"world"`       // census worldid for gear import (Wuoshi = 618)
 }
 
 // StatGrants is a stat block as written in TOML ([stats] or one [contexts.X]).

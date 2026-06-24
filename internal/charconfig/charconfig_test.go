@@ -225,3 +225,35 @@ func TestLoadClassRejectsUnknownKey(t *testing.T) {
 	_, err := LoadClass(dir, "x")
 	require.ErrorContains(t, err, "bogus")
 }
+
+func TestLoadCensusFields(t *testing.T) {
+	p := writeConfig(t, `
+[character]
+name = "Alex"
+class = "assassin"
+art_tier = "expert"
+census_name = "Biffels"
+world = 618
+[contexts.solo]
+mainstat = 156
+`)
+	cfg, err := Load(p)
+	require.NoError(t, err)
+	require.Equal(t, "Biffels", cfg.Character.CensusName)
+	require.Equal(t, 618, cfg.Character.World)
+}
+
+func TestLoadCensusFieldsOptional(t *testing.T) {
+	p := writeConfig(t, `
+[character]
+name = "Alex"
+class = "assassin"
+art_tier = "expert"
+[contexts.solo]
+mainstat = 156
+`)
+	cfg, err := Load(p)
+	require.NoError(t, err)
+	require.Equal(t, "", cfg.Character.CensusName)
+	require.Equal(t, 0, cfg.Character.World)
+}
