@@ -1,7 +1,7 @@
 # Character Gear Import — Design
 
 **Date:** 2026-06-24
-**Status:** Design (approved in brainstorm; pending spec review). This doc is the brainstorm record — rationale, feasibility probes, alternatives. The authoritative behavior is folded into `docs/SPEC.md` (Planned subsections in §3, §4, §6, §7, §8, §16).
+**Status:** Implemented 2026-06-24 (plan 2w). This doc is the brainstorm record — rationale, feasibility probes, alternatives. The authoritative behavior lives in `docs/SPEC.md` (§3, §4, §6, §7, §8; deferrals in §16).
 **Backlog refs:** `docs/SPEC.md` §16, `docs/plans/design-plan2.md` backlog §1 (character import) and §10 (class-intrinsic values migration / wield-state detection).
 
 ## Goal

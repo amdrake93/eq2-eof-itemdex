@@ -121,9 +121,7 @@ The timestamp window used for the server-side filter is intentionally loose: Cen
 
 `extract.AllEoFFrom` (and `AllEoF` which wraps it at offset 0) calls `collect` with a caller-supplied page size and start offset. If Census returns its quota-exceeded sentinel ("Missing Service ID…") mid-run, `collect` returns a `*PartialError` carrying the items already collected and the `NextOffset` at which the session ended. The caller can re-run with `--refresh` and pass `NextOffset` to `AllEoFFrom` to accumulate additional pages in a future session. The package-level sentinel `ErrQuotaExceeded` is wrapped inside `PartialError` and can be tested with `errors.Is`.
 
-### Character import query (Planned)
-
-> **Status:** Planned — see `docs/plans/2026-06-24-character-gear-import-design.md`. Not yet implemented.
+### Character import query
 
 `itemdex import` (§8) reads the live equipped loadout for one character from the Census `character` collection. The query is keyed on the config's `census_name` and `world` (§6): `name.first_lower=<census_name lowercased>` + `locationdata.worldid=<world>`, with `c:show=equipmentslot_list,type,last_update`. The character name field is nested (`name.first` / `name.first_lower`); the world is `locationdata.worldid` (Wuoshi = 618). This is the only network step of the import; resolution and sim are offline. The `last_update` timestamp is carried into the loadout file so snapshot staleness is visible rather than hidden.
 
@@ -201,9 +199,7 @@ An item's stats aggregate across multiple **sources**: `modifier` rows come from
 
 The shared parser `internal/catalog/effects.go ParseEffects` extracts static of-caster grants (mapped to census stat keys via `modifierToField`; non-mapped keys such as combat skills and single attributes are captured but not scored) and routes triggered effects to a proc record. Parsed effect-stats persist in `data/item-effects.csv`; gear procs persist in `data/item-procs.csv`; an `effect-audit.md` report summarizes the review. Triggered effects are cataloged as procs and are not folded into the item's stat totals.
 
-### Adornment catalog & imported loadout (Planned)
-
-> **Status:** Planned — see `docs/plans/2026-06-24-character-gear-import-design.md`. Not yet implemented.
+### Adornment catalog & imported loadout
 
 Two artifacts back character import:
 
@@ -279,7 +275,7 @@ The top-level `Config` struct has four sections:
 
 | Section | Type | Purpose |
 |---|---|---|
-| `[character]` | `Character` | Identity fields: `name`, `class`, `art_tier`; plus `census_name` and `world` for gear import (§4, §8 — Planned). |
+| `[character]` | `Character` | Identity fields: `name`, `class`, `art_tier`; plus `census_name` and `world` for gear import (§4, §8). |
 | `[stats]` | `StatGrants` | AA/innate stat grants applied to every evaluation context (baseline before gear and context buffs). |
 | `[art_mods."Name"]` | `map[string]ArtMod` | Per-art AA modifiers keyed by rank-stripped art name. |
 | `[contexts.X]` | `map[string]StatGrants` | Named buff packages. At least one context is required. |
@@ -289,7 +285,7 @@ The top-level `Config` struct has four sections:
 - `Class` must be `"assassin"` — any other value is a hard error (`"only assassin is implemented"`). See §16 — Open Items & Known Divergences for the class-agnosticism backlog item.
 - `ArtTier` must be `"expert"` — any other value is a hard error (`"only expert is implemented"`). See §16 for the tier-flexibility backlog item.
 
-**Gear-import fields (Planned).** `census_name` (string) and `world` (int) identify the live character for `itemdex import` (§4, §8). They are optional for non-import flows (existing configs load unchanged) and required when `import` runs. Gear is still never part of the character config — import writes a separate loadout file, and the optimizer adds gear (see `ContextBlock` below and §7).
+**Gear-import fields.** `census_name` (string) and `world` (int) identify the live character for `itemdex import` (§4, §8). They are optional for non-import flows (existing configs load unchanged) and required when `import` runs. Gear is still never part of the character config — import writes a separate loadout file, and the optimizer adds gear (see `ContextBlock` below and §7).
 
 **`StatGrants` validation** — every stat in a `[stats]` or `[contexts.X]` block must be non-negative. Config stats are grants; debuffs are not a config concept, and a negative `cast_speed` at or below −100 would make the rotation's divisor non-positive. The check is enforced by `StatGrants.nonNegative()` for both the base `[stats]` block and every context block individually.
 
@@ -347,9 +343,7 @@ The Soulfire main-hand is the fixed primary weapon across all tiers — it is no
 
 `SlotCandidates(items, keep)` builds the per-slot candidate pools passed to `BuildSet`. It groups all items that pass the `keep` predicate by their Census slot. The off-hand slot (`Secondary`) is then overridden: its candidate pool is every one-handed weapon that passes `keep` except Soulfire weapons (the player never owns a second Soulfire, and the main-hand Soulfire is fixed). The Primary slot is left as-is in the map but `BuildSet` ignores it.
 
-### Imported loadout (Planned)
-
-> **Status:** Planned — see `docs/plans/2026-06-24-character-gear-import-design.md`. Not yet implemented.
+### Imported loadout
 
 `bis --loadout <file>` (§8) builds a `Set` from an imported loadout file (§4) instead of an empty set, classifying each kept slot:
 
@@ -414,8 +408,8 @@ Weights are outputs derived from the full model at the converged set — no stat
 |---|---|---|
 | `itemdex` | Pull EoF items from Census and write CSV catalog. Serves from cache if CSVs exist and `--refresh` is false. | `--out data` (CSV output dir / cache), `--refresh false` (force fresh Census pull), `--sid s:example` (Census service ID), `--page 1000` (items per Census request) |
 | `builddb` | Build the SQLite database from the CSV cache. Reads gear from CSVs, pulls Assassin Expert CAs from Census, and writes `bis.db`. | `--data data` (CSV catalog dir), `--db bis.db` (output DB path), `--sid s:example` (Census service ID) |
-| `bis` | Run the BiS optimizer and write the markdown report. Runs all three accessibility tiers plus any locked re-model. | `--db bis.db` (scored DB), `--out bis-report.md` (report path), `--character characters/alex.toml` (character config), `--lock ""` (comma-separated item IDs to lock for a re-model run), `--loadout ""` (imported loadout file to sim from — Planned, §7), `--top 3` (alternatives per slot), `--fight` (fight duration in seconds; defaults to `constants.FightDurationSecs`) |
-| `itemdex import` *(Planned)* | Pull one character's live equipped loadout from Census and write a loadout file. Fetches any uncataloged items/adornments. | `--character characters/alex.toml` (config supplying `census_name`/`world`), `--out data` (catalog dir for appended items/adornments), `--sid s:example` (Census service ID) |
+| `bis` | Run the BiS optimizer and write the markdown report. Runs all three accessibility tiers plus any locked re-model. | `--db bis.db` (scored DB), `--out bis-report.md` (report path), `--character characters/alex.toml` (character config), `--lock ""` (comma-separated item IDs to lock for a re-model run), `--loadout ""` (imported loadout file to sim from — §7), `--top 3` (alternatives per slot), `--fight` (fight duration in seconds; defaults to `constants.FightDurationSecs`) |
+| `itemdex import` | Pull one character's live equipped loadout from Census and write a loadout file. Fetches any uncataloged items/adornments. | `--character characters/alex.toml` (config supplying `census_name`/`world`), `--out data` (catalog dir for appended items/adornments), `--sid s:example` (Census service ID) |
 | `weights` | Print marginal DPS weights per stat at the current loadout for each context. Diagnostic tool; does not write any files. | `--db bis.db`, `--character characters/alex.toml`, `--fight` (fight duration; defaults to `constants.FightDurationSecs`) |
 | `fitcurve` | Fit the haste/DPS-mod quadratic curve from the readings CSV and print paste-ready constants for `internal/model/curve.go`. | `--readings data/curve-readings.csv` |
 
@@ -427,7 +421,7 @@ Weights are outputs derived from the full model at the converged set — no stat
 2. `go run ./cmd/builddb` — ingests the CSV catalog + fresh Census CA pull and writes `bis.db`.
 3. `go run ./cmd/bis` — runs the optimizer and writes `bis-report.md`. Optionally run `go run ./cmd/weights` first to inspect stat weights.
 
-**Gear-import loop (Planned)** — run to sim from the live equipped set:
+**Gear-import loop** — run to sim from the live equipped set:
 
 1. Set `census_name` and `world` in the character config (§6).
 2. `go run ./cmd/itemdex import` — writes `characters/<name>-loadout.toml`; appends any newly-fetched items/adornments to the CSVs and prints a `builddb` reminder if it did.
@@ -739,7 +733,7 @@ This section is the forward worklist. Items are grouped by kind; each gives the 
 
 **Gear procs captured, not scored.** Triggered gear effects (from `effect_list`) are now cataloged in `item_procs` (`data/item-procs.csv`) with rate, damage range, damage type, and raw trigger text. Scoring them (rate × expected damage, 0%-crit class) is deferred — procs do not affect current BiS rankings until a scoring layer is added.
 
-**Adornment optimization deferred (gear-import scope).** Character import (§4, §7 — Planned) counts equipped adornments' stats toward the imported loadout total but treats adornments as fixed: it never suggests adornment swaps and there is no adornment candidate pool. Scoring adornments as upgrade candidates (a per-socket optimization layer) is future work; it pairs with the crit-adornment question in §16.3. Until then `data/adornments.csv` is a stat cache for import only.
+**Adornment optimization deferred (gear-import scope).** Character import (§4, §7) counts equipped adornments' stats toward the imported loadout total but treats adornments as fixed: it never suggests adornment swaps and there is no adornment candidate pool. Scoring adornments as upgrade candidates (a per-socket optimization layer) is future work; it pairs with the crit-adornment question in §16.3. Until then `data/adornments.csv` is a stat cache for import only.
 
 **Food/drink slots excluded from import.** Import skips food and drink slots — their stats are not counted, since food/drink change ad hoc and shouldn't perturb the modeled set. Revisit if a future expansion makes consumable stats stable and BiS-relevant.
 
