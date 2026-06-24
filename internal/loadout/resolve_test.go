@@ -58,6 +58,70 @@ func TestResolveSumsItemAndAdornments(t *testing.T) {
 	require.InDelta(t, 2, cloak.Stats.CritChance, 1e-9)
 }
 
+func TestResolveOffHandWeaponGetsSecondarySlot(t *testing.T) {
+	weaponSlots := []census.Slot{{Name: "Primary"}, {Name: "Secondary"}}
+	weaponType := census.TypeInfo{Delay: 3, MinBaseDamage: 50, MaxBaseDamage: 100}
+	ch := census.Character{
+		EquipmentSlots: []census.EquipmentSlot{
+			{Name: "primary", Item: census.EquippedItem{ID: 6}},
+			{Name: "secondary", Item: census.EquippedItem{ID: 7}},
+		},
+	}
+	catalog := func(id int64) (census.Item, bool) {
+		if id == 6 || id == 7 {
+			return census.Item{ID: id, Slots: weaponSlots, TypeInfo: weaponType}, true
+		}
+		return census.Item{}, false
+	}
+	adorn := func(id int64) (map[string]float64, bool) { return nil, false }
+
+	f, missItems, missAdorns := Resolve(ch, catalog, adorn, func(string) bool { return true })
+
+	require.Empty(t, missItems)
+	require.Empty(t, missAdorns)
+	require.Len(t, f.Slots, 2)
+
+	bySlot := map[string]SlotEntry{}
+	for _, e := range f.Slots {
+		bySlot[e.CharSlot] = e
+	}
+	main := bySlot["primary"]
+	require.Equal(t, "Primary", main.CatalogSlot)
+	require.InDelta(t, 3, main.WeaponDelay, 1e-9)
+
+	off := bySlot["secondary"]
+	require.Equal(t, "Secondary", off.CatalogSlot)
+	require.InDelta(t, 3, off.WeaponDelay, 1e-9)
+}
+
+func TestResolveItemEffectStatsCounted(t *testing.T) {
+	ch := census.Character{
+		EquipmentSlots: []census.EquipmentSlot{
+			{Name: "head", Item: census.EquippedItem{ID: 42}},
+		},
+	}
+	catalog := func(id int64) (census.Item, bool) {
+		if id == 42 {
+			return census.Item{
+				ID:    id,
+				Slots: []census.Slot{{Name: "Head"}},
+				EffectList: []census.Effect{
+					{Description: "When Equipped:", Indentation: 0},
+					{Description: "Increases Haste of caster by 25.0.", Indentation: 1},
+				},
+			}, true
+		}
+		return census.Item{}, false
+	}
+	adorn := func(id int64) (map[string]float64, bool) { return nil, false }
+
+	f, missItems, _ := Resolve(ch, catalog, adorn, func(string) bool { return true })
+
+	require.Empty(t, missItems)
+	require.Len(t, f.Slots, 1)
+	require.InDelta(t, 25, f.Slots[0].Stats.Haste, 1e-9)
+}
+
 func TestResolveReportsMissing(t *testing.T) {
 	ch := census.Character{EquipmentSlots: []census.EquipmentSlot{
 		{Name: "head", Item: census.EquippedItem{ID: 999, Adornments: []census.Adornment{{ID: 888}}}},

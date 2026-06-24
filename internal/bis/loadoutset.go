@@ -10,7 +10,7 @@ import (
 // a candidate pool — the slots bis can suggest upgrades for. Ranged/Ammo/Charm/
 // event carry stats on import but are never swap candidates (SPEC §7, §16).
 var optimizableCatalogSlots = map[string]bool{
-	"Primary": true, "Secondary": true, "Head": true, "Chest": true,
+	"Secondary": true, "Head": true, "Chest": true,
 	"Shoulder": true, "Shoulders": true, "Forearms": true, "Hand": true, "Hands": true,
 	"Leg": true, "Legs": true, "Foot": true, "Feet": true, "Finger": true,
 	"Ear": true, "Wrist": true, "Neck": true, "Back": true, "Waist": true,

@@ -51,10 +51,10 @@ func Resolve(
 		if len(it.Slots) > 0 {
 			catalogSlot = it.Slots[0].Name
 		}
-		mods := map[string]float64{}
-		for k, m := range it.Modifiers {
-			mods[k] += m.Value
+		if slot.Name == "secondary" {
+			catalogSlot = "Secondary"
 		}
+		mods := ItemStatGrants(it)
 		for k, v := range adornStats {
 			mods[k] += v
 		}

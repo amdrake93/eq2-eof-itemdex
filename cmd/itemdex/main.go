@@ -170,6 +170,20 @@ func runImport(argv []string) {
 		fmt.Fprintln(os.Stderr, "error loading catalog cache:", err)
 		os.Exit(1)
 	}
+
+	if ef, err := os.Open(filepath.Join(*dir, "item-effects.csv")); err == nil {
+		effectStats, err := catalog.ReadEffectStatsCSV(ef)
+		ef.Close()
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "error reading item-effects.csv:", err)
+			os.Exit(1)
+		}
+		cachedItems = loadout.MergeEffectStats(cachedItems, effectStats)
+	} else if !os.IsNotExist(err) {
+		fmt.Fprintln(os.Stderr, "error opening item-effects.csv:", err)
+		os.Exit(1)
+	}
+
 	catIndex := make(map[int64]census.Item, len(cachedItems))
 	for _, it := range cachedItems {
 		catIndex[it.ID] = it

@@ -10,10 +10,10 @@ import (
 )
 
 func TestOptimizableSlot(t *testing.T) {
-	for _, s := range []string{"Head", "Chest", "Finger", "Ear", "Wrist", "Back", "Waist", "Primary", "Secondary"} {
+	for _, s := range []string{"Head", "Chest", "Finger", "Ear", "Wrist", "Back", "Waist", "Secondary"} {
 		require.True(t, OptimizableSlot(s), s)
 	}
-	for _, s := range []string{"Charm", "Ranged", "Ammo", "Food"} {
+	for _, s := range []string{"Charm", "Ranged", "Ammo", "Food", "Primary"} {
 		require.False(t, OptimizableSlot(s), s)
 	}
 }
