@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/amdrake93/eq2-eof-itemdex/internal/bis"
 	"github.com/amdrake93/eq2-eof-itemdex/internal/catalog"
 	"github.com/amdrake93/eq2-eof-itemdex/internal/census"
 	"github.com/amdrake93/eq2-eof-itemdex/internal/charconfig"
@@ -133,32 +134,6 @@ func runEffectsBackfill(c *census.Client, dir string) {
 	}
 }
 
-// optimizableCatalogSlots are the gear catalog slots the optimizer may swap.
-// TODO(task9): use bis.OptimizableSlot once it exists; this temporary local
-// duplicates the standard equippable gear slots.
-var optimizableCatalogSlots = map[string]bool{
-	"Primary":   true,
-	"Secondary": true,
-	"Head":      true,
-	"Chest":     true,
-	"Shoulder":  true,
-	"Shoulders": true,
-	"Forearms":  true,
-	"Hand":      true,
-	"Hands":     true,
-	"Leg":       true,
-	"Legs":      true,
-	"Foot":      true,
-	"Feet":      true,
-	"Finger":    true,
-	"Ear":       true,
-	"Wrist":     true,
-	"Neck":      true,
-	"Back":      true,
-	"Waist":     true,
-}
-
-func optimizableSlot(catalogSlot string) bool { return optimizableCatalogSlots[catalogSlot] }
 
 // runImport fetches the configured character's live equipped loadout from Census,
 // backfills any items/adornments missing from the local catalog, and writes
@@ -215,7 +190,7 @@ func runImport(argv []string) {
 		return s, ok
 	}
 
-	_, missItems, missAdorns := loadout.Resolve(ch, catLookup, adornLookup, optimizableSlot)
+	_, missItems, missAdorns := loadout.Resolve(ch, catLookup, adornLookup, bis.OptimizableSlot)
 
 	addedItems, addedAdorns := 0, 0
 
@@ -257,7 +232,7 @@ func runImport(argv []string) {
 		}
 	}
 
-	f, missItems2, missAdorns2 := loadout.Resolve(ch, catLookup, adornLookup, optimizableSlot)
+	f, missItems2, missAdorns2 := loadout.Resolve(ch, catLookup, adornLookup, bis.OptimizableSlot)
 	f.MarkUnresolved("item", missItems2)
 	f.MarkUnresolved("adornment", missAdorns2)
 
