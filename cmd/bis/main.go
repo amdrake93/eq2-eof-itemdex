@@ -101,7 +101,7 @@ func runLoadoutReport(classData charconfig.ClassData, lo store.Loadout,
 		var bestName string
 		var bestDelta float64
 		for _, cand := range bySlot[slot] {
-			if d := set.CandidateDelta(slot, cand); d > bestDelta {
+			if d := set.UpgradeDelta(slot, cand); d > bestDelta {
 				bestDelta, bestName = d, cand.Name
 			}
 		}

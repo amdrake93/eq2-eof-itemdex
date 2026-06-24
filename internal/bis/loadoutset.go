@@ -1,10 +1,33 @@
 package bis
 
 import (
+	"math"
+
 	"github.com/amdrake93/eq2-eof-itemdex/internal/loadout"
 	"github.com/amdrake93/eq2-eof-itemdex/internal/model"
 	"github.com/amdrake93/eq2-eof-itemdex/internal/store"
 )
+
+// UpgradeDelta is the DPS gain from swapping candidate c into slot, REPLACING the
+// weakest item currently equipped there. It differs from CandidateDelta, which
+// measures a candidate against an EMPTY slot (its standalone contribution): for the
+// "what to upgrade next" report on an already-equipped loadout, the meaningful
+// number is the gain over what's worn, so we subtract the contribution of the
+// equipped item the candidate would displace. An empty slot falls back to the full
+// standalone contribution.
+func (s *Set) UpgradeDelta(slot string, c store.ScorableItem) float64 {
+	equipped := s.Equipped[slot]
+	if len(equipped) == 0 {
+		return s.CandidateDelta(slot, c)
+	}
+	weakest := math.Inf(1)
+	for _, it := range equipped {
+		if d := s.CandidateDelta(slot, it); d < weakest {
+			weakest = d
+		}
+	}
+	return s.CandidateDelta(slot, c) - weakest
+}
 
 // optimizableCatalogSlots are catalog (census item slot_list) slot names that have
 // a candidate pool — the slots bis can suggest upgrades for. Ranged/Ammo/Charm/

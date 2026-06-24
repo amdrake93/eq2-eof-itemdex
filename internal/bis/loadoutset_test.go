@@ -9,6 +9,29 @@ import (
 	"github.com/amdrake93/eq2-eof-itemdex/internal/store"
 )
 
+func TestUpgradeDeltaIsSwapGainNotStandalone(t *testing.T) {
+	lo := store.Loadout{Main: model.Weapon{AvgDamage: 160, DelaySecs: 4}}
+	set := NewSet(model.StatBlock{}, lo, 1.0, 600)
+	equipped := store.ScorableItem{ID: 1, Name: "Worn", Slot: "Head", Stats: model.StatBlock{MultiAttack: 10}}
+	set.Equipped["Head"] = []store.ScorableItem{equipped}
+
+	same := store.ScorableItem{ID: 2, Name: "Same", Slot: "Head", Stats: model.StatBlock{MultiAttack: 10}}
+	better := store.ScorableItem{ID: 3, Name: "Better", Slot: "Head", Stats: model.StatBlock{MultiAttack: 20}}
+
+	// CandidateDelta is standalone-vs-empty: positive even for an equal item.
+	require.Greater(t, set.CandidateDelta("Head", same), 0.0)
+
+	// UpgradeDelta is the swap gain: ~0 for an equal item, and strictly less than the
+	// equal item's inflated standalone CandidateDelta.
+	require.InDelta(t, 0.0, set.UpgradeDelta("Head", same), 1e-9)
+	require.Less(t, set.UpgradeDelta("Head", same), set.CandidateDelta("Head", same))
+
+	// A genuinely better item shows a positive — but still modest — swap gain.
+	up := set.UpgradeDelta("Head", better)
+	require.Greater(t, up, 0.0)
+	require.Less(t, up, set.CandidateDelta("Head", better))
+}
+
 func TestOptimizableSlot(t *testing.T) {
 	for _, s := range []string{"Head", "Chest", "Finger", "Ear", "Wrist", "Cloak", "Waist", "Secondary"} {
 		require.True(t, OptimizableSlot(s), s)
