@@ -1,9 +1,13 @@
 package census
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/url"
+	"strconv"
+	"strings"
 )
 
 // ErrCharacterNotFound means the census character query returned zero rows.
@@ -68,6 +72,48 @@ type characterListResponse struct {
 	Returned   int            `json:"returned"`
 	ErrorCode  string         `json:"errorCode"`
 	Error      string         `json:"error"`
+}
+
+const characterShowFields = "displayname,type.class,type.level,last_update,equipmentslot_list"
+
+// itemShowFields mirrors extract.showFields — the field set used when paging all EoF
+// items (internal/extract/extract.go). Kept in sync so fetched items carry identical
+// fields to cataloged ones.
+const itemShowFields = "displayname,id,tier,itemlevel,gamelink,slot_list,typeinfo,modifiers,effect_list,_extended.discovered.world_list"
+
+// FetchCharacter queries one character by name + world from the eq2 character collection.
+func FetchCharacter(ctx context.Context, c *Client, censusName string, world int) (Character, error) {
+	q := url.Values{}
+	q.Set("name.first_lower", strings.ToLower(censusName))
+	q.Set("locationdata.worldid", strconv.Itoa(world))
+	q.Set("c:limit", "1")
+	q.Set("c:show", characterShowFields)
+	body, err := c.Get(ctx, "get", "character", q.Encode())
+	if err != nil {
+		return Character{}, err
+	}
+	return DecodeCharacter(body)
+}
+
+// FetchItemsByIDs pulls full item records (incl. modifiers + effect_list) for the
+// given ids in a single request. Used for items/adornments absent from the catalog.
+func FetchItemsByIDs(ctx context.Context, c *Client, ids []int64) ([]Item, error) {
+	if len(ids) == 0 {
+		return nil, nil
+	}
+	strs := make([]string, len(ids))
+	for i, id := range ids {
+		strs[i] = strconv.FormatInt(id, 10)
+	}
+	q := url.Values{}
+	q.Set("id", strings.Join(strs, ","))
+	q.Set("c:limit", strconv.Itoa(len(ids)))
+	q.Set("c:show", itemShowFields)
+	body, err := c.Get(ctx, "get", "item", q.Encode())
+	if err != nil {
+		return nil, err
+	}
+	return DecodeItems(body)
 }
 
 // DecodeCharacter parses a census character_list payload for the first character.
