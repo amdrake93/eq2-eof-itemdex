@@ -12,10 +12,7 @@ import (
 	"github.com/amdrake93/eq2-eof-itemdex/internal/classify"
 )
 
-const (
-	showFields   = "displayname,id,tier,itemlevel,gamelink,slot_list,typeinfo,modifiers,effect_list,_extended.discovered.world_list"
-	maxItemLevel = 72
-)
+const maxItemLevel = 72
 
 // ErrQuotaExceeded is returned (wrapped) when Census cuts off a session due to
 // the s:example service-ID quota. The caller may treat partial results as valid
@@ -83,7 +80,7 @@ func collect(ctx context.Context, c *census.Client, pageSize, startOffset int, w
 				"&_extended.discovered.world_list.timestamp=%%3E%d"+
 				"&_extended.discovered.world_list.timestamp=%%3C%d"+
 				"&itemlevel=%%3C%d&c:show=%s&c:limit=%d&c:start=%d",
-			classify.VarsoonWorldID, windowStart.Unix()-1, windowEnd.Unix(), maxItemLevel, showFields, pageSize, start)
+			classify.VarsoonWorldID, windowStart.Unix()-1, windowEnd.Unix(), maxItemLevel, census.ItemShowFields, pageSize, start)
 		body, err := c.Get(ctx, "get", "item", query)
 		if err != nil {
 			if isQuotaError(err) {

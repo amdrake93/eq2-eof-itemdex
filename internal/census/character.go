@@ -76,10 +76,10 @@ type characterListResponse struct {
 
 const characterShowFields = "displayname,type.class,type.level,last_update,equipmentslot_list"
 
-// itemShowFields mirrors extract.showFields — the field set used when paging all EoF
-// items (internal/extract/extract.go). Kept in sync so fetched items carry identical
-// fields to cataloged ones.
-const itemShowFields = "displayname,id,tier,itemlevel,gamelink,slot_list,typeinfo,modifiers,effect_list,_extended.discovered.world_list"
+// ItemShowFields is the c:show field set for a full item fetch — the single source
+// of truth shared by the catalog paging in internal/extract and FetchItemsByIDs, so
+// items pulled either way carry identical fields.
+const ItemShowFields = "displayname,id,tier,itemlevel,gamelink,slot_list,typeinfo,modifiers,effect_list,_extended.discovered.world_list"
 
 // FetchCharacter queries one character by name + world from the eq2 character collection.
 func FetchCharacter(ctx context.Context, c *Client, censusName string, world int) (Character, error) {
@@ -108,7 +108,7 @@ func FetchItemsByIDs(ctx context.Context, c *Client, ids []int64) ([]Item, error
 	q := url.Values{}
 	q.Set("id", strings.Join(strs, ","))
 	q.Set("c:limit", strconv.Itoa(len(ids)))
-	q.Set("c:show", itemShowFields)
+	q.Set("c:show", ItemShowFields)
 	body, err := c.Get(ctx, "get", "item", q.Encode())
 	if err != nil {
 		return nil, err

@@ -81,3 +81,13 @@ func TestFetchItemsByIDs(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, items, 2)
 }
+
+func TestFetchItemsByIDsEmpty(t *testing.T) {
+	c := New("s:example")
+	c.BaseURL = "http://invalid.invalid"
+	c.Limiter = rate.NewLimiter(rate.Inf, 1)
+
+	items, err := FetchItemsByIDs(context.Background(), c, nil)
+	require.NoError(t, err)
+	require.Nil(t, items)
+}
