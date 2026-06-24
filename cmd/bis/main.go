@@ -81,7 +81,7 @@ type upgrade struct {
 	Delta      float64
 }
 
-func runLoadoutReport(db *store.DB, classData charconfig.ClassData, lo store.Loadout,
+func runLoadoutReport(classData charconfig.ClassData, lo store.Loadout,
 	profile model.StatBlock, items []store.ScorableItem, loadoutPath, out string, topN int, fight float64) {
 
 	f, err := loadout.Read(loadoutPath)
@@ -242,7 +242,7 @@ func main() {
 	if *loadoutPath != "" {
 		// Loadout is simmed in the RAID context: an imported set represents the
 		// player's real, raid-buffed-capable gear, so the raid baseline is correct.
-		runLoadoutReport(db, classData, lo, raid, items, *loadoutPath, *out, *topN, *fight)
+		runLoadoutReport(classData, lo, raid, items, *loadoutPath, *out, *topN, *fight)
 		return
 	}
 
