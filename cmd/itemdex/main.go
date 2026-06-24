@@ -6,15 +6,24 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
 
+	"github.com/amdrake93/eq2-eof-itemdex/internal/catalog"
 	"github.com/amdrake93/eq2-eof-itemdex/internal/census"
+	"github.com/amdrake93/eq2-eof-itemdex/internal/charconfig"
+	"github.com/amdrake93/eq2-eof-itemdex/internal/loadout"
 	"github.com/amdrake93/eq2-eof-itemdex/internal/source"
 )
 
 func main() {
+	if len(os.Args) > 1 && os.Args[1] == "import" {
+		runImport(os.Args[2:])
+		return
+	}
+
 	var (
 		dir      = flag.String("out", "data", "directory for CSV catalog (also the cache)")
 		refresh  = flag.Bool("refresh", false, "force a fresh Census pull (rewrites CSVs)")
@@ -122,4 +131,199 @@ func runEffectsBackfill(c *census.Client, dir string) {
 	if processed < len(sortedIDs) {
 		os.Exit(1)
 	}
+}
+
+// optimizableCatalogSlots are the gear catalog slots the optimizer may swap.
+// TODO(task9): use bis.OptimizableSlot once it exists; this temporary local
+// duplicates the standard equippable gear slots.
+var optimizableCatalogSlots = map[string]bool{
+	"Primary":   true,
+	"Secondary": true,
+	"Head":      true,
+	"Chest":     true,
+	"Shoulder":  true,
+	"Shoulders": true,
+	"Forearms":  true,
+	"Hand":      true,
+	"Hands":     true,
+	"Leg":       true,
+	"Legs":      true,
+	"Foot":      true,
+	"Feet":      true,
+	"Finger":    true,
+	"Ear":       true,
+	"Wrist":     true,
+	"Neck":      true,
+	"Back":      true,
+	"Waist":     true,
+}
+
+func optimizableSlot(catalogSlot string) bool { return optimizableCatalogSlots[catalogSlot] }
+
+// runImport fetches the configured character's live equipped loadout from Census,
+// backfills any items/adornments missing from the local catalog, and writes
+// characters/<name>-loadout.toml. It is thin wiring over loadout.Resolve plus the
+// source/catalog backfill helpers; all non-trivial logic lives in those packages.
+func runImport(argv []string) {
+	fs := flag.NewFlagSet("import", flag.ExitOnError)
+	character := fs.String("character", "characters/alex.toml", "character config TOML")
+	dir := fs.String("out", "data", "catalog directory (cache)")
+	sid := fs.String("sid", "s:example", "Census service ID")
+	_ = fs.Parse(argv)
+
+	cfg, err := charconfig.Load(*character)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "error loading character config:", err)
+		os.Exit(1)
+	}
+	if cfg.Character.CensusName == "" || cfg.Character.World == 0 {
+		fmt.Fprintln(os.Stderr, "error: character config needs census_name and world for gear import")
+		os.Exit(1)
+	}
+
+	ctx := context.Background()
+	c := census.New(*sid)
+
+	ch, err := census.FetchCharacter(ctx, c, cfg.Character.CensusName, cfg.Character.World)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "error fetching character:", err)
+		os.Exit(1)
+	}
+
+	cachedItems, err := source.LoadCache(*dir)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "error loading catalog cache:", err)
+		os.Exit(1)
+	}
+	catIndex := make(map[int64]census.Item, len(cachedItems))
+	for _, it := range cachedItems {
+		catIndex[it.ID] = it
+	}
+
+	adornIndex, err := loadAdornmentIndex(*dir)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "error loading adornments:", err)
+		os.Exit(1)
+	}
+
+	catLookup := func(id int64) (census.Item, bool) {
+		it, ok := catIndex[id]
+		return it, ok
+	}
+	adornLookup := func(id int64) (map[string]float64, bool) {
+		s, ok := adornIndex[id]
+		return s, ok
+	}
+
+	_, missItems, missAdorns := loadout.Resolve(ch, catLookup, adornLookup, optimizableSlot)
+
+	addedItems, addedAdorns := 0, 0
+
+	if len(missItems) > 0 {
+		fetched, err := census.FetchItemsByIDs(ctx, c, missItems)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "error fetching missing items:", err)
+			os.Exit(1)
+		}
+		for _, it := range fetched {
+			catIndex[it.ID] = it
+		}
+		addedItems, err = source.AppendItems(*dir, fetched)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "error appending items to catalog:", err)
+			os.Exit(1)
+		}
+	}
+
+	if len(missAdorns) > 0 {
+		fetched, err := census.FetchItemsByIDs(ctx, c, missAdorns)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "error fetching missing adornments:", err)
+			os.Exit(1)
+		}
+		var newAdorns []catalog.Adornment
+		for _, it := range fetched {
+			stats := loadout.ItemStatGrants(it)
+			adornIndex[it.ID] = stats
+			newAdorns = append(newAdorns, catalog.Adornment{
+				ID:    it.ID,
+				Name:  string(it.DisplayName),
+				Stats: stats,
+			})
+		}
+		if err := mergeAdornmentsCSV(*dir, newAdorns, &addedAdorns); err != nil {
+			fmt.Fprintln(os.Stderr, "error writing adornments:", err)
+			os.Exit(1)
+		}
+	}
+
+	f, missItems2, missAdorns2 := loadout.Resolve(ch, catLookup, adornLookup, optimizableSlot)
+	f.MarkUnresolved("item", missItems2)
+	f.MarkUnresolved("adornment", missAdorns2)
+
+	outPath := filepath.Join("characters", strings.ToLower(cfg.Character.CensusName)+"-loadout.toml")
+	if err := loadout.Write(outPath, f); err != nil {
+		fmt.Fprintln(os.Stderr, "error writing loadout:", err)
+		os.Exit(1)
+	}
+
+	unresolved := len(missItems2) + len(missAdorns2)
+	fmt.Printf("wrote %s (%d slots; %d unresolved)\n", outPath, len(f.Slots), unresolved)
+	if addedItems+addedAdorns > 0 {
+		fmt.Printf("added %d items + %d adornments to %s/ — run builddb before bis\n", addedItems, addedAdorns, *dir)
+	}
+}
+
+// loadAdornmentIndex reads <dir>/adornments.csv into an id -> stat-grant map,
+// returning an empty (non-nil) index when the file is absent.
+func loadAdornmentIndex(dir string) (map[int64]map[string]float64, error) {
+	index := map[int64]map[string]float64{}
+	path := filepath.Join(dir, "adornments.csv")
+	fh, err := os.Open(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return index, nil
+		}
+		return nil, err
+	}
+	defer fh.Close()
+
+	rows, err := catalog.ReadAdornmentsCSV(fh)
+	if err != nil {
+		return nil, err
+	}
+	for _, a := range rows {
+		index[a.ID] = a.Stats
+	}
+	return index, nil
+}
+
+// mergeAdornmentsCSV merges newAdorns into <dir>/adornments.csv by id, recording
+// the count newly added.
+func mergeAdornmentsCSV(dir string, newAdorns []catalog.Adornment, added *int) error {
+	path := filepath.Join(dir, "adornments.csv")
+
+	var existing []catalog.Adornment
+	if fh, err := os.Open(path); err == nil {
+		existing, err = catalog.ReadAdornmentsCSV(fh)
+		closeErr := fh.Close()
+		if err != nil {
+			return err
+		}
+		if closeErr != nil {
+			return closeErr
+		}
+	} else if !os.IsNotExist(err) {
+		return err
+	}
+
+	merged, n := catalog.MergeAdornments(existing, newAdorns)
+	*added = n
+
+	out, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+	return catalog.WriteAdornmentsCSV(out, merged)
 }

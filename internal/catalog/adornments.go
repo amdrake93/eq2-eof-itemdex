@@ -14,6 +14,27 @@ type Adornment struct {
 	Stats map[string]float64
 }
 
+// MergeAdornments appends incoming adornments whose id is not already present in
+// existing, returning the merged slice and the count newly added. Existing rows
+// are kept as-is (incoming duplicates do not overwrite).
+func MergeAdornments(existing, incoming []Adornment) (merged []Adornment, added int) {
+	known := make(map[int64]bool, len(existing))
+	for _, a := range existing {
+		known[a.ID] = true
+	}
+
+	merged = append(merged, existing...)
+	for _, a := range incoming {
+		if known[a.ID] {
+			continue
+		}
+		known[a.ID] = true
+		merged = append(merged, a)
+		added++
+	}
+	return merged, added
+}
+
 // WriteAdornmentsCSV writes a wide CSV: fixed (id,name) + sorted union of stat keys.
 func WriteAdornmentsCSV(w io.Writer, rows []Adornment) error {
 	statKeys := map[string]bool{}
