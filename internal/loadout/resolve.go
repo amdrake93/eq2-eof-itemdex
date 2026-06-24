@@ -8,17 +8,17 @@ import (
 )
 
 // Resolve turns a fetched Character into a loadout File. It is pure: catalogLookup
-// returns a cataloged census.Item by id; adornLookup returns an adornment's
-// census-keyed stat grants by id; optimizable decides whether a catalog slot is a
-// swap candidate. Ids not found are returned in missItems/missAdorns so the caller
-// can fetch them and re-run Resolve. Skipped slots (food/drink/mount) and empty
-// item sockets (ID 0) are omitted.
+// returns a cataloged census.Item by id; optimizable decides whether a catalog slot
+// is a swap candidate. Ids not found are returned in missItems so the caller can
+// fetch them and re-run Resolve. Adornment stats are intentionally not counted: they
+// are assumed roughly constant across the items competing for a slot, so they cancel
+// in relative ΔDPS comparisons. Skipped slots (food/drink/mount) and empty item
+// sockets (ID 0) are omitted.
 func Resolve(
 	ch census.Character,
 	catalogLookup func(int64) (census.Item, bool),
-	adornLookup func(int64) (map[string]float64, bool),
 	optimizable func(catalogSlot string) bool,
-) (f File, missItems []int64, missAdorns []int64) {
+) (f File, missItems []int64) {
 	f.CharacterName = ch.DisplayName
 	f.LastUpdate = ch.LastUpdate
 
@@ -29,21 +29,6 @@ func Resolve(
 		it, ok := catalogLookup(slot.Item.ID)
 		if !ok {
 			missItems = append(missItems, slot.Item.ID)
-		}
-
-		adornStats := map[string]float64{}
-		for _, aid := range slot.Item.FilledAdornmentIDs() {
-			as, found := adornLookup(aid)
-			if !found {
-				missAdorns = append(missAdorns, aid)
-				continue
-			}
-			for k, v := range as {
-				adornStats[k] += v
-			}
-		}
-
-		if !ok {
 			continue // can't build a slot entry without the item; caller re-resolves
 		}
 
@@ -55,9 +40,6 @@ func Resolve(
 			catalogSlot = "Secondary"
 		}
 		mods := ItemStatGrants(it)
-		for k, v := range adornStats {
-			mods[k] += v
-		}
 		var sb model.StatBlock
 		sb.AddModifiers(mods)
 
@@ -73,7 +55,7 @@ func Resolve(
 			Stats:       sb,
 		})
 	}
-	return f, missItems, missAdorns
+	return f, missItems
 }
 
 // MarkUnresolved records ids the caller still could not fetch after re-resolve, so

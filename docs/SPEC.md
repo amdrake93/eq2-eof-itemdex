@@ -195,18 +195,17 @@ Items are split across four CSV files based on their first slot:
 
 ### Effect-list ingestion
 
-An item's stats aggregate across multiple **sources**: `modifier` rows come from the Census `modifiers` block (the stats the catalog has always tracked); `effect` rows come from the item's `effect_list`, specifically "When Equipped: Increases/Decreases \<stat\> of caster by N" lines — static grants only (signed, point-values only, of-caster only). When building a `StatBlock` for a scored item, rows from all sources are summed. Adornments are not a source for the general scorable catalog; they enter only through character import, as fixed stat contributors on the imported loadout (see "Adornment catalog & imported loadout" below and §7).
+An item's stats aggregate across multiple **sources**: `modifier` rows come from the Census `modifiers` block (the stats the catalog has always tracked); `effect` rows come from the item's `effect_list`, specifically "When Equipped: Increases/Decreases \<stat\> of caster by N" lines — static grants only (signed, point-values only, of-caster only). When building a `StatBlock` for a scored item, rows from all sources are summed. Adornments are not modeled anywhere — their stats are assumed roughly constant across the items competing for a slot, so they cancel in relative comparison (see §7, §16).
 
 The shared parser `internal/catalog/effects.go ParseEffects` extracts static of-caster grants (mapped to census stat keys via `modifierToField`; non-mapped keys such as combat skills and single attributes are captured but not scored) and routes triggered effects to a proc record. Parsed effect-stats persist in `data/item-effects.csv`; gear procs persist in `data/item-procs.csv`; an `effect-audit.md` report summarizes the review. Triggered effects are cataloged as procs and are not folded into the item's stat totals.
 
-### Adornment catalog & imported loadout
+### Imported loadout file
 
-Two artifacts back character import:
+Import writes **`characters/<census_name lowercased>-loadout.toml`** — one entry per kept slot with `item_id`, `name`, an `optimizable` flag, and a resolved `stats` block (the item's `modifiers` **plus** its `effect_list` "When Equipped" stat grants). Effect-list grants are folded in via `loadout.ItemStatGrants` for freshly-fetched items, and via `loadout.MergeEffectStats` (reading `data/item-effects.csv`) for already-cataloged items whose cached `effect_list` is empty — so e.g. Cloak of Flames' +25 haste is counted. Weapon slots additionally carry `min_dmg`/`max_dmg`/`delay`. A top-level `last_update` records the Census snapshot time. The file is self-contained — `bis --loadout` consumes it with no network and no re-resolution.
 
-- **`data/adornments.csv`** — an adornment catalog (`id`, `name`, stat columns), populated lazily: when import encounters a filled adornment socket whose id is not yet cached, it fetches that adornment (an `item` in Census) and appends it. Each unique adornment id is fetched once. Adornments are captured here for their stats only; they are never optimization candidates.
-- **`characters/<census_name lowercased>-loadout.toml`** — the import output: one entry per kept slot with `item_id`, `name`, an `optimizable` flag, and a resolved `stats` block (item base — its `modifiers` **plus** its `effect_list` "When Equipped" stat grants — **+** the sum of its filled-adornment stats; v1 does not separate the adornment portion). Effect-list grants are folded in via `loadout.ItemStatGrants` for freshly-fetched items, and via `loadout.MergeEffectStats` (reading `data/item-effects.csv`) for already-cataloged items whose cached `effect_list` is empty — so e.g. Cloak of Flames' +25 haste is counted. Weapon slots additionally carry `min_dmg`/`max_dmg`/`delay`. A top-level `last_update` records the Census snapshot time. The file is self-contained — `bis --loadout` consumes it with no network and no re-resolution.
+**Adornments are not modeled.** Equipped adornment sockets are read from the character record but their stats are deliberately **not** counted, because adornments are assumed roughly constant across the items competing for a slot — so they cancel in relative ΔDPS comparison (§7, §16). There is no adornment catalog or adornment fetch.
 
-Gear items equipped but absent from the catalog are fetched on demand and **appended to the existing item CSVs** (so `builddb` permanently picks them up). Import does not auto-run `builddb`; it prints a reminder, preserving the pull → builddb → bis flow (§8). Any item or adornment id Census cannot resolve is reported as "unresolved — stats not counted," never silently dropped.
+Gear items equipped but absent from the catalog are fetched on demand and **appended to the existing item CSVs** (so `builddb` permanently picks them up). Import does not auto-run `builddb`; it prints a reminder, preserving the pull → builddb → bis flow (§8). Any item id Census cannot resolve is reported as "unresolved — stats not counted," never silently dropped.
 
 ## 5. Combat-Art Pipeline
 
@@ -348,7 +347,7 @@ The Soulfire main-hand is the fixed primary weapon across all tiers — it is no
 `bis --loadout <file>` (§8) builds a `Set` from an imported loadout file (§4) instead of an empty set, classifying each kept slot:
 
 - **Optimizable** — armor, jewelry, cloak, waist, and the `Secondary` (off-hand) weapon. Pre-filled with the equipped item and eligible for re-optimization against the catalog candidate pool. The imported `Primary` main-hand is **installed** into the set's weapon (overriding the config Soulfire so the sim runs the real main-hand) but, like the from-scratch model, is itself **fixed** — never a swap candidate (`OptimizableSlot` excludes `Primary`). The off-hand resolves to the `Secondary` slot via the character equipment slot name (`CharSlot`), since a one-handed weapon's census `slot_list` is `Primary|Secondary` and would otherwise mis-resolve to `Primary`.
-- **Fixed** — ranged, ammo, charm/activated, event slots, and **all adornments**. Their stats contribute to the set total like locked items, but they are never swap candidates (no catalog pool, by design — §16).
+- **Fixed** — ranged, ammo, charm/activated, event slots. Their stats contribute to the set total like locked items, but they are never swap candidates (no catalog pool, by design — §16). (Adornments are not counted at all — §4, §16.)
 - **Skipped** — food, drink, mount slots, and empty sockets contribute nothing.
 
 This generalizes the existing `--lock` concept (lock specific ids) to "lock the whole imported set, re-optimizing only the chosen optimizable slots." The four import use cases are report modes over this `Set`, reusing existing machinery with no new model math: **score current set** (`Set.DPS()` + `DeriveWeights`), **what to upgrade next** (`Set.CandidateDelta` per optimizable slot, ranked), **seed optimization** (`BuildSet` seeded from the set), and **validate vs parses** (emit absolute predicted DPS).
@@ -409,7 +408,7 @@ Weights are outputs derived from the full model at the converged set — no stat
 | `itemdex` | Pull EoF items from Census and write CSV catalog. Serves from cache if CSVs exist and `--refresh` is false. | `--out data` (CSV output dir / cache), `--refresh false` (force fresh Census pull), `--sid s:example` (Census service ID), `--page 1000` (items per Census request) |
 | `builddb` | Build the SQLite database from the CSV cache. Reads gear from CSVs, pulls Assassin Expert CAs from Census, and writes `bis.db`. | `--data data` (CSV catalog dir), `--db bis.db` (output DB path), `--sid s:example` (Census service ID) |
 | `bis` | Run the BiS optimizer and write the markdown report. Runs all three accessibility tiers plus any locked re-model. | `--db bis.db` (scored DB), `--out bis-report.md` (report path), `--character characters/alex.toml` (character config), `--lock ""` (comma-separated item IDs to lock for a re-model run), `--loadout ""` (imported loadout file to sim from — §7), `--top 3` (alternatives per slot), `--fight` (fight duration in seconds; defaults to `constants.FightDurationSecs`) |
-| `itemdex import` | Pull one character's live equipped loadout from Census and write a loadout file. Fetches any uncataloged items/adornments. | `--character characters/alex.toml` (config supplying `census_name`/`world`), `--out data` (catalog dir for appended items/adornments), `--sid s:example` (Census service ID) |
+| `itemdex import` | Pull one character's live equipped loadout from Census and write a loadout file. Fetches any uncataloged items. | `--character characters/alex.toml` (config supplying `census_name`/`world`), `--out data` (catalog dir for appended items), `--sid s:example` (Census service ID) |
 | `weights` | Print marginal DPS weights per stat at the current loadout for each context. Diagnostic tool; does not write any files. | `--db bis.db`, `--character characters/alex.toml`, `--fight` (fight duration; defaults to `constants.FightDurationSecs`) |
 | `fitcurve` | Fit the haste/DPS-mod quadratic curve from the readings CSV and print paste-ready constants for `internal/model/curve.go`. | `--readings data/curve-readings.csv` |
 
@@ -424,7 +423,7 @@ Weights are outputs derived from the full model at the converged set — no stat
 **Gear-import loop** — run to sim from the live equipped set:
 
 1. Set `census_name` and `world` in the character config (§6).
-2. `go run ./cmd/itemdex import` — writes `characters/<name>-loadout.toml`; appends any newly-fetched items/adornments to the CSVs and prints a `builddb` reminder if it did.
+2. `go run ./cmd/itemdex import` — writes `characters/<name>-loadout.toml`; appends any newly-fetched items to the CSVs and prints a `builddb` reminder if it did.
 3. `go run ./cmd/builddb` — only if step 2 fetched new items.
 4. `go run ./cmd/bis --loadout characters/<name>-loadout.toml` — sims from the real set.
 
@@ -733,7 +732,7 @@ This section is the forward worklist. Items are grouped by kind; each gives the 
 
 **Gear procs captured, not scored.** Triggered gear effects (from `effect_list`) are now cataloged in `item_procs` (`data/item-procs.csv`) with rate, damage range, damage type, and raw trigger text. Scoring them (rate × expected damage, 0%-crit class) is deferred — procs do not affect current BiS rankings until a scoring layer is added.
 
-**Adornment optimization deferred (gear-import scope).** Character import (§4, §7) counts equipped adornments' stats toward the imported loadout total but treats adornments as fixed: it never suggests adornment swaps and there is no adornment candidate pool. Scoring adornments as upgrade candidates (a per-socket optimization layer) is future work; it pairs with the crit-adornment question in §16.3. Until then `data/adornments.csv` is a stat cache for import only.
+**Adornments not modeled (gear-import scope).** Character import (§4, §7) does **not** count adornment stats at all: adornments are assumed roughly constant across the items competing for a slot, so they cancel in relative ΔDPS and would only add an unfair equipped-vs-candidate asymmetry (the equipped item is adorned; catalog candidates are not). There is no adornment catalog or fetch. Revisit only if genuinely slot-specific or build-defining adornments emerge; that would pair with the crit-adornment question in §16.3.
 
 **Food/drink slots excluded from import.** Import skips food and drink slots — their stats are not counted, since food/drink change ad hoc and shouldn't perturb the modeled set. Revisit if a future expansion makes consumable stats stable and BiS-relevant.
 

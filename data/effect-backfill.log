@@ -1,0 +1,10 @@
+2026/06/19 20:11:38 WARN census decode stopped; persisting progress and exiting for resume processed=1600 total=3497 err="census error: Missing Service ID.  A valid Service ID is required for continued api use.  The Service ID s:example is for casual use only.  (http://census.daybreakgames.com/#devSignup)"
+2026/06/19 20:11:38 INFO processed items processed=1600 total=3497
+exit status 1
+2026/06/19 20:45:23 WARN census decode stopped; persisting progress and exiting for resume processed=2500 total=3497 err="census error: Missing Service ID.  A valid Service ID is required for continued api use.  The Service ID s:example is for casual use only.  (http://census.daybreakgames.com/#devSignup)"
+2026/06/19 20:45:23 INFO processed items processed=2500 total=3497
+exit status 1
+2026/06/19 20:52:06 WARN census decode stopped; persisting progress and exiting for resume processed=3150 total=3497 err="census error: Missing Service ID.  A valid Service ID is required for continued api use.  The Service ID s:example is for casual use only.  (http://census.daybreakgames.com/#devSignup)"
+2026/06/19 20:52:06 INFO processed items processed=3150 total=3497
+exit status 1
+2026/06/19 20:57:45 INFO processed items processed=3497 total=3497
