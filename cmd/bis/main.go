@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -117,6 +118,10 @@ func runLoadoutReport(classData charconfig.ClassData, lo store.Loadout,
 	seeded := bis.BuildSet(profile, lo, raidBySlot, locked, maxBuildPasses, classData.AutoAttackMultiplier, fight)
 
 	md := renderLoadoutReport(f, current, seeded.DPS(), reports)
+	if err := os.MkdirAll(filepath.Dir(out), 0o755); err != nil {
+		fmt.Fprintln(os.Stderr, "bis: create report dir:", err)
+		os.Exit(1)
+	}
 	if err := os.WriteFile(out, []byte(md), 0o644); err != nil {
 		fmt.Fprintln(os.Stderr, "bis: write report:", err)
 		os.Exit(1)
@@ -175,10 +180,10 @@ func renderLoadoutReport(f loadout.File, current, seededDPS float64, reports []b
 
 func main() {
 	dbPath := flag.String("db", "bis.db", "scored SQLite db (built by builddb)")
-	out := flag.String("out", "bis-report.md", "report output path")
+	out := flag.String("out", "", "report output path (default: <config-or-loadout-dir>/{bis-report,upgrade-report}.md)")
 	lock := flag.String("lock", "", "comma-separated item IDs to lock (raid re-model)")
 	topN := flag.Int("top", 3, "alternatives per slot")
-	character := flag.String("character", "characters/alex.toml", "character config (TOML)")
+	character := flag.String("character", "characters/biffels/config.toml", "character config (TOML)")
 	fight := flag.Float64("fight", constants.FightDurationSecs, "target fight length in seconds (smoothed)")
 	loadoutPath := flag.String("loadout", "", "imported loadout file to sim from (itemdex import output)")
 	flag.Parse()
@@ -242,7 +247,11 @@ func main() {
 	if *loadoutPath != "" {
 		// Loadout is simmed in the RAID context: an imported set represents the
 		// player's real, raid-buffed-capable gear, so the raid baseline is correct.
-		runLoadoutReport(classData, lo, raid, items, *loadoutPath, *out, *topN, *fight)
+		reportPath := *out
+		if reportPath == "" {
+			reportPath = filepath.Join(filepath.Dir(*loadoutPath), "upgrade-report.md")
+		}
+		runLoadoutReport(classData, lo, raid, items, *loadoutPath, reportPath, *topN, *fight)
 		return
 	}
 
@@ -290,9 +299,17 @@ func main() {
 		fmt.Fprintln(os.Stderr, "write scores:", err)
 		os.Exit(1)
 	}
-	if err := os.WriteFile(*out, []byte(bis.Render(reports, *fight)), 0o644); err != nil {
+	reportPath := *out
+	if reportPath == "" {
+		reportPath = filepath.Join(filepath.Dir(*character), "bis-report.md")
+	}
+	if err := os.MkdirAll(filepath.Dir(reportPath), 0o755); err != nil {
+		fmt.Fprintln(os.Stderr, "bis: create report dir:", err)
+		os.Exit(1)
+	}
+	if err := os.WriteFile(reportPath, []byte(bis.Render(reports, *fight)), 0o644); err != nil {
 		fmt.Fprintln(os.Stderr, "write report:", err)
 		os.Exit(1)
 	}
-	fmt.Printf("wrote %s and %d score rows to %s\n", *out, len(allRows), *dbPath)
+	fmt.Printf("wrote %s and %d score rows to %s\n", reportPath, len(allRows), *dbPath)
 }

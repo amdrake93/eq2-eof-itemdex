@@ -48,7 +48,7 @@ func loadWeapon(db *sql.DB, query string, args ...any) (model.Weapon, string, er
 
 func main() {
 	dbPath := flag.String("db", "bis.db", "sqlite db from builddb")
-	character := flag.String("character", "characters/alex.toml", "character config (TOML)")
+	character := flag.String("character", "characters/biffels/config.toml", "character config (TOML)")
 	fight := flag.Float64("fight", constants.FightDurationSecs, "target fight length in seconds (smoothed)")
 	flag.Parse()
 
