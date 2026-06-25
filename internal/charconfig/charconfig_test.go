@@ -25,8 +25,8 @@ art_tier = "expert"
 multiattack = 10
 `
 
-func TestLoadCommittedAlexConfig(t *testing.T) {
-	cfg, err := Load("../../characters/alex.toml")
+func TestLoadCommittedConfig(t *testing.T) {
+	cfg, err := Load("../../characters/biffels/config.toml")
 	require.NoError(t, err)
 
 	require.Equal(t, "assassin", cfg.Character.Class)
@@ -161,7 +161,7 @@ dpsmod = -10
 }
 
 func TestLoadMainStatAndPotencyFields(t *testing.T) {
-	cfg, err := Load("../../characters/alex.toml")
+	cfg, err := Load("../../characters/biffels/config.toml")
 	require.NoError(t, err)
 	require.InDelta(t, 156.0, cfg.Stats.MainStat, 1e-9)
 	require.InDelta(t, 5.0, cfg.Stats.Potency, 1e-9)

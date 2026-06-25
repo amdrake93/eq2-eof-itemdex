@@ -21,7 +21,7 @@ go.work.sum
 /data/.census_next_offset
 /bis.db
 
-# Generated per-run gear-import / report outputs — local only (regenerate via import/bis)
-/characters/*-loadout.toml
-/loadout-report.md
-/bis-report.md
+# Generated per-character outputs — local only (config.toml is committed)
+/characters/*/loadout.toml
+/characters/*/upgrade-report.md
+/characters/*/bis-report.md
