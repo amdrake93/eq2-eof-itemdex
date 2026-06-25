@@ -104,3 +104,35 @@ func TestTwoEffectHasteItemsDoNotStack(t *testing.T) {
 	bigger := store.ScorableItem{ID: 3, Name: "Greater Haste Gloves", Slot: "Hands", Stats: model.StatBlock{HasteEffect: 35}}
 	require.Greater(t, set.CandidateDelta("Hands", bigger), 0.0)
 }
+
+func TestRankSlotUpgrades(t *testing.T) {
+	lo := store.Loadout{Main: model.Weapon{AvgDamage: 160, MinDamage: 100, MaxDamage: 220, DelaySecs: 4}}
+	set := NewSet(model.StatBlock{}, lo, 1.0, 600)
+	set.Equipped["Head"] = []store.ScorableItem{{ID: 1, Slot: "Head"}}
+	set.Equipped["Hands"] = []store.ScorableItem{{ID: 2, Slot: "Hands"}}
+	optimizable := map[string]bool{"Head": true, "Hands": true}
+	bySlot := map[string][]store.ScorableItem{
+		"Head": {
+			{Name: "BigHead", Tier: "FABLED", Slot: "Head", Stats: model.StatBlock{MultiAttack: 40}},
+			{Name: "MidHead", Tier: "LEGENDARY", Slot: "Head", Stats: model.StatBlock{MultiAttack: 20}},
+		},
+		"Hands": {
+			{Name: "SmallHands", Tier: "LEGENDARY", Slot: "Hands", Stats: model.StatBlock{MultiAttack: 5}},
+		},
+	}
+
+	got := RankSlotUpgrades(set, bySlot, optimizable, 0)
+	require.Len(t, got, 2)
+	require.Equal(t, "Head", got[0].Slot)
+	require.Equal(t, "BigHead", got[0].Best.Name)
+	require.Equal(t, "FABLED", got[0].Best.Tier)
+	require.NotNil(t, got[0].Alt)
+	require.Equal(t, "MidHead", got[0].Alt.Name)
+	require.Greater(t, got[0].Best.Delta, got[0].Alt.Delta)
+	require.Equal(t, "Hands", got[1].Slot)
+	require.Nil(t, got[1].Alt)
+
+	top1 := RankSlotUpgrades(set, bySlot, optimizable, 1)
+	require.Len(t, top1, 1)
+	require.Equal(t, "Head", top1[0].Slot)
+}
