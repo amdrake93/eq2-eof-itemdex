@@ -1,6 +1,7 @@
 package model
 
 import (
+	"math"
 	"testing"
 
 	"github.com/amdrake93/eq2-eof-itemdex/internal/spell"
@@ -143,4 +144,17 @@ func TestWeightStatsIncludeCastSpeedNotRecovery(t *testing.T) {
 	// A zero-recast (spammable) art makes the CA timeline cast-bound, so faster
 	// casts must add DPS.
 	require.Greater(t, weights["castspeed"], 0.0)
+}
+
+func TestHasteWeightUsesEffectiveHaste(t *testing.T) {
+	dps := func(sb StatBlock) float64 {
+		return AutoDPS(sb, Weapon{AvgDamage: 100, MinDamage: 100, MaxDamage: 100, DelaySecs: 4})
+	}
+	// Same effective haste (60) reached two ways must yield the same haste weight.
+	wA := DeriveWeights(StatBlock{Haste: 60}, dps)["haste"]
+	wB := DeriveWeights(StatBlock{Haste: 35, HasteEffect: 25}, dps)["haste"]
+	require.InDelta(t, wA, wB, 1e-6)
+	// And it must differ from evaluating as if HasteEffect were ignored (Haste=35).
+	wIgnored := DeriveWeights(StatBlock{Haste: 35}, dps)["haste"]
+	require.Greater(t, math.Abs(wB-wIgnored), 1e-6, "expected wB and wIgnored to differ by more than 1e-6")
 }

@@ -124,6 +124,9 @@ func statAtEffect(e float64) float64 {
 // 300 cap.
 func curveStatMarginal(base StatBlock, stat string, dps func(StatBlock) float64) float64 {
 	v := getStat(base, stat)
+	if stat == "haste" {
+		v = base.EffectiveHaste() // curve position uses stackable + item-effect haste (spec §11)
+	}
 
 	var lo, hi float64
 	switch stat {
@@ -144,5 +147,11 @@ func curveStatMarginal(base StatBlock, stat string, dps func(StatBlock) float64)
 	if hi <= lo {
 		return 0
 	}
-	return (dps(setStat(base, stat, hi)) - dps(setStat(base, stat, lo))) / (hi - lo)
+	// For haste, lo/hi are EFFECTIVE-haste stat values; evaluate DPS at those totals
+	// by adjusting only the stackable Haste field (HasteEffect is fixed in base).
+	loSet, hiSet := lo, hi
+	if stat == "haste" {
+		loSet, hiSet = lo-base.HasteEffect, hi-base.HasteEffect
+	}
+	return (dps(setStat(base, stat, hiSet)) - dps(setStat(base, stat, loSet))) / (hi - lo)
 }
