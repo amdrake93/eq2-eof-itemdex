@@ -3,52 +3,40 @@ package loadout
 import (
 	"github.com/amdrake93/eq2-eof-itemdex/internal/catalog"
 	"github.com/amdrake93/eq2-eof-itemdex/internal/census"
+	"github.com/amdrake93/eq2-eof-itemdex/internal/model"
 )
 
-// ItemStatGrants returns an item's census-stat-key -> value grants, summing its
-// modifiers block with the static stat grants parsed from its effect_list (the
-// "When Equipped: Increases <stat> of caster by N" lines). Triggered procs and
-// percent-unit effects are not stat grants and are excluded.
-func ItemStatGrants(it census.Item) map[string]float64 {
-	grants := map[string]float64{}
+// ItemStatBlock builds an item's StatBlock from its modifiers block plus its effect
+// grants, routing the non-stacking "Haste" item effect (effect-source attackspeed)
+// into HasteEffect rather than the additive Haste field (spec §11). Effect grants
+// come from the item's effect_list (freshly-fetched items) and/or extraEffectStats
+// (cataloged items, whose grants are persisted in item-effects.csv). All other
+// effect stats fold normally. census attackspeed key == haste.
+func ItemStatBlock(it census.Item, extraEffectStats map[string]float64) model.StatBlock {
+	var sb model.StatBlock
+
+	mods := map[string]float64{}
 	for k, m := range it.Modifiers {
-		grants[k] += m.Value
+		mods[k] += m.Value
 	}
-	effectStats, _, _ := catalog.ParseEffects(it.EffectList)
-	for k, v := range effectStats {
-		grants[k] += v
-	}
-	return grants
-}
+	sb.AddModifiers(mods)
 
-// MergeEffectStats returns copies of items with each matching effect stat folded
-// into the item's Modifiers (by census stat key). Cached items load with an empty
-// EffectList, so their "When Equipped" grants — persisted separately in
-// item-effects.csv — must be merged back in here. Effects whose ItemID matches no
-// item are ignored.
-func MergeEffectStats(items []census.Item, effects []catalog.EffectStat) []census.Item {
-	byID := make(map[int64]int, len(items))
-	out := make([]census.Item, len(items))
-	for i, it := range items {
-		mods := make(map[string]census.Modifier, len(it.Modifiers))
-		for k, m := range it.Modifiers {
-			mods[k] = m
-		}
-		it.Modifiers = mods
-		out[i] = it
-		byID[it.ID] = i
+	effects := map[string]float64{}
+	parsed, _, _ := catalog.ParseEffects(it.EffectList)
+	for k, v := range parsed {
+		effects[k] += v
 	}
-
-	for _, es := range effects {
-		i, ok := byID[int64(es.ItemID)]
-		if !ok {
+	for k, v := range extraEffectStats {
+		effects[k] += v
+	}
+	for k, v := range effects {
+		if k == "attackspeed" {
+			if v > sb.HasteEffect {
+				sb.HasteEffect = v
+			}
 			continue
 		}
-		mods := out[i].Modifiers
-		existing := mods[es.Stat]
-		existing.Value += es.Value
-		mods[es.Stat] = existing
+		sb.AddModifiers(map[string]float64{k: v})
 	}
-
-	return out
+	return sb
 }
