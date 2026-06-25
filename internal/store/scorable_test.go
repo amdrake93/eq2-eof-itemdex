@@ -64,5 +64,6 @@ func TestStatsAggregateAcrossSources(t *testing.T) {
 	items, err := d.LoadScorableItems()
 	require.NoError(t, err)
 	require.Len(t, items, 1)
-	require.InDelta(t, 35.0, items[0].Stats.Haste, 1e-9)
+	require.InDelta(t, 10.0, items[0].Stats.Haste, 1e-9)        // modifier-source haste only
+	require.InDelta(t, 25.0, items[0].Stats.HasteEffect, 1e-9)  // effect-source haste routed to HasteEffect
 }

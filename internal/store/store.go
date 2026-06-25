@@ -301,16 +301,22 @@ func (d *DB) LoadScorableItems() ([]ScorableItem, error) {
 	}
 
 	for i := range items {
-		sr, err := d.db.Query(`SELECT stat, value FROM item_stats WHERE item_id = ?`, items[i].ID)
+		sr, err := d.db.Query(`SELECT stat, value, source FROM item_stats WHERE item_id = ?`, items[i].ID)
 		if err != nil {
 			return nil, err
 		}
 		for sr.Next() {
-			var stat string
+			var stat, source string
 			var val float64
-			if err := sr.Scan(&stat, &val); err != nil {
+			if err := sr.Scan(&stat, &val, &source); err != nil {
 				_ = sr.Close()
 				return nil, err
+			}
+			if stat == "attackspeed" && source == "effect" {
+				if val > items[i].Stats.HasteEffect {
+					items[i].Stats.HasteEffect = val
+				}
+				continue
 			}
 			items[i].Mods[stat] += val
 		}

@@ -56,7 +56,8 @@ func TestLoadItemEffectsCoexistsWithModifier(t *testing.T) {
 	items, err := db.LoadScorableItems()
 	require.NoError(t, err)
 	require.Len(t, items, 1)
-	require.InDelta(t, 35.0, items[0].Stats.Haste, 1e-9)
+	require.InDelta(t, 10.0, items[0].Stats.Haste, 1e-9)        // modifier-source only
+	require.InDelta(t, 25.0, items[0].Stats.HasteEffect, 1e-9)  // effect-source routed to HasteEffect
 }
 
 func TestLoadItemProcs(t *testing.T) {
@@ -80,6 +81,30 @@ func TestLoadItemProcs(t *testing.T) {
 	require.InDelta(t, 100.0, minDmg, 1e-9)
 	require.InDelta(t, 200.0, maxDmg, 1e-9)
 	require.Equal(t, "raw text", raw)
+}
+
+func TestLoadScorableItemsRoutesEffectHaste(t *testing.T) {
+	db, err := Open(":memory:")
+	require.NoError(t, err)
+	defer func() { require.NoError(t, db.Close()) }()
+	require.NoError(t, db.Init())
+
+	_, err = db.SQL().Exec(`INSERT INTO items (id, name, slot, tier, wieldstyle, gamelink, classes, weapon_min_dmg, weapon_max_dmg, delay)
+		VALUES (1, 'Test Cloak', 'Cloak', '', '', '', 'assassin', 0, 0, 0)`)
+	require.NoError(t, err)
+	_, err = db.SQL().Exec(`INSERT INTO item_stats (item_id, stat, value, source) VALUES
+		(1, 'attackspeed', 7, 'modifier'),
+		(1, 'attackspeed', 25, 'effect'),
+		(1, 'critchance', 2, 'effect')`)
+	require.NoError(t, err)
+
+	items, err := db.LoadScorableItems()
+	require.NoError(t, err)
+	require.Len(t, items, 1)
+	it := items[0]
+	require.InDelta(t, 7, it.Stats.Haste, 1e-9)        // modifier-source haste only
+	require.InDelta(t, 25, it.Stats.HasteEffect, 1e-9) // effect-source haste routed to HasteEffect
+	require.InDelta(t, 2, it.Stats.CritChance, 1e-9)   // non-haste effect stat still folds normally
 }
 
 func TestCombatArtsRoundTripComponents(t *testing.T) {
