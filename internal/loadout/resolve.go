@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/amdrake93/eq2-eof-itemdex/internal/census"
-	"github.com/amdrake93/eq2-eof-itemdex/internal/model"
 )
 
 // Resolve turns a fetched Character into a loadout File. It is pure: catalogLookup
@@ -17,6 +16,7 @@ import (
 func Resolve(
 	ch census.Character,
 	catalogLookup func(int64) (census.Item, bool),
+	effectStatsLookup func(int64) map[string]float64,
 	optimizable func(catalogSlot string) bool,
 ) (f File, missItems []int64) {
 	f.CharacterName = ch.DisplayName
@@ -39,9 +39,7 @@ func Resolve(
 		if slot.Name == "secondary" {
 			catalogSlot = "Secondary"
 		}
-		mods := ItemStatGrants(it)
-		var sb model.StatBlock
-		sb.AddModifiers(mods)
+		sb := ItemStatBlock(it, effectStatsLookup(slot.Item.ID))
 
 		f.Slots = append(f.Slots, SlotEntry{
 			CatalogSlot: catalogSlot,

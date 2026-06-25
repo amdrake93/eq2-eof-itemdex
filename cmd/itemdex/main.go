@@ -171,18 +171,26 @@ func runImport(argv []string) {
 		os.Exit(1)
 	}
 
+	effectByID := map[int64]map[string]float64{}
 	if ef, err := os.Open(filepath.Join(*dir, "item-effects.csv")); err == nil {
 		effectStats, err := catalog.ReadEffectStatsCSV(ef)
-		ef.Close()
+		_ = ef.Close()
 		if err != nil {
 			fmt.Fprintln(os.Stderr, "error reading item-effects.csv:", err)
 			os.Exit(1)
 		}
-		cachedItems = loadout.MergeEffectStats(cachedItems, effectStats)
+		for _, es := range effectStats {
+			id := int64(es.ItemID)
+			if effectByID[id] == nil {
+				effectByID[id] = map[string]float64{}
+			}
+			effectByID[id][es.Stat] += es.Value
+		}
 	} else if !os.IsNotExist(err) {
 		fmt.Fprintln(os.Stderr, "error opening item-effects.csv:", err)
 		os.Exit(1)
 	}
+	effectStatsLookup := func(id int64) map[string]float64 { return effectByID[id] }
 
 	catIndex := make(map[int64]census.Item, len(cachedItems))
 	for _, it := range cachedItems {
@@ -194,7 +202,7 @@ func runImport(argv []string) {
 		return it, ok
 	}
 
-	_, missItems := loadout.Resolve(ch, catLookup, bis.OptimizableSlot)
+	_, missItems := loadout.Resolve(ch, catLookup, effectStatsLookup, bis.OptimizableSlot)
 
 	addedItems := 0
 
@@ -214,7 +222,7 @@ func runImport(argv []string) {
 		}
 	}
 
-	f, missItems2 := loadout.Resolve(ch, catLookup, bis.OptimizableSlot)
+	f, missItems2 := loadout.Resolve(ch, catLookup, effectStatsLookup, bis.OptimizableSlot)
 	f.MarkUnresolved("item", missItems2)
 
 	outPath := filepath.Join("characters", strings.ToLower(cfg.Character.CensusName)+"-loadout.toml")

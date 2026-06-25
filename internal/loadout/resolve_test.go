@@ -37,7 +37,7 @@ func TestResolveItemStats(t *testing.T) {
 	}
 	optimizable := func(catalogSlot string) bool { return catalogSlot == "Back" }
 
-	f, missItems := Resolve(ch, catalog, optimizable)
+	f, missItems := Resolve(ch, catalog, func(int64) map[string]float64 { return nil }, optimizable)
 
 	require.Empty(t, missItems)
 	require.Equal(t, "Biffels (Wuoshi)", f.CharacterName)
@@ -64,7 +64,7 @@ func TestResolveOffHandWeaponGetsSecondarySlot(t *testing.T) {
 		}
 		return census.Item{}, false
 	}
-	f, missItems := Resolve(ch, catalog, func(string) bool { return true })
+	f, missItems := Resolve(ch, catalog, func(int64) map[string]float64 { return nil }, func(string) bool { return true })
 
 	require.Empty(t, missItems)
 	require.Len(t, f.Slots, 2)
@@ -101,11 +101,29 @@ func TestResolveItemEffectStatsCounted(t *testing.T) {
 		}
 		return census.Item{}, false
 	}
-	f, missItems := Resolve(ch, catalog, func(string) bool { return true })
+	f, missItems := Resolve(ch, catalog, func(int64) map[string]float64 { return nil }, func(string) bool { return true })
 
 	require.Empty(t, missItems)
 	require.Len(t, f.Slots, 1)
-	require.InDelta(t, 25, f.Slots[0].Stats.Haste, 1e-9)
+	require.InDelta(t, 25, f.Slots[0].Stats.HasteEffect, 1e-9)
+}
+
+func TestResolveRoutesEffectHasteToHasteEffect(t *testing.T) {
+	ch := census.Character{EquipmentSlots: []census.EquipmentSlot{
+		{Name: "cloak", Item: census.EquippedItem{ID: 1}},
+	}}
+	catalog := func(id int64) (census.Item, bool) {
+		it := census.Item{ID: 1, DisplayName: "Cloak of Flames", Slots: []census.Slot{{Name: "Cloak"}}}
+		return it, true
+	}
+	effects := func(id int64) map[string]float64 { return map[string]float64{"attackspeed": 25} }
+	optimizable := func(string) bool { return true }
+
+	f, miss := Resolve(ch, catalog, effects, optimizable)
+	require.Empty(t, miss)
+	require.Len(t, f.Slots, 1)
+	require.InDelta(t, 0, f.Slots[0].Stats.Haste, 1e-9)
+	require.InDelta(t, 25, f.Slots[0].Stats.HasteEffect, 1e-9)
 }
 
 func TestResolveReportsMissing(t *testing.T) {
@@ -113,7 +131,7 @@ func TestResolveReportsMissing(t *testing.T) {
 		{Name: "head", Item: census.EquippedItem{ID: 999}},
 	}}
 	none := func(id int64) (census.Item, bool) { return census.Item{}, false }
-	f, missItems := Resolve(ch, none, func(string) bool { return true })
+	f, missItems := Resolve(ch, none, func(int64) map[string]float64 { return nil }, func(string) bool { return true })
 
 	require.Equal(t, []int64{999}, missItems)
 	require.Empty(t, f.Slots, "unresolved item produces no slot entry")
