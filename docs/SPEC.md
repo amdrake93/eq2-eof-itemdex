@@ -13,7 +13,7 @@
 
 The system answers one question for an EQ2 Eye of Fear (EoF) era Assassin on the Varsoon TLE server: which gear set maximizes relative DPS? It produces three artifacts:
 
-1. **BiS markdown report** (`bis-report.md`) — three-tier gear rankings (PRE-RAID / RAID / BEST-OF-BEST), each listing the converged best-in-slot pick per equipment slot plus the top-N alternatives ranked by in-context ΔDPS (`cmd/bis`).
+1. **BiS markdown report** (`bis-report.md`, written into the character's directory — §6) — three-tier gear rankings (PRE-RAID / RAID / BEST-OF-BEST), each listing the converged best-in-slot pick per equipment slot plus the top-N alternatives ranked by in-context ΔDPS (`cmd/bis`).
 2. **SQLite catalog** (`bis.db`) — queryable database of Assassin-usable gear, Assassin combat arts with parsed damage components, and per-item DPS scores under each tier baseline (`internal/store`).
 3. **CSV gear catalogs** (`data/weapons.csv`, `data/armor.csv`, `data/jewelry-charms.csv`, `data/maxlife.csv`) — flat-file item cache used as offline Census snapshots and as the DB build input (`internal/catalog`).
 
@@ -82,7 +82,7 @@ Census API
 | `internal/spell` | Combat-art pull, parse, and manual supplement. `AssassinCombatArts` queries the Census `spell` collection for Assassin Expert-tier arts at level ≤ 70, then `FilterCombatArts` drops non-damaging and beneficial entries. `ParseDamage` and `ParseComponents` extract damage ranges and component kinds (DirectHit, DoT, Proc) from Census `effect_list` text. `ManualArts` returns two arts learned below the level-57 census floor, recovered via tooltip calibration. |
 | `internal/model` | DPS arithmetic. `AutoDPS` (per-weapon sustained swing DPS), `AutoDPSDual` (dual-wield with ×1.33 off-hand delay penalty), `CADPS` (fight-length-smoothed combat-art DPS from rotation timeline), `TotalDPSDual` (auto + CA combined). `DeriveWeights` finite-differences marginal DPS per +1 to each stat. |
 | `internal/bis` | Set builder, ranker, and renderer. `BuildSet` runs coordinate ascent (up to 12 passes) to fill each equipment slot with the DPS-maximizing pick given the current full-set context. `SlotCandidates` builds per-slot candidate pools (off-hand pool = all one-handed non-Soulfire weapons). `ConvergedWeights` derives stat weights at the converged set. `Render` produces the markdown report. |
-| `internal/charconfig` | TOML character and class config. `Load` parses `characters/<name>.toml` (strict: unknown keys are errors), validating AA stats, per-art recast/potency mods, and named buff contexts (`solo`, `raid`). `LoadClass` reads `classes/<class>.toml` for the class auto-attack multiplier. `ApplyArtMods` stamps per-art AA modifiers onto the loaded combat-art pool. |
+| `internal/charconfig` | TOML character and class config. `Load` parses a character's `config.toml` (`characters/<census_name>/config.toml`, strict: unknown keys are errors), validating AA stats, per-art recast/potency mods, and named buff contexts (`solo`, `raid`). `LoadClass` reads `classes/<class>.toml` for the class auto-attack multiplier. `ApplyArtMods` stamps per-art AA modifiers onto the loaded combat-art pool. |
 | `internal/constants` | Locked combat constants shared across all packages. Covers crit multiplier, flurry multiplier, haste/DPS-mod caps, recast-reduction ceiling, dual-wield delay penalty, fight duration, and CA cast time. Per-character values are not here — they live in TOML config. |
 | `internal/fit` | Curve fitting for the haste/DPS-mod conversion. `FitQuad` fits `f(s) = A·s − B·s²` to tooltip readings in `data/curve-readings.csv`; `FitLog` fits the logarithmic alternative for residual comparison. `cmd/fitcurve` prints paste-ready constants for `internal/model/curve.go`; `TestFittedConstantsMatchReadings` (sync test) fails until those constants are updated after new readings. |
 
@@ -201,7 +201,7 @@ The shared parser `internal/catalog/effects.go ParseEffects` extracts static of-
 
 ### Imported loadout file
 
-Import writes **`characters/<census_name lowercased>-loadout.toml`** — one entry per kept slot with `item_id`, `name`, an `optimizable` flag, and a resolved `stats` block (the item's `modifiers` **plus** its `effect_list` "When Equipped" stat grants). Effect-list grants are folded in via `loadout.ItemStatBlock`, which takes the item plus an `effectStatsLookup` (built from `data/item-effects.csv`): freshly-fetched items carry their grants in `effect_list`; already-cataloged items (whose cached `effect_list` is empty) get theirs from the lookup — so e.g. Cloak of Flames' +25 haste is counted. The named "Haste" item effect routes to `StatBlock.HasteEffect` (non-stacking — §11). Weapon slots additionally carry `min_dmg`/`max_dmg`/`delay`. A top-level `last_update` records the Census snapshot time. The file is self-contained — `bis --loadout` consumes it with no network and no re-resolution.
+Import writes **`loadout.toml` into the config's own directory** (the per-character directory — §6; e.g. `characters/biffels/loadout.toml`) — one entry per kept slot with `item_id`, `name`, an `optimizable` flag, and a resolved `stats` block (the item's `modifiers` **plus** its `effect_list` "When Equipped" stat grants). Effect-list grants are folded in via `loadout.ItemStatBlock`, which takes the item plus an `effectStatsLookup` (built from `data/item-effects.csv`): freshly-fetched items carry their grants in `effect_list`; already-cataloged items (whose cached `effect_list` is empty) get theirs from the lookup — so e.g. Cloak of Flames' +25 haste is counted. The named "Haste" item effect routes to `StatBlock.HasteEffect` (non-stacking — §11). Weapon slots additionally carry `min_dmg`/`max_dmg`/`delay`. A top-level `last_update` records the Census snapshot time. The file is self-contained — `bis --loadout` consumes it with no network and no re-resolution.
 
 **Adornments are not modeled.** Equipped adornment sockets are read from the character record but their stats are deliberately **not** counted, because adornments are assumed roughly constant across the items competing for a slot — so they cancel in relative ΔDPS comparison (§7, §16). There is no adornment catalog or adornment fetch.
 
@@ -268,7 +268,9 @@ Both are single `DirectHit` melee components. `ManualArts` returns a deep copy t
 
 ### Character TOML structure
 
-`internal/charconfig/charconfig.go Load` parses `characters/<name>.toml` using `github.com/BurntSushi/toml` in strict mode: any TOML key that does not map to a struct field is reported as an error via `md.Undecoded()`. A typo'd stat name silently vanishes in most configs; here it fails loudly.
+**Per-character directory.** Each character has one directory `characters/<census_name lowercased>/` holding everything for that character: the hand-authored `config.toml` (committed) plus all generated outputs — `loadout.toml` (import), `upgrade-report.md` (`bis --loadout`), and `bis-report.md` (`bis` from-scratch). The generated files are gitignored; only `config.toml` is committed. The directory is keyed by the character so multiple characters coexist without clobbering. **Path rule:** every generated output co-locates with the config's directory — commands derive the output directory from the path of the config (`--character`) or loadout (`--loadout`) file they were given, so nothing re-derives a name (§8). The committed example is `characters/biffels/config.toml` (the player is "Alex"; the in-game character is "Biffels", so the directory is keyed by the latter).
+
+`internal/charconfig/charconfig.go Load` parses the `config.toml` (e.g. `characters/biffels/config.toml`) using `github.com/BurntSushi/toml` in strict mode: any TOML key that does not map to a struct field is reported as an error via `md.Undecoded()`. A typo'd stat name silently vanishes in most configs; here it fails loudly.
 
 The top-level `Config` struct has four sections:
 
@@ -417,9 +419,9 @@ Weights are outputs derived from the full model at the converged set — no stat
 |---|---|---|
 | `itemdex` | Pull EoF items from Census and write CSV catalog. Serves from cache if CSVs exist and `--refresh` is false. | `--out data` (CSV output dir / cache), `--refresh false` (force fresh Census pull), `--sid s:example` (Census service ID), `--page 1000` (items per Census request) |
 | `builddb` | Build the SQLite database from the CSV cache. Reads gear from CSVs, pulls Assassin Expert CAs from Census, and writes `bis.db`. | `--data data` (CSV catalog dir), `--db bis.db` (output DB path), `--sid s:example` (Census service ID) |
-| `bis` | Run the BiS optimizer and write the markdown report. Runs all three accessibility tiers plus any locked re-model. | `--db bis.db` (scored DB), `--out bis-report.md` (report path), `--character characters/alex.toml` (character config), `--lock ""` (comma-separated item IDs to lock for a re-model run), `--loadout ""` (imported loadout file to sim from — §7), `--top 3` (alternatives per slot), `--fight` (fight duration in seconds; defaults to `constants.FightDurationSecs`) |
-| `itemdex import` | Pull one character's live equipped loadout from Census and write a loadout file. Fetches any uncataloged items. | `--character characters/alex.toml` (config supplying `census_name`/`world`), `--out data` (catalog dir for appended items), `--sid s:example` (Census service ID) |
-| `weights` | Print marginal DPS weights per stat at the current loadout for each context. Diagnostic tool; does not write any files. | `--db bis.db`, `--character characters/alex.toml`, `--fight` (fight duration; defaults to `constants.FightDurationSecs`) |
+| `bis` | Run the BiS optimizer and write the markdown report into the character's directory (§6). From-scratch mode writes `bis-report.md`; `--loadout` mode writes `upgrade-report.md` (the tiered upgrade report). | `--db bis.db` (scored DB), `--character characters/biffels/config.toml` (character config; its directory is the per-character output dir), `--out ""` (override report path/name; default = `<config-dir>/bis-report.md`, or `<loadout-dir>/upgrade-report.md` in `--loadout` mode), `--lock ""` (item IDs to lock for a re-model run), `--loadout ""` (imported loadout file to sim from — §7), `--top 3` (slots shown per bucket / alternatives per slot), `--fight` (fight seconds; default `constants.FightDurationSecs`) |
+| `itemdex import` | Pull one character's live equipped loadout from Census and write `loadout.toml` into the config's directory (§6). Fetches any uncataloged items. | `--character characters/biffels/config.toml` (config supplying `census_name`/`world`; its directory receives `loadout.toml`), `--out data` (catalog dir for appended items), `--sid s:example` (Census service ID) |
+| `weights` | Print marginal DPS weights per stat at the current loadout for each context. Diagnostic tool; does not write any files. | `--db bis.db`, `--character characters/biffels/config.toml`, `--fight` (fight duration; defaults to `constants.FightDurationSecs`) |
 | `fitcurve` | Fit the haste/DPS-mod quadratic curve from the readings CSV and print paste-ready constants for `internal/model/curve.go`. | `--readings data/curve-readings.csv` |
 
 ### Operational loops
@@ -428,14 +430,14 @@ Weights are outputs derived from the full model at the converged set — no stat
 
 1. `go run ./cmd/itemdex [--refresh]` — pulls EoF items from Census and writes (or refreshes) the CSV catalog under `data/`. Omit `--refresh` to serve from the existing cache.
 2. `go run ./cmd/builddb` — ingests the CSV catalog + fresh Census CA pull and writes `bis.db`.
-3. `go run ./cmd/bis` — runs the optimizer and writes `bis-report.md`. Optionally run `go run ./cmd/weights` first to inspect stat weights.
+3. `go run ./cmd/bis` — runs the optimizer and writes `bis-report.md` into the character's directory (§6). Optionally run `go run ./cmd/weights` first to inspect stat weights.
 
 **Gear-import loop** — run to sim from the live equipped set:
 
 1. Set `census_name` and `world` in the character config (§6).
-2. `go run ./cmd/itemdex import` — writes `characters/<name>-loadout.toml`; appends any newly-fetched items to the CSVs and prints a `builddb` reminder if it did.
+2. `go run ./cmd/itemdex import` — writes `loadout.toml` into the config's directory (`characters/<census_name>/loadout.toml`); appends any newly-fetched items to the CSVs and prints a `builddb` reminder if it did.
 3. `go run ./cmd/builddb` — only if step 2 fetched new items.
-4. `go run ./cmd/bis --loadout characters/<name>-loadout.toml` — sims from the real set.
+4. `go run ./cmd/bis --loadout characters/<census_name>/loadout.toml` — sims from the real set; writes `upgrade-report.md` into that same directory.
 
 **Curve re-fit loop** — run after collecting new haste/DPS-mod or main-stat tooltip readings:
 
@@ -550,7 +552,7 @@ Provenance: live tooltip readings measured 2026-06-16, which disproved an earlie
 potPool = 1 + (Potency + PotencyBonus + PotencyAdd) / 100        (rotation.go, CAEffectiveDamage)
 ```
 
-Within the pool the three terms **add**; the pool then multiplies a combat art's component bases. The AGI curve multiplies separately (`scaling = potPool · mainStat`), so potency and main stat compound. `Potency` is the displayed character potency, `PotencyAdd` is the art's AA potency rider (§6), and `PotencyBonus` is an empirically captured hidden pool adjustment applied by the TLE server (≈ 24.6 in `characters/alex.toml`). Whether the pool multiplies in-component bases or the final cast total is the open question in §16.
+Within the pool the three terms **add**; the pool then multiplies a combat art's component bases. The AGI curve multiplies separately (`scaling = potPool · mainStat`), so potency and main stat compound. `Potency` is the displayed character potency, `PotencyAdd` is the art's AA potency rider (§6), and `PotencyBonus` is an empirically captured hidden pool adjustment applied by the TLE server (≈ 24.6 in `characters/biffels/config.toml`). Whether the pool multiplies in-component bases or the final cast total is the open question in §16.
 
 ### Ability-mod
 
