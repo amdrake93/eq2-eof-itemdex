@@ -350,7 +350,17 @@ The Soulfire main-hand is the fixed primary weapon across all tiers — it is no
 - **Fixed** — ranged, ammo, charm/activated, event slots. Their stats contribute to the set total like locked items, but they are never swap candidates (no catalog pool, by design — §16). (Adornments are not counted at all — §4, §16.)
 - **Skipped** — food, drink, mount slots, and empty sockets contribute nothing.
 
-This generalizes the existing `--lock` concept (lock specific ids) to "lock the whole imported set, re-optimizing only the chosen optimizable slots." The four import use cases are report modes over this `Set`, reusing existing machinery with no new model math: **score current set** (`Set.DPS()` + `DeriveWeights`), **what to upgrade next** (`Set.CandidateDelta` per optimizable slot, ranked), **seed optimization** (`BuildSet` seeded from the set), and **validate vs parses** (emit absolute predicted DPS).
+This generalizes the existing `--lock` concept (lock specific ids) to "lock the whole imported set, re-optimizing only the chosen optimizable slots." The four import use cases are report modes over this `Set`, reusing existing machinery with no new model math: **score current set** (`Set.DPS()` + `DeriveWeights`), **what to upgrade next** (the tiered upgrade report — see below), **seed optimization** (`BuildSet` seeded from the set), and **validate vs parses** (emit absolute predicted DPS).
+
+### Tiered upgrade report
+
+`bis --loadout`'s "what to upgrade next" is a tiered, actionable list: for each accessibility bucket it ranks the biggest `Set.UpgradeDelta`s against the imported set, answering "what to get now" vs "what to watch for in raids" — which the from-scratch tier BiS sets (the ideal end-states) do not.
+
+- **Three buckets** reuse the existing accessibility-tier **filters** (§6), nested as-is: **Get now** (PRE-RAID filter — `LEGENDARY`/`TREASURED`, no avatar/Hunter's/curated), **Raid look-out** (RAID filter — all but avatar), **Best-of-best** (all, incl avatar/`MYTHICAL`). Nesting is intentional: a pre-raid item topping the Raid bucket is a deliberate "keeper" signal — it isn't replaced even by raid gear.
+- **One context.** Every candidate in every bucket is evaluated against the imported set in the same (raid) context, so the +ΔDPS figures are comparable across buckets. (This differs from the from-scratch tiers, which sim PRE-RAID in `solo` context — appropriate there, not here.)
+- **Metric & ordering.** Per bucket, compute `Set.UpgradeDelta(slot, candidate)` for every optimizable slot × candidate in that bucket's pool; per slot keep the best candidate plus one alternative (2nd-best); rank slots by the **best (primary) candidate's** ΔDPS and show the top-N slots (default 3, `--top`). The alternative's ΔDPS is displayed but **never** affects ordering. A slot with only one upgrade in the bucket shows a single row.
+
+The report also carries the current-set DPS line and the seeded-optimization total (`BuildSet` seeded from the imported set, fixed slots locked).
 
 ### Coordinate-ascent optimizer
 
