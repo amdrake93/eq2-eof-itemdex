@@ -87,3 +87,20 @@ func TestSetFromLoadoutSecondaryWeaponAffectsDPS(t *testing.T) {
 
 	require.Greater(t, dpsWithOH, dpsNoOH, "Secondary weapon should increase DPS over no off-hand")
 }
+
+func TestTwoEffectHasteItemsDoNotStack(t *testing.T) {
+	lo := store.Loadout{Main: model.Weapon{AvgDamage: 160, MinDamage: 100, MaxDamage: 220, DelaySecs: 4}}
+	set := NewSet(model.StatBlock{}, lo, 1.0, 600)
+	set.Equipped["Cloak"] = []store.ScorableItem{
+		{ID: 1, Name: "Cloak of Flames", Slot: "Cloak", Stats: model.StatBlock{HasteEffect: 25}},
+	}
+
+	// A second effect-haste item (21) is REDUNDANT — its haste shouldn't add (max-wins),
+	// so its CandidateDelta for the Hands slot is ~0 (it has no other stats).
+	redundant := store.ScorableItem{ID: 2, Name: "Lesser Haste Gloves", Slot: "Hands", Stats: model.StatBlock{HasteEffect: 21}}
+	require.InDelta(t, 0, set.CandidateDelta("Hands", redundant), 1e-6)
+
+	// A BIGGER effect-haste item (35) DOES help — it raises the max from 25 to 35.
+	bigger := store.ScorableItem{ID: 3, Name: "Greater Haste Gloves", Slot: "Hands", Stats: model.StatBlock{HasteEffect: 35}}
+	require.Greater(t, set.CandidateDelta("Hands", bigger), 0.0)
+}
