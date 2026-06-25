@@ -136,8 +136,8 @@ func runEffectsBackfill(c *census.Client, dir string) {
 
 
 // runImport fetches the configured character's live equipped loadout from Census,
-// backfills any items missing from the local catalog, and writes
-// characters/<name>-loadout.toml. It is thin wiring over loadout.Resolve plus the
+// backfills any items missing from the local catalog, and writes loadout.toml into
+// the config's directory (the per-character dir). It is thin wiring over loadout.Resolve plus the
 // source/catalog backfill helpers; all non-trivial logic lives in those packages.
 func runImport(argv []string) {
 	fs := flag.NewFlagSet("import", flag.ExitOnError)
