@@ -4,7 +4,6 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"sort"
 	"strconv"
 	"strings"
 
@@ -76,9 +75,9 @@ func withFixedPrimary(reports []bis.SlotReport, main store.ScorableItem, ok bool
 	return append([]bis.SlotReport{primary}, reports...)
 }
 
-type upgrade struct {
-	Slot, Best string
-	Delta      float64
+type bucketReport struct {
+	Title    string
+	Upgrades []bis.SlotUpgrade
 }
 
 func runLoadoutReport(classData charconfig.ClassData, lo store.Loadout,
@@ -92,34 +91,32 @@ func runLoadoutReport(classData charconfig.ClassData, lo store.Loadout,
 	set, optimizable := bis.SetFromLoadout(f, profile, lo, classData.AutoAttackMultiplier, fight)
 	current := set.DPS()
 
-	bySlot := bis.SlotCandidates(items, func(it store.ScorableItem) bool {
-		return !bis.IsAvatar(it) && !bis.IsHunters(it) && !bis.Curated(it)
-	})
-
-	var upgrades []upgrade
-	for slot := range optimizable {
-		var bestName string
-		var bestDelta float64
-		for _, cand := range bySlot[slot] {
-			if d := set.UpgradeDelta(slot, cand); d > bestDelta {
-				bestDelta, bestName = d, cand.Name
-			}
-		}
-		if bestName != "" {
-			upgrades = append(upgrades, upgrade{Slot: slot, Best: bestName, Delta: bestDelta})
-		}
+	buckets := []struct {
+		title string
+		keep  func(store.ScorableItem) bool
+	}{
+		{"Get now — pre-raid accessible", bis.PreRaidFilter},
+		{"Raid look-out", bis.RaidFilter},
+		{"Best-of-best (aspirational)", bis.BestFilter},
 	}
-	sort.Slice(upgrades, func(i, j int) bool { return upgrades[i].Delta > upgrades[j].Delta })
+	var reports []bucketReport
+	for _, bk := range buckets {
+		bySlot := bis.SlotCandidates(items, bk.keep)
+		reports = append(reports, bucketReport{Title: bk.title, Upgrades: bis.RankSlotUpgrades(set, bySlot, optimizable, topN)})
+	}
 
+	// Seeded optimization: re-optimize optimizable slots from the raid pool with the
+	// imported set's fixed slots (charm/ranged/ammo/event) locked.
+	raidBySlot := bis.SlotCandidates(items, bis.RaidFilter)
 	locked := map[string][]store.ScorableItem{}
 	for slot, eq := range set.Equipped {
 		if !optimizable[slot] {
 			locked[slot] = eq
 		}
 	}
-	seeded := bis.BuildSet(profile, lo, bySlot, locked, maxBuildPasses, classData.AutoAttackMultiplier, fight)
+	seeded := bis.BuildSet(profile, lo, raidBySlot, locked, maxBuildPasses, classData.AutoAttackMultiplier, fight)
 
-	md := renderLoadoutReport(f, current, seeded.DPS(), upgrades, topN)
+	md := renderLoadoutReport(f, current, seeded.DPS(), reports)
 	if err := os.WriteFile(out, []byte(md), 0o644); err != nil {
 		fmt.Fprintln(os.Stderr, "bis: write report:", err)
 		os.Exit(1)
@@ -130,7 +127,7 @@ func runLoadoutReport(classData charconfig.ClassData, lo store.Loadout,
 	}
 }
 
-func renderLoadoutReport(f loadout.File, current, seededDPS float64, upgrades []upgrade, topN int) string {
+func renderLoadoutReport(f loadout.File, current, seededDPS float64, reports []bucketReport) string {
 	equippedBySlot := map[string]string{}
 	for _, s := range f.Slots {
 		if _, seen := equippedBySlot[s.CatalogSlot]; !seen {
@@ -142,25 +139,28 @@ func renderLoadoutReport(f loadout.File, current, seededDPS float64, upgrades []
 	fmt.Fprintf(&b, "# Loadout report: %s\n\n", f.CharacterName)
 	fmt.Fprintf(&b, "_last_update: %.0f_\n\n", f.LastUpdate)
 	fmt.Fprintf(&b, "**Current set DPS:** %.0f\n\n", current)
+	fmt.Fprintf(&b, "## Biggest upgrades from your current set\n\n")
 
-	fmt.Fprintf(&b, "## What to upgrade next\n\n")
-	fmt.Fprintf(&b, "| Slot | currently equipped | best alternative | +ΔDPS |\n")
-	fmt.Fprintf(&b, "|------|--------------------|------------------|------:|\n")
-	shown := upgrades
-	if topN > 0 && len(shown) > topN {
-		shown = shown[:topN]
-	}
-	for _, u := range shown {
-		cur := equippedBySlot[u.Slot]
-		if cur == "" {
-			cur = "(empty)"
+	for _, r := range reports {
+		fmt.Fprintf(&b, "### %s\n\n", r.Title)
+		if len(r.Upgrades) == 0 {
+			fmt.Fprintf(&b, "_no upgrades available in this bucket_\n\n")
+			continue
 		}
-		fmt.Fprintf(&b, "| %s | %s | %s | +%.0f |\n", u.Slot, cur, u.Best, u.Delta)
+		fmt.Fprintf(&b, "| Slot | currently equipped | upgrade | +ΔDPS |\n")
+		fmt.Fprintf(&b, "|------|--------------------|---------|------:|\n")
+		for _, u := range r.Upgrades {
+			cur := equippedBySlot[u.Slot]
+			if cur == "" {
+				cur = "(empty)"
+			}
+			fmt.Fprintf(&b, "| %s | %s | %s [%s] | +%.0f |\n", u.Slot, cur, u.Best.Name, u.Best.Tier, u.Best.Delta)
+			if u.Alt != nil {
+				fmt.Fprintf(&b, "| | | ↳ alt: %s [%s] | +%.0f |\n", u.Alt.Name, u.Alt.Tier, u.Alt.Delta)
+			}
+		}
+		b.WriteString("\n")
 	}
-	if len(shown) == 0 {
-		fmt.Fprintf(&b, "| _no single-slot upgrades found_ | | | |\n")
-	}
-	b.WriteString("\n")
 
 	fmt.Fprintf(&b, "## Seeded optimization\n\n")
 	fmt.Fprintf(&b, "Optimizing from the imported set (fixed slots locked): **%.0f DPS** (%+.0f over current).\n\n",
@@ -246,21 +246,14 @@ func main() {
 		return
 	}
 
-	notExcluded := func(it store.ScorableItem) bool { return !bis.IsHunters(it) && !bis.Curated(it) }
 	tiers := []struct {
 		name    string
 		profile model.StatBlock
 		keep    func(store.ScorableItem) bool
 	}{
-		{"PRE-RAID", solo, func(it store.ScorableItem) bool {
-			return (it.Tier == "LEGENDARY" || it.Tier == "TREASURED") && !bis.IsAvatar(it) && notExcluded(it)
-		}},
-		{"RAID", raid, func(it store.ScorableItem) bool {
-			return !bis.IsAvatar(it) && notExcluded(it)
-		}},
-		{"BEST-OF-BEST", raid, func(it store.ScorableItem) bool {
-			return notExcluded(it)
-		}},
+		{"PRE-RAID", solo, bis.PreRaidFilter},
+		{"RAID", raid, bis.RaidFilter},
+		{"BEST-OF-BEST", raid, bis.BestFilter},
 	}
 
 	var reports []bis.BaselineReport
@@ -280,7 +273,7 @@ func main() {
 
 	if len(lockIDs) > 0 {
 		locked := lockedItems(items, lockIDs)
-		bySlot := bis.SlotCandidates(items, func(it store.ScorableItem) bool { return !bis.IsAvatar(it) && notExcluded(it) })
+		bySlot := bis.SlotCandidates(items, bis.RaidFilter)
 		profile := raid
 		if haveMain {
 			profile = profile.Add(mainItem.Stats)
