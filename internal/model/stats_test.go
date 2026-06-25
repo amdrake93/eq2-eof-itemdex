@@ -63,3 +63,12 @@ func TestAddIncludesMainStatAndPotencyBonus(t *testing.T) {
 	require.InDelta(t, 196.0, sum.MainStat, 1e-9)
 	require.InDelta(t, 24.6, sum.PotencyBonus, 1e-9)
 }
+
+func TestAddMaxesHasteEffect(t *testing.T) {
+	a := StatBlock{Haste: 10, HasteEffect: 25}
+	b := StatBlock{Haste: 5, HasteEffect: 21}
+	sum := a.Add(b)
+	require.InDelta(t, 15, sum.Haste, 1e-9)       // stackable haste sums
+	require.InDelta(t, 25, sum.HasteEffect, 1e-9) // item-effect haste maxes (25 > 21)
+	require.InDelta(t, 40, sum.EffectiveHaste(), 1e-9)
+}

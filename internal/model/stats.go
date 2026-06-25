@@ -16,6 +16,7 @@ type StatBlock struct {
 	MainStat      float64 // strength key = "+N primary attributes" → AGI for a scout; multiplies CA damage via its curve
 	PotencyBonus  float64 // calibrated hidden potency-pool points (config-only; ⚠ spec §12 open mystery)
 	CritBonus     float64 // buff/gear bonus added to the 1.50 base crit factor (percent points; 0 today, raid-context future — §16)
+	HasteEffect   float64 // non-stacking named "Haste" item effect — max-wins, NOT summed (spec §11)
 }
 
 // modifierToField maps a Census modifier key to the StatBlock field it feeds.
@@ -60,5 +61,11 @@ func (s StatBlock) Add(o StatBlock) StatBlock {
 		MainStat:      s.MainStat + o.MainStat,
 		PotencyBonus:  s.PotencyBonus + o.PotencyBonus,
 		CritBonus:     s.CritBonus + o.CritBonus,
+		HasteEffect:   max(s.HasteEffect, o.HasteEffect),
 	}
 }
+
+// EffectiveHaste is the total haste used by the model: stackable haste (AA +
+// modifier-block, in Haste) plus the non-stacking "Haste" item effect (HasteEffect,
+// already resolved to the max across a set by Add). See spec §11.
+func (s StatBlock) EffectiveHaste() float64 { return s.Haste + s.HasteEffect }
