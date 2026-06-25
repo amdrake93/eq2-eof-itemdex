@@ -83,3 +83,12 @@ func TestAutoWeaponMultiplierCalibration(t *testing.T) {
 	m1 := AutoWeaponMultiplier(StatBlock{MainStat: 983, DPSMod: 73.2}, 2.0)
 	require.InDelta(t, 1442.0, 290*m1, 8) // 290×1.6406×1.51×2.0 = 1436.7
 }
+
+func TestEffectiveHasteDrivesSwingRate(t *testing.T) {
+	w := Weapon{AvgDamage: 100, MinDamage: 100, MaxDamage: 100, DelaySecs: 4}
+	// haste from the stat vs the item effect must drive swing rate identically.
+	viaStat := AutoDPS(StatBlock{Haste: 25}, w)
+	viaEffect := AutoDPS(StatBlock{HasteEffect: 25}, w)
+	require.InDelta(t, viaStat, viaEffect, 1e-9)
+	require.Greater(t, viaEffect, AutoDPS(StatBlock{}, w))
+}

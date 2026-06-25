@@ -64,7 +64,7 @@ func AutoWeaponMultiplier(sb StatBlock, classAutoMult float64) float64 {
 }
 
 func effDelay(sb StatBlock, w Weapon) float64 {
-	h := HasteDpsModEffect(sb.Haste)
+	h := HasteDpsModEffect(sb.EffectiveHaste())
 	return w.DelaySecs / (1 + h/100)
 }
 
