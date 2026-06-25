@@ -141,7 +141,7 @@ func runEffectsBackfill(c *census.Client, dir string) {
 // source/catalog backfill helpers; all non-trivial logic lives in those packages.
 func runImport(argv []string) {
 	fs := flag.NewFlagSet("import", flag.ExitOnError)
-	character := fs.String("character", "characters/alex.toml", "character config TOML")
+	character := fs.String("character", "characters/biffels/config.toml", "character config TOML")
 	dir := fs.String("out", "data", "catalog directory (cache)")
 	sid := fs.String("sid", "s:example", "Census service ID")
 	_ = fs.Parse(argv)
@@ -225,7 +225,12 @@ func runImport(argv []string) {
 	f, missItems2 := loadout.Resolve(ch, catLookup, effectStatsLookup, bis.OptimizableSlot)
 	f.MarkUnresolved("item", missItems2)
 
-	outPath := filepath.Join("characters", strings.ToLower(cfg.Character.CensusName)+"-loadout.toml")
+	outDir := filepath.Dir(*character)
+	if err := os.MkdirAll(outDir, 0o755); err != nil {
+		fmt.Fprintln(os.Stderr, "error creating output dir:", err)
+		os.Exit(1)
+	}
+	outPath := filepath.Join(outDir, "loadout.toml")
 	if err := loadout.Write(outPath, f); err != nil {
 		fmt.Fprintln(os.Stderr, "error writing loadout:", err)
 		os.Exit(1)
