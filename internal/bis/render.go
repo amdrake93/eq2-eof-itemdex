@@ -22,7 +22,12 @@ func writeWeightTable(b *strings.Builder, weights map[string]float64) {
 	for k := range weights {
 		keys = append(keys, k)
 	}
-	sort.Slice(keys, func(i, j int) bool { return weights[keys[i]] > weights[keys[j]] })
+	sort.Slice(keys, func(i, j int) bool {
+		if weights[keys[i]] != weights[keys[j]] {
+			return weights[keys[i]] > weights[keys[j]]
+		}
+		return keys[i] < keys[j]
+	})
 	b.WriteString("| stat | weight |\n|---|---:|\n")
 	for _, k := range keys {
 		fmt.Fprintf(b, "| %s | %.4f |\n", k, weights[k])

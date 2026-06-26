@@ -48,3 +48,20 @@ func TestBuildSlotReportsSkipsPrimary(t *testing.T) {
 		require.NotEqual(t, "Primary", r.Slot, "main-hand slot is fixed; it should not be ranked")
 	}
 }
+
+func TestSlotCandidatesScoredDeterministicTieBreak(t *testing.T) {
+	lo := store.Loadout{Main: model.Weapon{AvgDamage: 160, DelaySecs: 4}}
+	set := NewSet(model.StatBlock{}, lo, 1.0, 600)
+	weights := map[string]float64{}
+	// Identical stats => identical ΔDPS tie.
+	cands := []store.ScorableItem{
+		{ID: 77, Name: "Hi", Slot: "Chest", Stats: model.StatBlock{Flurry: 10}},
+		{ID: 33, Name: "Lo", Slot: "Chest", Stats: model.StatBlock{Flurry: 10}},
+	}
+
+	for i := 0; i < 5; i++ {
+		got := SlotCandidatesScored(set, "Chest", cands, weights)
+		require.Equal(t, 33, got[0].Item.ID) // lower id first on tie
+		require.Equal(t, 77, got[1].Item.ID)
+	}
+}

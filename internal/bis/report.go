@@ -40,7 +40,12 @@ func SlotCandidatesScored(set *Set, slot string, cands []store.ScorableItem, wei
 		_, terms := model.ScoreItem(weights, c.Stats)
 		out = append(out, ScoredItem{Item: c, Delta: set.CandidateDelta(slot, c), Terms: terms})
 	}
-	sort.Slice(out, func(i, j int) bool { return out[i].Delta > out[j].Delta })
+	sort.Slice(out, func(i, j int) bool {
+		if out[i].Delta != out[j].Delta {
+			return out[i].Delta > out[j].Delta
+		}
+		return out[i].Item.ID < out[j].Item.ID
+	})
 	return out
 }
 

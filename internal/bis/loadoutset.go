@@ -85,7 +85,12 @@ func RankSlotUpgrades(set *Set, bySlot map[string][]store.ScorableItem, optimiza
 				out = append(out, su)
 				continue
 			}
-			sort.Slice(cands, func(i, j int) bool { return cands[i].Delta > cands[j].Delta })
+			sort.Slice(cands, func(i, j int) bool {
+				if cands[i].Delta != cands[j].Delta {
+					return cands[i].Delta > cands[j].Delta
+				}
+				return cands[i].ID < cands[j].ID
+			})
 			su.Best = cands[0]
 			if len(cands) > 1 {
 				alt := cands[1]
@@ -94,7 +99,21 @@ func RankSlotUpgrades(set *Set, bySlot map[string][]store.ScorableItem, optimiza
 			out = append(out, su)
 		}
 	}
-	sort.Slice(out, func(i, j int) bool { return out[i].Best.Delta > out[j].Best.Delta })
+	sort.Slice(out, func(i, j int) bool {
+		if out[i].Best.Delta != out[j].Best.Delta {
+			return out[i].Best.Delta > out[j].Best.Delta
+		}
+		if out[i].Slot != out[j].Slot {
+			return out[i].Slot < out[j].Slot
+		}
+		if out[i].EquippedID != out[j].EquippedID {
+			return out[i].EquippedID < out[j].EquippedID
+		}
+		if out[i].EquippedName != out[j].EquippedName {
+			return out[i].EquippedName < out[j].EquippedName
+		}
+		return out[i].Best.ID < out[j].Best.ID
+	})
 	if topN > 0 && len(out) > topN {
 		out = out[:topN]
 	}

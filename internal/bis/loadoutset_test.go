@@ -209,3 +209,27 @@ func TestRankSlotUpgradesSingleCapStillOmitsNoUpgrade(t *testing.T) {
 	// No positive upgrade for a single-cap slot -> the slot is omitted entirely.
 	require.Empty(t, RankSlotUpgrades(set, bySlot, optimizable, 0))
 }
+
+func TestRankSlotUpgradesDeterministicTieBreak(t *testing.T) {
+	lo := store.Loadout{Main: model.Weapon{AvgDamage: 160, MinDamage: 100, MaxDamage: 220, DelaySecs: 4}}
+	set := NewSet(model.StatBlock{}, lo, 1.0, 600)
+	set.Equipped["Finger"] = []store.ScorableItem{{ID: 1, Name: "Worn", Slot: "Finger"}}
+	optimizable := map[string]bool{"Finger": true}
+	// Two candidates with identical stats => identical ΔDPS (a tie).
+	bySlot := map[string][]store.ScorableItem{
+		"Finger": {
+			{ID: 77, Name: "RingHi", Slot: "Finger", Stats: model.StatBlock{MultiAttack: 20}},
+			{ID: 33, Name: "RingLo", Slot: "Finger", Stats: model.StatBlock{MultiAttack: 20}},
+		},
+	}
+
+	got := RankSlotUpgrades(set, bySlot, optimizable, 0)
+	// Tie broken by candidate id: lower id is Best.
+	require.Equal(t, 33, got[0].Best.ID)
+	require.Equal(t, 77, got[0].Alt.ID)
+
+	// Whole result is stable across repeated runs.
+	for i := 0; i < 5; i++ {
+		require.Equal(t, got, RankSlotUpgrades(set, bySlot, optimizable, 0))
+	}
+}
