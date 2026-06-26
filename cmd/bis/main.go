@@ -133,13 +133,6 @@ func runLoadoutReport(classData charconfig.ClassData, lo store.Loadout,
 }
 
 func renderLoadoutReport(f loadout.File, current, seededDPS float64, reports []bucketReport) string {
-	equippedBySlot := map[string]string{}
-	for _, s := range f.Slots {
-		if _, seen := equippedBySlot[s.CatalogSlot]; !seen {
-			equippedBySlot[s.CatalogSlot] = s.Name
-		}
-	}
-
 	var b strings.Builder
 	fmt.Fprintf(&b, "# Loadout report: %s\n\n", f.CharacterName)
 	fmt.Fprintf(&b, "_last_update: %.0f_\n\n", f.LastUpdate)
@@ -152,17 +145,16 @@ func renderLoadoutReport(f loadout.File, current, seededDPS float64, reports []b
 			fmt.Fprintf(&b, "_no upgrades available in this bucket_\n\n")
 			continue
 		}
-		fmt.Fprintf(&b, "| Slot | currently equipped | upgrade | +ΔDPS |\n")
-		fmt.Fprintf(&b, "|------|--------------------|---------|------:|\n")
+		fmt.Fprintf(&b, "| Slot | Wearing | Best upgrade | Alternative |\n")
+		fmt.Fprintf(&b, "|------|---------|--------------|-------------|\n")
 		for _, u := range r.Upgrades {
-			cur := equippedBySlot[u.Slot]
-			if cur == "" {
-				cur = "(empty)"
-			}
-			fmt.Fprintf(&b, "| %s | %s | %s [%s] | +%.0f |\n", u.Slot, cur, u.Best.Name, u.Best.Tier, u.Best.Delta)
+			wearing := fmt.Sprintf("%s (%.0f)", bis.EQ2ULink(u.EquippedName, u.EquippedID), u.EquippedValue)
+			best := fmt.Sprintf("**%s**", upgradeCell(u.Best, current))
+			alt := ""
 			if u.Alt != nil {
-				fmt.Fprintf(&b, "| | | ↳ alt: %s [%s] | +%.0f |\n", u.Alt.Name, u.Alt.Tier, u.Alt.Delta)
+				alt = upgradeCell(*u.Alt, current)
 			}
+			fmt.Fprintf(&b, "| %s | %s | %s | %s |\n", u.Slot, wearing, best, alt)
 		}
 		b.WriteString("\n")
 	}
@@ -176,6 +168,16 @@ func renderLoadoutReport(f loadout.File, current, seededDPS float64, reports []b
 			strings.Join(f.Unresolved, ", "))
 	}
 	return b.String()
+}
+
+// upgradeCell renders one upgrade as "[name](url) +ΔDPS (+pct%)" where pct is the
+// gain as a share of total current-set DPS.
+func upgradeCell(o bis.UpgradeOption, setDPS float64) string {
+	pct := 0.0
+	if setDPS > 0 {
+		pct = o.Delta / setDPS * 100
+	}
+	return fmt.Sprintf("%s +%.0f (+%.1f%%)", bis.EQ2ULink(o.Name, o.ID), o.Delta, pct)
 }
 
 func main() {
