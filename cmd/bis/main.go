@@ -57,25 +57,6 @@ func lockedItems(items []store.ScorableItem, ids []int) map[string][]store.Scora
 	return m
 }
 
-func findByName(items []store.ScorableItem, name string) (store.ScorableItem, bool) {
-	for _, it := range items {
-		if it.Name == name {
-			return it, true
-		}
-	}
-	return store.ScorableItem{}, false
-}
-
-// withFixedPrimary prepends the fixed main-hand as a Primary slot report so each
-// list is complete, showing the given Soulfire (not an optimized pick).
-func withFixedPrimary(reports []bis.SlotReport, main store.ScorableItem, ok bool) []bis.SlotReport {
-	if !ok {
-		return reports
-	}
-	primary := bis.SlotReport{Slot: "Primary", Chosen: []store.ScorableItem{main}}
-	return append([]bis.SlotReport{primary}, reports...)
-}
-
 type bucketReport struct {
 	Title    string
 	Upgrades []bis.SlotUpgrade
@@ -102,13 +83,13 @@ func runLoadoutReport(classData charconfig.ClassData, lo store.Loadout,
 	}
 	var reports []bucketReport
 	for _, bk := range buckets {
-		bySlot := bis.SlotCandidates(items, bk.keep)
+		bySlot := bis.SlotCandidates(items, bk.keep, classData.WeaponWieldStyles, classData.DualWield)
 		reports = append(reports, bucketReport{Title: bk.title, Upgrades: bis.RankSlotUpgrades(set, bySlot, optimizable, topN)})
 	}
 
 	// Seeded optimization: re-optimize optimizable slots from the raid pool with the
 	// imported set's fixed slots (charm/ranged/ammo/event) locked.
-	raidBySlot := bis.SlotCandidates(items, bis.RaidFilter)
+	raidBySlot := bis.SlotCandidates(items, bis.RaidFilter, classData.WeaponWieldStyles, classData.DualWield)
 	locked := map[string][]store.ScorableItem{}
 	for slot, eq := range set.Equipped {
 		if !optimizable[slot] {
@@ -245,9 +226,7 @@ func main() {
 		fmt.Fprintln(os.Stderr, "load items:", err)
 		os.Exit(1)
 	}
-	mainItem, haveMain := findByName(items, lo.MainName)
-	fmt.Printf("loadout: %s (main-hand, fixed); %d combat arts; %d assassin items\n",
-		lo.MainName, len(lo.Arts), len(items))
+	fmt.Printf("loadout: %d combat arts; %d assassin items\n", len(lo.Arts), len(items))
 
 	if *loadoutPath != "" {
 		// Loadout is simmed in the RAID context: an imported set represents the
@@ -282,28 +261,20 @@ func main() {
 	var reports []bis.BaselineReport
 	var allRows []store.ScoreRow
 	for _, t := range tiers {
-		profile := t.profile
-		if haveMain {
-			profile = profile.Add(mainItem.Stats)
-		}
-		bySlot := bis.SlotCandidates(items, t.keep)
-		set := bis.BuildSet(profile, lo, bySlot, nil, maxBuildPasses, classData.AutoAttackMultiplier, *fight)
+		bySlot := bis.SlotCandidates(items, t.keep, classData.WeaponWieldStyles, classData.DualWield)
+		set := bis.BuildSet(t.profile, lo, bySlot, nil, maxBuildPasses, classData.AutoAttackMultiplier, *fight)
 		weights := bis.ConvergedWeights(set)
-		slotReports := withFixedPrimary(bis.BuildSlotReports(set, bySlot, weights, reportTop), mainItem, haveMain)
+		slotReports := bis.BuildSlotReports(set, bySlot, weights, reportTop)
 		allRows = append(allRows, scoreRows(slotReports, strings.ToLower(t.name))...)
 		reports = append(reports, bis.BaselineReport{Name: t.name, Weights: weights, Reports: slotReports})
 	}
 
 	if len(lockIDs) > 0 {
 		locked := lockedItems(items, lockIDs)
-		bySlot := bis.SlotCandidates(items, bis.RaidFilter)
-		profile := raid
-		if haveMain {
-			profile = profile.Add(mainItem.Stats)
-		}
-		set := bis.BuildSet(profile, lo, bySlot, locked, maxBuildPasses, classData.AutoAttackMultiplier, *fight)
+		bySlot := bis.SlotCandidates(items, bis.RaidFilter, classData.WeaponWieldStyles, classData.DualWield)
+		set := bis.BuildSet(raid, lo, bySlot, locked, maxBuildPasses, classData.AutoAttackMultiplier, *fight)
 		weights := bis.ConvergedWeights(set)
-		slotReports := withFixedPrimary(bis.BuildSlotReports(set, bySlot, weights, reportTop), mainItem, haveMain)
+		slotReports := bis.BuildSlotReports(set, bySlot, weights, reportTop)
 		reports = append(reports, bis.BaselineReport{
 			Name: fmt.Sprintf("RAID (locked: %s)", *lock), Weights: weights, Reports: slotReports,
 		})

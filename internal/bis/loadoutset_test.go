@@ -10,10 +10,10 @@ import (
 )
 
 func TestOptimizableSlot(t *testing.T) {
-	for _, s := range []string{"Head", "Chest", "Finger", "Ear", "Wrist", "Cloak", "Waist", "Secondary"} {
+	for _, s := range []string{"Primary", "Secondary", "Head", "Chest", "Finger", "Ear", "Wrist", "Cloak", "Waist"} {
 		require.True(t, OptimizableSlot(s), s)
 	}
-	for _, s := range []string{"Charm", "Ranged", "Ammo", "Food", "Primary"} {
+	for _, s := range []string{"Charm", "Ranged", "Ammo", "Food"} {
 		require.False(t, OptimizableSlot(s), s)
 	}
 }
@@ -25,8 +25,8 @@ func TestSetFromLoadoutCountsFixedStats(t *testing.T) {
 			{CatalogSlot: "Charm", ItemID: 2, Name: "Clicky", Optimizable: false, Stats: model.StatBlock{CritChance: 3}},
 		},
 	}
-	lo := store.Loadout{Main: model.Weapon{AvgDamage: 160, DelaySecs: 4}}
-	set, optimizable := SetFromLoadout(f, model.StatBlock{}, lo, 1.0, 600)
+	set, optimizable := SetFromLoadout(f, model.StatBlock{}, store.Loadout{}, 1.0, 600)
+	seedMain(set)
 
 	require.Contains(t, set.Equipped, "Cloak")
 	require.Contains(t, set.Equipped, "Charm")
@@ -37,12 +37,10 @@ func TestSetFromLoadoutCountsFixedStats(t *testing.T) {
 func TestSetFromLoadoutSecondaryWeaponAffectsDPS(t *testing.T) {
 	// A Secondary weapon ScorableItem with WeaponDelay>0 must be picked up by
 	// offWeapon() and increase DPS relative to no off-hand.
-	mainWeapon := model.Weapon{AvgDamage: 160, MinDamage: 80, MaxDamage: 240, DelaySecs: 4}
-	lo := store.Loadout{Main: mainWeapon}
-
 	// Without off-hand
 	fNoOH := loadout.File{}
-	setNoOH, _ := SetFromLoadout(fNoOH, model.StatBlock{}, lo, 1.0, 600)
+	setNoOH, _ := SetFromLoadout(fNoOH, model.StatBlock{}, store.Loadout{}, 1.0, 600)
+	seedMain(setNoOH)
 	dpsNoOH := setNoOH.DPS()
 
 	// With off-hand Secondary weapon
@@ -59,15 +57,17 @@ func TestSetFromLoadoutSecondaryWeaponAffectsDPS(t *testing.T) {
 			},
 		},
 	}
-	setWithOH, _ := SetFromLoadout(fWithOH, model.StatBlock{}, lo, 1.0, 600)
+	setWithOH, _ := SetFromLoadout(fWithOH, model.StatBlock{}, store.Loadout{}, 1.0, 600)
+	seedMain(setWithOH)
 	dpsWithOH := setWithOH.DPS()
 
 	require.Greater(t, dpsWithOH, dpsNoOH, "Secondary weapon should increase DPS over no off-hand")
 }
 
 func TestTwoEffectHasteItemsDoNotStack(t *testing.T) {
-	lo := store.Loadout{Main: model.Weapon{AvgDamage: 160, MinDamage: 100, MaxDamage: 220, DelaySecs: 4}}
+	lo := store.Loadout{}
 	set := NewSet(model.StatBlock{}, lo, 1.0, 600)
+	seedMain(set)
 	set.Equipped["Cloak"] = []store.ScorableItem{
 		{ID: 1, Name: "Cloak of Flames", Slot: "Cloak", Stats: model.StatBlock{HasteEffect: 25}},
 	}
@@ -83,8 +83,9 @@ func TestTwoEffectHasteItemsDoNotStack(t *testing.T) {
 }
 
 func TestRankSlotUpgrades(t *testing.T) {
-	lo := store.Loadout{Main: model.Weapon{AvgDamage: 160, MinDamage: 100, MaxDamage: 220, DelaySecs: 4}}
+	lo := store.Loadout{}
 	set := NewSet(model.StatBlock{}, lo, 1.0, 600)
+	seedMain(set)
 	// Finger is a two-capacity slot: one strong ring, one weak ring.
 	set.Equipped["Finger"] = []store.ScorableItem{
 		{ID: 10, Name: "StrongRing", Slot: "Finger", Stats: model.StatBlock{MultiAttack: 40}},
@@ -118,8 +119,9 @@ func TestRankSlotUpgrades(t *testing.T) {
 }
 
 func TestRankSlotUpgradesEmptyPositionRow(t *testing.T) {
-	lo := store.Loadout{Main: model.Weapon{AvgDamage: 160, MinDamage: 100, MaxDamage: 220, DelaySecs: 4}}
+	lo := store.Loadout{}
 	set := NewSet(model.StatBlock{}, lo, 1.0, 600)
+	seedMain(set)
 	// Only ONE ring worn in a two-capacity slot: the second position is empty.
 	set.Equipped["Finger"] = []store.ScorableItem{
 		{ID: 10, Name: "OnlyRing", Slot: "Finger", Stats: model.StatBlock{MultiAttack: 40}},
@@ -146,8 +148,9 @@ func TestRankSlotUpgradesEmptyPositionRow(t *testing.T) {
 }
 
 func TestRankSlotUpgradesTopNCapsRows(t *testing.T) {
-	lo := store.Loadout{Main: model.Weapon{AvgDamage: 160, MinDamage: 100, MaxDamage: 220, DelaySecs: 4}}
+	lo := store.Loadout{}
 	set := NewSet(model.StatBlock{}, lo, 1.0, 600)
+	seedMain(set)
 	set.Equipped["Finger"] = []store.ScorableItem{
 		{ID: 10, Name: "WeakRing", Slot: "Finger", Stats: model.StatBlock{MultiAttack: 5}},
 		{ID: 11, Name: "WeakRing2", Slot: "Finger", Stats: model.StatBlock{MultiAttack: 5}},
@@ -161,8 +164,9 @@ func TestRankSlotUpgradesTopNCapsRows(t *testing.T) {
 }
 
 func TestRankSlotUpgradesMultiCapAlwaysShowsBothInstances(t *testing.T) {
-	lo := store.Loadout{Main: model.Weapon{AvgDamage: 160, MinDamage: 100, MaxDamage: 220, DelaySecs: 4}}
+	lo := store.Loadout{}
 	set := NewSet(model.StatBlock{}, lo, 1.0, 600)
+	seedMain(set)
 	// A very strong ring and a weak ring; the only candidate beats ONLY the weak one.
 	set.Equipped["Finger"] = []store.ScorableItem{
 		{ID: 10, Name: "StrongRing", Slot: "Finger", Stats: model.StatBlock{MultiAttack: 100}},
@@ -195,8 +199,9 @@ func TestRankSlotUpgradesMultiCapAlwaysShowsBothInstances(t *testing.T) {
 }
 
 func TestRankSlotUpgradesSingleCapStillOmitsNoUpgrade(t *testing.T) {
-	lo := store.Loadout{Main: model.Weapon{AvgDamage: 160, MinDamage: 100, MaxDamage: 220, DelaySecs: 4}}
+	lo := store.Loadout{}
 	set := NewSet(model.StatBlock{}, lo, 1.0, 600)
+	seedMain(set)
 	// Single-cap Head with a strong worn item the candidate cannot beat.
 	set.Equipped["Head"] = []store.ScorableItem{
 		{ID: 10, Name: "StrongHead", Slot: "Head", Stats: model.StatBlock{MultiAttack: 100}},
@@ -211,8 +216,9 @@ func TestRankSlotUpgradesSingleCapStillOmitsNoUpgrade(t *testing.T) {
 }
 
 func TestRankSlotUpgradesDeterministicTieBreak(t *testing.T) {
-	lo := store.Loadout{Main: model.Weapon{AvgDamage: 160, MinDamage: 100, MaxDamage: 220, DelaySecs: 4}}
+	lo := store.Loadout{}
 	set := NewSet(model.StatBlock{}, lo, 1.0, 600)
+	seedMain(set)
 	set.Equipped["Finger"] = []store.ScorableItem{{ID: 1, Name: "Worn", Slot: "Finger"}}
 	optimizable := map[string]bool{"Finger": true}
 	// Two candidates with identical stats => identical ΔDPS (a tie).

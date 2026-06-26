@@ -17,8 +17,9 @@ func TestBuildSetStopsStackingPastCap(t *testing.T) {
 		return store.ScorableItem{ID: id, Slot: slot, Tier: "FABLED", Stats: model.StatBlock{Flurry: 30}}
 	}
 	bySlot := map[string][]store.ScorableItem{
-		"Head":  {haste(1, "Head"), flurry(2, "Head")},
-		"Chest": {haste(3, "Chest"), flurry(4, "Chest")},
+		"Primary": {{ID: 100, Slot: "Primary", WieldStyle: "One-Handed", WeaponAvg: 160, WeaponDelay: 4}},
+		"Head":    {haste(1, "Head"), flurry(2, "Head")},
+		"Chest":   {haste(3, "Chest"), flurry(4, "Chest")},
 	}
 	set := BuildSet(model.StatBlock{}, lo, bySlot, nil, 12, 1.0, 600)
 
@@ -35,7 +36,8 @@ func TestBuildSetStopsStackingPastCap(t *testing.T) {
 func TestBuildSetRespectsLocked(t *testing.T) {
 	lo := testLoadout()
 	bySlot := map[string][]store.ScorableItem{
-		"Head": {{ID: 1, Slot: "Head", Tier: "FABLED", Stats: model.StatBlock{Potency: 5}}},
+		"Primary": {{ID: 100, Slot: "Primary", WieldStyle: "One-Handed", WeaponAvg: 160, WeaponDelay: 4}},
+		"Head":    {{ID: 1, Slot: "Head", Tier: "FABLED", Stats: model.StatBlock{Potency: 5}}},
 	}
 	locked := map[string][]store.ScorableItem{
 		"Chest": {{ID: 99, Slot: "Chest", Tier: "FABLED", Stats: model.StatBlock{Flurry: 50}}},
@@ -48,8 +50,9 @@ func TestBuildSetRespectsLocked(t *testing.T) {
 func TestBuildSetConverges(t *testing.T) {
 	lo := testLoadout()
 	bySlot := map[string][]store.ScorableItem{
-		"Head":  {{ID: 1, Slot: "Head", Tier: "FABLED", Stats: model.StatBlock{Flurry: 10}}},
-		"Chest": {{ID: 2, Slot: "Chest", Tier: "FABLED", Stats: model.StatBlock{Haste: 50}}},
+		"Primary": {{ID: 100, Slot: "Primary", WieldStyle: "One-Handed", WeaponAvg: 160, WeaponDelay: 4}},
+		"Head":    {{ID: 1, Slot: "Head", Tier: "FABLED", Stats: model.StatBlock{Flurry: 10}}},
+		"Chest":   {{ID: 2, Slot: "Chest", Tier: "FABLED", Stats: model.StatBlock{Haste: 50}}},
 	}
 	a := BuildSet(model.StatBlock{}, lo, bySlot, nil, 12, 1.0, 600)
 	b := BuildSet(model.StatBlock{}, lo, bySlot, nil, 12, 1.0, 600)

@@ -25,9 +25,10 @@ type SlotReport struct {
 // against the converged off-hand — the weights used for explainable breakdowns.
 func ConvergedWeights(set *Set) map[string]float64 {
 	base := set.restBase("")
+	main := set.mainWeapon()
 	off := set.offWeapon()
 	dps := func(sb model.StatBlock) float64 {
-		return model.TotalDPSDual(sb, set.Main, off, set.Arts, set.AutoMult, set.FightLen)
+		return model.TotalDPSDual(sb, main, off, set.Arts, set.AutoMult, set.FightLen)
 	}
 	return model.DeriveWeights(base, dps)
 }
@@ -67,9 +68,6 @@ func BuildSlotReports(set *Set, bySlot map[string][]store.ScorableItem, weights 
 
 	reports := make([]SlotReport, 0, len(slots))
 	for _, slot := range slots {
-		if slot == mainHandSlot {
-			continue
-		}
 		scored := SlotCandidatesScored(set, slot, bySlot[slot], weights)
 		reports = append(reports, SlotReport{
 			Slot:   slot,

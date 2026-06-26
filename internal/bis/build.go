@@ -24,7 +24,7 @@ func capacityOf(slot string) int {
 // maximize the full set DPS, each addition evaluated in the context of those
 // already chosen (so within-slot caps/interactions are respected). It restores
 // the slot's original contents before returning.
-func pickBest(set *Set, slot string, cands []store.ScorableItem) []store.ScorableItem {
+func pickBest(set *Set, slot string, cands []store.ScorableItem, forbidden map[int]bool) []store.ScorableItem {
 	orig := set.Equipped[slot]
 	defer func() { set.Equipped[slot] = orig }()
 
@@ -34,7 +34,7 @@ func pickBest(set *Set, slot string, cands []store.ScorableItem) []store.Scorabl
 	for len(chosen) < capN {
 		bestIdx, bestDPS := -1, math.Inf(-1)
 		for i, c := range cands {
-			if used[c.ID] {
+			if used[c.ID] || forbidden[c.ID] {
 				continue
 			}
 			set.Equipped[slot] = append(append([]store.ScorableItem{}, chosen...), c)
@@ -77,19 +77,32 @@ func BuildSet(profile model.StatBlock, lo store.Loadout, bySlot, locked map[stri
 		set.Equipped[slot] = items
 		lockedSlot[slot] = true
 	}
-	slots := make([]string, 0, len(bySlot))
+	armor := make([]string, 0, len(bySlot))
 	for slot := range bySlot {
-		if slot == mainHandSlot || lockedSlot[slot] {
+		if slot == mainHandSlot || slot == offHandSlot || lockedSlot[slot] {
 			continue
 		}
-		slots = append(slots, slot)
+		armor = append(armor, slot)
 	}
-	sort.Strings(slots)
+	sort.Strings(armor)
+
+	// Weapon slots first (so a main-hand is present when armor is evaluated), then armor.
+	order := []string{}
+	for _, w := range []string{mainHandSlot, offHandSlot} {
+		if _, ok := bySlot[w]; ok && !lockedSlot[w] {
+			order = append(order, w)
+		}
+	}
+	order = append(order, armor...)
 
 	for pass := 0; pass < maxPasses; pass++ {
 		changed := false
-		for _, slot := range slots {
-			best := pickBest(set, slot, bySlot[slot])
+		for _, slot := range order {
+			var forbidden map[int]bool
+			if slot == mainHandSlot || slot == offHandSlot {
+				forbidden = weaponForbid(set, slot)
+			}
+			best := pickBest(set, slot, bySlot[slot], forbidden)
 			if !sameItems(best, set.Equipped[slot]) {
 				set.Equipped[slot] = best
 				changed = true
@@ -100,4 +113,18 @@ func BuildSet(profile model.StatBlock, lo store.Loadout, bySlot, locked map[stri
 		}
 	}
 	return set
+}
+
+// weaponForbid returns the item ids equipped in the OTHER weapon slot, which the
+// given weapon slot may not reuse (the player owns one of each physical weapon).
+func weaponForbid(set *Set, slot string) map[int]bool {
+	other := offHandSlot
+	if slot == offHandSlot {
+		other = mainHandSlot
+	}
+	forbid := map[int]bool{}
+	for _, it := range set.Equipped[other] {
+		forbid[it.ID] = true
+	}
+	return forbid
 }

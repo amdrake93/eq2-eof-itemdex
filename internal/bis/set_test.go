@@ -8,14 +8,18 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func testLoadout() store.Loadout {
-	return store.Loadout{
-		Main: model.Weapon{AvgDamage: 160, DelaySecs: 4},
-	}
+func testLoadout() store.Loadout { return store.Loadout{} }
+
+// seedMain gives a set the standard test main-hand weapon (160 avg, 4.0 delay,
+// single-wield) so auto-attack DPS is non-zero — the equipped-slot equivalent of
+// the old Loadout.Main.
+func seedMain(set *Set) {
+	set.Equipped[mainHandSlot] = []store.ScorableItem{{ID: 1000, Slot: mainHandSlot, WeaponAvg: 160, WeaponDelay: 4}}
 }
 
 func TestSetDPSAndCandidateDelta(t *testing.T) {
 	set := NewSet(model.StatBlock{}, testLoadout(), 1.0, 600)
+	seedMain(set)
 
 	// This fixture has no off-hand, so it is single-wielding: the dual-wield
 	// delay penalty does NOT apply (it's gated on an equipped off-hand weapon).
@@ -39,14 +43,17 @@ func TestSetRestBaseExcludesSlot(t *testing.T) {
 }
 
 func TestSetAppliesClassAutoMult(t *testing.T) {
-	lo := store.Loadout{Main: model.Weapon{AvgDamage: 160, DelaySecs: 4}}
-	base := NewSet(model.StatBlock{}, lo, 1.0, 600).DPS()
-	scaled := NewSet(model.StatBlock{}, lo, 2.0, 600).DPS()
-	require.InDelta(t, 2.0*base, scaled, 1e-9) // no CAs/arts in fixture → DPS is pure auto
+	mk := func(am float64) float64 {
+		set := NewSet(model.StatBlock{}, store.Loadout{}, am, 600)
+		seedMain(set)
+		return set.DPS()
+	}
+	require.InDelta(t, 2.0*mk(1.0), mk(2.0), 1e-9) // no CAs/arts in fixture → DPS is pure auto
 }
 
 func TestReplaceInstanceDeltaHoldsOtherInstanceFixed(t *testing.T) {
 	set := NewSet(model.StatBlock{}, testLoadout(), 1.0, 600)
+	seedMain(set)
 	strong := store.ScorableItem{ID: 1, Slot: "Finger", Stats: model.StatBlock{MultiAttack: 40}}
 	weak := store.ScorableItem{ID: 2, Slot: "Finger", Stats: model.StatBlock{MultiAttack: 5}}
 	set.Equipped["Finger"] = []store.ScorableItem{strong, weak}
@@ -69,6 +76,7 @@ func TestReplaceInstanceDeltaHoldsOtherInstanceFixed(t *testing.T) {
 
 func TestEquippedInstanceValueIsMarginalContribution(t *testing.T) {
 	set := NewSet(model.StatBlock{}, testLoadout(), 1.0, 600)
+	seedMain(set)
 	ring := store.ScorableItem{ID: 1, Slot: "Finger", Stats: model.StatBlock{MultiAttack: 40}}
 	set.Equipped["Finger"] = []store.ScorableItem{ring}
 

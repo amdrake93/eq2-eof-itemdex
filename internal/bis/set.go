@@ -18,7 +18,6 @@ const offHandSlot = "Secondary"
 // interactions are exact.
 type Set struct {
 	Profile  model.StatBlock
-	Main     model.Weapon
 	Arts     []spell.CombatArt
 	AutoMult float64 // class-intrinsic auto-attack multiplier (classes/<class>.toml)
 	FightLen float64 // target fight length in seconds (smoothed CADPS window center)
@@ -27,7 +26,7 @@ type Set struct {
 
 // NewSet returns an empty set seeded with the profile baseline and loadout.
 func NewSet(profile model.StatBlock, lo store.Loadout, autoMult, fightLen float64) *Set {
-	return &Set{Profile: profile, Main: lo.Main, Arts: lo.Arts, AutoMult: autoMult, FightLen: fightLen, Equipped: map[string][]store.ScorableItem{}}
+	return &Set{Profile: profile, Arts: lo.Arts, AutoMult: autoMult, FightLen: fightLen, Equipped: map[string][]store.ScorableItem{}}
 }
 
 // restBase is the set's StatBlock with one slot's items excluded (exclude=""
@@ -54,14 +53,29 @@ func (s *Set) restBase(exclude string) model.StatBlock {
 	return b
 }
 
-// offWeapon is the equipped off-hand weapon (zero Weapon if none).
-func (s *Set) offWeapon() model.Weapon {
-	for _, it := range s.Equipped[offHandSlot] {
+// weaponFrom returns the first equippable weapon in items (zero Weapon if none).
+func weaponFrom(items []store.ScorableItem) model.Weapon {
+	for _, it := range items {
 		if it.IsWeapon() {
 			return model.Weapon{AvgDamage: it.WeaponAvg, MinDamage: it.WeaponMin, MaxDamage: it.WeaponMax, DelaySecs: it.WeaponDelay}
 		}
 	}
 	return model.Weapon{}
+}
+
+// mainWeapon is the equipped main-hand weapon (zero Weapon if none), derived from
+// Equipped["Primary"] — the mirror of offWeapon()/Equipped["Secondary"].
+func (s *Set) mainWeapon() model.Weapon { return weaponFrom(s.Equipped[mainHandSlot]) }
+
+// offWeapon is the equipped off-hand weapon (zero Weapon if none).
+func (s *Set) offWeapon() model.Weapon { return weaponFrom(s.Equipped[offHandSlot]) }
+
+// restMain is the main-hand weapon excluding a slot (zero if the slot IS the main-hand).
+func (s *Set) restMain(exclude string) model.Weapon {
+	if exclude == mainHandSlot {
+		return model.Weapon{}
+	}
+	return s.mainWeapon()
 }
 
 // restOff is the off-hand weapon excluding a slot (zero if the slot IS the off-hand).
@@ -74,7 +88,7 @@ func (s *Set) restOff(exclude string) model.Weapon {
 
 // DPS is the full set's modeled TotalDPS.
 func (s *Set) DPS() float64 {
-	return model.TotalDPSDual(s.restBase(""), s.Main, s.offWeapon(), s.Arts, s.AutoMult, s.FightLen)
+	return model.TotalDPSDual(s.restBase(""), s.mainWeapon(), s.offWeapon(), s.Arts, s.AutoMult, s.FightLen)
 }
 
 // slotDPS computes full-set DPS with `slot`'s equipped items REPLACED by `items`,
@@ -85,17 +99,15 @@ func (s *Set) slotDPS(slot string, items []store.ScorableItem) float64 {
 	for _, it := range items {
 		rb = rb.Add(it.Stats)
 	}
+	main := s.mainWeapon()
+	if slot == mainHandSlot {
+		main = weaponFrom(items)
+	}
 	off := s.offWeapon()
 	if slot == offHandSlot {
-		off = model.Weapon{}
-		for _, it := range items {
-			if it.IsWeapon() {
-				off = model.Weapon{AvgDamage: it.WeaponAvg, MinDamage: it.WeaponMin, MaxDamage: it.WeaponMax, DelaySecs: it.WeaponDelay}
-				break
-			}
-		}
+		off = weaponFrom(items)
 	}
-	return model.TotalDPSDual(rb, s.Main, off, s.Arts, s.AutoMult, s.FightLen)
+	return model.TotalDPSDual(rb, main, off, s.Arts, s.AutoMult, s.FightLen)
 }
 
 // ReplaceInstanceDelta is the ΔDPS of swapping the worn item at index `idx` in
@@ -133,10 +145,15 @@ func (s *Set) EquippedInstanceValue(slot string, idx int) float64 {
 // the rest of the (otherwise-fixed) set with that slot emptied.
 func (s *Set) CandidateDelta(slot string, c store.ScorableItem) float64 {
 	rb := s.restBase(slot)
-	ro := s.restOff(slot)
-	if slot == offHandSlot && c.IsWeapon() {
+	var newMain, newOff *model.Weapon
+	if c.IsWeapon() {
 		w := model.Weapon{AvgDamage: c.WeaponAvg, MinDamage: c.WeaponMin, MaxDamage: c.WeaponMax, DelaySecs: c.WeaponDelay}
-		return model.ItemDelta(rb, s.Main, ro, s.Arts, c.Stats, nil, &w, s.AutoMult, s.FightLen)
+		switch slot {
+		case mainHandSlot:
+			newMain = &w
+		case offHandSlot:
+			newOff = &w
+		}
 	}
-	return model.ItemDelta(rb, s.Main, ro, s.Arts, c.Stats, nil, nil, s.AutoMult, s.FightLen)
+	return model.ItemDelta(rb, s.restMain(slot), s.restOff(slot), s.Arts, c.Stats, newMain, newOff, s.AutoMult, s.FightLen)
 }

@@ -13,9 +13,10 @@ import (
 // event carry stats on import but are never swap candidates (SPEC §7, §16).
 // Slot names are the census ITEM slot_list vocabulary, verified against the live
 // catalog (bis.db items.slot): Cloak (not "Back"), plural Shoulders/Hands/Legs/Feet.
-// Charm, Ranged, Ammo and Primary (the fixed main-hand) are intentionally excluded.
+// Charm, Ranged and Ammo are intentionally excluded. Both weapon slots (Primary
+// main-hand, Secondary off-hand) are optimizable.
 var optimizableCatalogSlots = map[string]bool{
-	"Secondary": true, "Head": true, "Chest": true, "Shoulders": true,
+	"Primary": true, "Secondary": true, "Head": true, "Chest": true, "Shoulders": true,
 	"Forearms": true, "Hands": true, "Legs": true, "Feet": true,
 	"Finger": true, "Ear": true, "Wrist": true, "Neck": true,
 	"Cloak": true, "Waist": true,
@@ -122,8 +123,8 @@ func RankSlotUpgrades(set *Set, bySlot map[string][]store.ScorableItem, optimiza
 
 // SetFromLoadout builds a Set with every kept slot's stats equipped (fixed +
 // optimizable alike) and returns the set of catalog slots eligible for
-// re-optimization. The Primary weapon entry overrides lo.Main; the Secondary
-// weapon entry lands in Equipped["Secondary"] so Set.DPS()'s off-hand picks it up.
+// re-optimization. Both weapon entries land in Equipped (Primary main-hand,
+// Secondary off-hand), so Set.DPS()'s mainWeapon()/offWeapon() derive them.
 func SetFromLoadout(f loadout.File, profile model.StatBlock, lo store.Loadout, autoMult, fightLen float64) (*Set, map[string]bool) {
 	set := NewSet(profile, lo, autoMult, fightLen)
 	optimizable := map[string]bool{}
@@ -141,11 +142,8 @@ func SetFromLoadout(f loadout.File, profile model.StatBlock, lo store.Loadout, a
 			it.WeaponDelay = e.WeaponDelay
 		}
 		set.Equipped[e.CatalogSlot] = append(set.Equipped[e.CatalogSlot], it)
-		if e.Optimizable {
+		if OptimizableSlot(e.CatalogSlot) {
 			optimizable[e.CatalogSlot] = true
-		}
-		if e.CatalogSlot == "Primary" && it.IsWeapon() {
-			set.Main = model.Weapon{AvgDamage: it.WeaponAvg, MinDamage: it.WeaponMin, MaxDamage: it.WeaponMax, DelaySecs: it.WeaponDelay}
 		}
 	}
 	return set, optimizable

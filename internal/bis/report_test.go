@@ -17,7 +17,12 @@ func TestBuildSlotReports(t *testing.T) {
 		"Ear": {mk(1, "FABLED", 5), mk(2, "FABLED", 20), mk(3, "FABLED", 12), mk(4, "FABLED", 1),
 			mk(5, "LEGENDARY", 8), mk(6, "MYTHICAL", 50)},
 	}
-	set := BuildSet(model.StatBlock{}, lo, bySlot, nil, 12, 1.0, 600)
+	// Inject the main-hand via locked (not a candidate pool) so it is not itself
+	// reported — keeping this test focused on the Ear slot.
+	locked := map[string][]store.ScorableItem{
+		"Primary": {{ID: 100, Slot: "Primary", WieldStyle: "One-Handed", WeaponAvg: 160, WeaponDelay: 4}},
+	}
+	set := BuildSet(model.StatBlock{}, lo, bySlot, locked, 12, 1.0, 600)
 	weights := ConvergedWeights(set)
 	reports := BuildSlotReports(set, bySlot, weights, 3)
 
@@ -35,7 +40,7 @@ func TestBuildSlotReports(t *testing.T) {
 	require.GreaterOrEqual(t, r.Ranked[1].Delta, r.Ranked[2].Delta)
 }
 
-func TestBuildSlotReportsSkipsPrimary(t *testing.T) {
+func TestBuildSlotReportsIncludesPrimary(t *testing.T) {
 	lo := testLoadout()
 	bySlot := map[string][]store.ScorableItem{
 		"Primary": {{ID: 1, Slot: "Primary", Tier: "FABLED", WieldStyle: "One-Handed", WeaponAvg: 160, WeaponDelay: 4}},
@@ -44,14 +49,18 @@ func TestBuildSlotReportsSkipsPrimary(t *testing.T) {
 	set := BuildSet(model.StatBlock{}, lo, bySlot, nil, 12, 1.0, 600)
 	reports := BuildSlotReports(set, bySlot, ConvergedWeights(set), 3)
 
+	var hasPrimary bool
 	for _, r := range reports {
-		require.NotEqual(t, "Primary", r.Slot, "main-hand slot is fixed; it should not be ranked")
+		if r.Slot == "Primary" {
+			hasPrimary = true
+		}
 	}
+	require.True(t, hasPrimary, "main-hand is a normal ranked slot")
 }
 
 func TestSlotCandidatesScoredDeterministicTieBreak(t *testing.T) {
-	lo := store.Loadout{Main: model.Weapon{AvgDamage: 160, DelaySecs: 4}}
-	set := NewSet(model.StatBlock{}, lo, 1.0, 600)
+	set := NewSet(model.StatBlock{}, store.Loadout{}, 1.0, 600)
+	seedMain(set)
 	weights := map[string]float64{}
 	// Identical stats => identical ΔDPS tie.
 	cands := []store.ScorableItem{

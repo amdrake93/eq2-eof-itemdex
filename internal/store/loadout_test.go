@@ -33,9 +33,6 @@ func TestLoadLoadout(t *testing.T) {
 
 	lo, err := d.LoadLoadout()
 	require.NoError(t, err)
-	require.Equal(t, "Soulfire Sabre", lo.MainName)
-	require.InDelta(t, 159.5, lo.Main.AvgDamage, 1e-9)
-	require.InDelta(t, 4.0, lo.Main.DelaySecs, 1e-9)
 	require.Len(t, lo.Arts, 1)
 	require.Equal(t, "Assassinate II", lo.Arts[0].Name)
 	require.Equal(t, 200, lo.Arts[0].CastSecsHundredths)

@@ -137,5 +137,5 @@ func writeAssumptions(b *strings.Builder, fightLen float64) {
 	fmt.Fprintf(b, "- reuse: DIVIDES recast by (1 + reuse/100), floored at each art's %.0f%%-of-base recast (reached at 100%% reuse; AA art mods sit at that floor — Assassinate/Mortal Blade); cast speed divides cast times; recovery base %.2fs (reduced by recovery speed); fight target = %.0fs (smoothed)\n",
 		constants.RecastReductionCeiling*100, constants.CARecoveryBaseSecs, fightLen)
 	b.WriteString("- Set built by coordinate-ascent to convergence (caps/interactions resolved at the live set baseline).\n")
-	b.WriteString("- Main-hand is fixed (Soulfire Sabre); its weapon damage AND full stat line are included in the baseline.\n")
+	b.WriteString("- Main-hand and off-hand are optimized weapon slots; each weapon's damage and full stat line are included like any other slot, and the two are kept distinct (one of each).\n")
 }

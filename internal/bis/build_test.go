@@ -16,12 +16,13 @@ func TestCapacityOf(t *testing.T) {
 
 func TestPickBestRespectsCapacityAndContext(t *testing.T) {
 	set := NewSet(model.StatBlock{}, testLoadout(), 1.0, 600)
+	seedMain(set)
 	cands := []store.ScorableItem{
 		{ID: 1, Slot: "Ear", Tier: "FABLED", Stats: model.StatBlock{Flurry: 20}},
 		{ID: 2, Slot: "Ear", Tier: "FABLED", Stats: model.StatBlock{Haste: 100}},
 		{ID: 3, Slot: "Ear", Tier: "FABLED", Stats: model.StatBlock{Flurry: 20}},
 	}
-	got := pickBest(set, "Ear", cands)
+	got := pickBest(set, "Ear", cands, nil)
 	require.Len(t, got, 2)
 	ids := map[int]bool{got[0].ID: true, got[1].ID: true}
 	require.True(t, ids[2], "should include the haste item (a fresh multiplier)")

@@ -216,38 +216,20 @@ func (d *DB) WriteScores(rows []ScoreRow) (err error) {
 	return tx.Commit()
 }
 
-// Loadout is the fixed main-hand + collapsed combat arts the model scores against.
-// The off-hand is chosen from the Secondary candidate pool, not fixed here.
+// Loadout is the combat-art pool the model scores against, collapsed to highest
+// rank. Both weapons are optimized slots (chosen from the candidate pools), not
+// fixed here.
 type Loadout struct {
-	Main     model.Weapon
-	MainName string
-	Arts     []spell.CombatArt
+	Arts []spell.CombatArt
 }
 
-func (d *DB) loadWeapon(query string, args ...any) (model.Weapon, string, error) {
-	var name string
-	var mn, mx, delay float64
-	if err := d.db.QueryRow(query, args...).Scan(&name, &mn, &mx, &delay); err != nil {
-		return model.Weapon{}, "", err
-	}
-	return model.Weapon{AvgDamage: (mn + mx) / 2, MinDamage: mn, MaxDamage: mx, DelaySecs: delay}, name, nil
-}
-
-// LoadLoadout reads the Soulfire main-hand and the Assassin combat arts collapsed
-// to highest rank.
+// LoadLoadout reads the Assassin combat arts collapsed to highest rank.
 func (d *DB) LoadLoadout() (Loadout, error) {
-	main, mainName, err := d.loadWeapon(
-		`SELECT name, weapon_min_dmg, weapon_max_dmg, delay FROM items
-		 WHERE name LIKE 'Soulfire%' AND classes LIKE '%assassin%'
-		 ORDER BY (name = 'Soulfire Sabre') DESC, weapon_max_dmg DESC LIMIT 1`)
-	if err != nil {
-		return Loadout{}, err
-	}
 	arts, err := d.CombatArts()
 	if err != nil {
 		return Loadout{}, err
 	}
-	return Loadout{Main: main, MainName: mainName, Arts: spell.HighestRanks(arts)}, nil
+	return Loadout{Arts: spell.HighestRanks(arts)}, nil
 }
 
 // ScorableItem is one Assassin-usable item with its DPS-relevant stats resolved
