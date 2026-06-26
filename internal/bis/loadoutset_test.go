@@ -159,3 +159,53 @@ func TestRankSlotUpgradesTopNCapsRows(t *testing.T) {
 
 	require.Len(t, RankSlotUpgrades(set, bySlot, optimizable, 1), 1)
 }
+
+func TestRankSlotUpgradesMultiCapAlwaysShowsBothInstances(t *testing.T) {
+	lo := store.Loadout{Main: model.Weapon{AvgDamage: 160, MinDamage: 100, MaxDamage: 220, DelaySecs: 4}}
+	set := NewSet(model.StatBlock{}, lo, 1.0, 600)
+	// A very strong ring and a weak ring; the only candidate beats ONLY the weak one.
+	set.Equipped["Finger"] = []store.ScorableItem{
+		{ID: 10, Name: "StrongRing", Slot: "Finger", Stats: model.StatBlock{MultiAttack: 100}},
+		{ID: 11, Name: "WeakRing", Slot: "Finger", Stats: model.StatBlock{MultiAttack: 5}},
+	}
+	optimizable := map[string]bool{"Finger": true}
+	bySlot := map[string][]store.ScorableItem{
+		"Finger": {{ID: 20, Name: "MidRing", Slot: "Finger", Stats: model.StatBlock{MultiAttack: 50}}},
+	}
+
+	got := RankSlotUpgrades(set, bySlot, optimizable, 0)
+
+	// Both worn instances appear, even though StrongRing has no positive upgrade.
+	require.Len(t, got, 2)
+
+	byEquipped := map[string]SlotUpgrade{}
+	for _, su := range got {
+		byEquipped[su.EquippedName] = su
+	}
+	require.Contains(t, byEquipped, "WeakRing")
+	require.Contains(t, byEquipped, "StrongRing")
+
+	// WeakRing has a real upgrade; StrongRing has the zero-value "no upgrade" sentinel.
+	require.Equal(t, "MidRing", byEquipped["WeakRing"].Best.Name)
+	require.Equal(t, "", byEquipped["StrongRing"].Best.Name)
+	require.Nil(t, byEquipped["StrongRing"].Alt)
+
+	// No-upgrade rows sort last (Best.Delta 0).
+	require.Equal(t, "StrongRing", got[1].EquippedName)
+}
+
+func TestRankSlotUpgradesSingleCapStillOmitsNoUpgrade(t *testing.T) {
+	lo := store.Loadout{Main: model.Weapon{AvgDamage: 160, MinDamage: 100, MaxDamage: 220, DelaySecs: 4}}
+	set := NewSet(model.StatBlock{}, lo, 1.0, 600)
+	// Single-cap Head with a strong worn item the candidate cannot beat.
+	set.Equipped["Head"] = []store.ScorableItem{
+		{ID: 10, Name: "StrongHead", Slot: "Head", Stats: model.StatBlock{MultiAttack: 100}},
+	}
+	optimizable := map[string]bool{"Head": true}
+	bySlot := map[string][]store.ScorableItem{
+		"Head": {{ID: 20, Name: "WeakHead", Slot: "Head", Stats: model.StatBlock{MultiAttack: 5}}},
+	}
+
+	// No positive upgrade for a single-cap slot -> the slot is omitted entirely.
+	require.Empty(t, RankSlotUpgrades(set, bySlot, optimizable, 0))
+}

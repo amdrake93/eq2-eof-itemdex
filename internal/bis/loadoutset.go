@@ -75,6 +75,14 @@ func RankSlotUpgrades(set *Set, bySlot map[string][]store.ScorableItem, optimiza
 				}
 			}
 			if len(cands) == 0 {
+				// Single-capacity slots stay actionable: omit when there's no upgrade.
+				// Multi-capacity slots always show every worn instance (both rings/
+				// ears/wrists), even with no upgrade — Best stays the zero-value
+				// "no upgrade" sentinel and sorts last.
+				if capacityOf(slot) <= 1 || idx >= len(worn) {
+					continue
+				}
+				out = append(out, su)
 				continue
 			}
 			sort.Slice(cands, func(i, j int) bool { return cands[i].Delta > cands[j].Delta })
