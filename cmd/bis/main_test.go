@@ -43,3 +43,24 @@ func TestRenderLoadoutReportLinkedTable(t *testing.T) {
 	// No tier tags anywhere.
 	require.NotContains(t, md, "[FABLED]")
 }
+
+func TestRenderLoadoutReportNoUpgradeRow(t *testing.T) {
+	f := loadout.File{CharacterName: "Biffels", LastUpdate: 123}
+	reports := []bucketReport{{
+		Title: "Get now — pre-raid accessible",
+		Upgrades: []bis.SlotUpgrade{
+			{
+				Slot:          "Finger",
+				EquippedName:  "StrongRing",
+				EquippedID:    10,
+				EquippedValue: 300,
+				// zero-value Best => no upgrade in this bucket
+			},
+		},
+	}}
+
+	md := renderLoadoutReport(f, 30000, 30000, reports)
+
+	// Worn item still linked; best cell is an em dash; alternative cell blank.
+	require.Contains(t, md, "[StrongRing](https://u.eq2wire.com/item/10) (300) | — |  |")
+}

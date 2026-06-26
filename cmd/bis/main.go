@@ -149,10 +149,13 @@ func renderLoadoutReport(f loadout.File, current, seededDPS float64, reports []b
 		fmt.Fprintf(&b, "|------|---------|--------------|-------------|\n")
 		for _, u := range r.Upgrades {
 			wearing := fmt.Sprintf("%s (%.0f)", bis.EQ2ULink(u.EquippedName, u.EquippedID), u.EquippedValue)
-			best := fmt.Sprintf("**%s**", upgradeCell(u.Best, current))
+			best := "—"
 			alt := ""
-			if u.Alt != nil {
-				alt = upgradeCell(*u.Alt, current)
+			if u.Best.Name != "" {
+				best = fmt.Sprintf("**%s**", upgradeCell(u.Best, current))
+				if u.Alt != nil {
+					alt = upgradeCell(*u.Alt, current)
+				}
 			}
 			fmt.Fprintf(&b, "| %s | %s | %s | %s |\n", u.Slot, wearing, best, alt)
 		}
