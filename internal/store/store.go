@@ -274,7 +274,7 @@ func (it ScorableItem) IsWeapon() bool { return it.WeaponDelay > 0 }
 func (d *DB) LoadScorableItems() ([]ScorableItem, error) {
 	rows, err := d.db.Query(
 		`SELECT id, name, slot, tier, wieldstyle, gamelink, weapon_min_dmg, weapon_max_dmg, delay
-		 FROM items WHERE classes LIKE '%assassin%'`)
+		 FROM items WHERE classes LIKE '%assassin%' ORDER BY id`)
 	if err != nil {
 		return nil, err
 	}

@@ -3,6 +3,8 @@
 package bis
 
 import (
+	"sort"
+
 	"github.com/amdrake93/eq2-eof-itemdex/internal/model"
 	"github.com/amdrake93/eq2-eof-itemdex/internal/spell"
 	"github.com/amdrake93/eq2-eof-itemdex/internal/store"
@@ -29,14 +31,23 @@ func NewSet(profile model.StatBlock, lo store.Loadout, autoMult, fightLen float6
 }
 
 // restBase is the set's StatBlock with one slot's items excluded (exclude=""
-// includes everything).
+// includes everything). Slots are summed in sorted order so the float
+// accumulation is deterministic (float addition isn't associative) — without
+// this, map iteration order makes Set.DPS() wobble in its low bits, flipping
+// pickBest near-ties and producing non-reproducible reports.
 func (s *Set) restBase(exclude string) model.StatBlock {
+	slots := make([]string, 0, len(s.Equipped))
+	for slot := range s.Equipped {
+		slots = append(slots, slot)
+	}
+	sort.Strings(slots)
+
 	b := s.Profile
-	for slot, items := range s.Equipped {
+	for _, slot := range slots {
 		if slot == exclude {
 			continue
 		}
-		for _, it := range items {
+		for _, it := range s.Equipped[slot] {
 			b = b.Add(it.Stats)
 		}
 	}
