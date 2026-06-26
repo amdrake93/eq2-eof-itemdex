@@ -39,7 +39,7 @@ func TestRenderLoadoutReportLinkedTable(t *testing.T) {
 	// Alternative cell present.
 	require.Contains(t, md, "[MidRing](https://u.eq2wire.com/item/21) +150 (+0.5%)")
 	// Empty row: plain text, no link, value 0, blank alternative cell.
-	require.Contains(t, md, "| Finger | Empty (0) |")
+	require.Contains(t, md, "| Finger | Empty (0) | **[AnyRing](https://u.eq2wire.com/item/22) +400 (+1.3%)** |  |")
 	// No tier tags anywhere.
 	require.NotContains(t, md, "[FABLED]")
 }
