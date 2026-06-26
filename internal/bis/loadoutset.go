@@ -57,6 +57,12 @@ func RankSlotUpgrades(set *Set, bySlot map[string][]store.ScorableItem, optimiza
 	var out []SlotUpgrade
 	for slot := range optimizable {
 		worn := set.Equipped[slot]
+		// A weapon slot must not suggest the item worn in the OTHER weapon slot —
+		// the player owns one of each physical weapon (mirror of the optimizer's rule).
+		var forbidden map[int]bool
+		if slot == mainHandSlot || slot == offHandSlot {
+			forbidden = weaponForbid(set, slot)
+		}
 		for idx := 0; idx < capacityOf(slot); idx++ {
 			su := SlotUpgrade{Slot: slot}
 			replaceIdx := idx
@@ -71,6 +77,9 @@ func RankSlotUpgrades(set *Set, bySlot map[string][]store.ScorableItem, optimiza
 
 			var cands []UpgradeOption
 			for _, c := range bySlot[slot] {
+				if forbidden[c.ID] {
+					continue
+				}
 				if d := set.ReplaceInstanceDelta(slot, replaceIdx, c); d > 0 {
 					cands = append(cands, UpgradeOption{ID: c.ID, Name: c.Name, Delta: d})
 				}

@@ -239,3 +239,27 @@ func TestRankSlotUpgradesDeterministicTieBreak(t *testing.T) {
 		require.Equal(t, got, RankSlotUpgrades(set, bySlot, optimizable, 0))
 	}
 }
+
+func TestRankSlotUpgradesWeaponSlotsStayDistinct(t *testing.T) {
+	set := NewSet(model.StatBlock{}, store.Loadout{}, 1.0, 600)
+	seedMain(set) // worn main-hand has ID 1000
+	set.Equipped["Secondary"] = []store.ScorableItem{{ID: 2, Slot: "Secondary", WeaponAvg: 100, WeaponDelay: 4}}
+	optimizable := map[string]bool{"Secondary": true}
+	// The pool offers the WORN main-hand (id 1000) as an off-hand option; it must be
+	// excluded (one physical weapon), even though its raw delta would look positive.
+	bySlot := map[string][]store.ScorableItem{
+		"Secondary": {
+			{ID: 1000, Slot: "Secondary", WeaponAvg: 160, WeaponDelay: 4},
+			{ID: 50, Slot: "Secondary", WeaponAvg: 150, WeaponDelay: 4},
+		},
+	}
+
+	got := RankSlotUpgrades(set, bySlot, optimizable, 0)
+	require.NotEmpty(t, got)
+	for _, su := range got {
+		require.NotEqual(t, 1000, su.Best.ID, "must not suggest the worn main-hand as an off-hand upgrade")
+		if su.Alt != nil {
+			require.NotEqual(t, 1000, su.Alt.ID)
+		}
+	}
+}
