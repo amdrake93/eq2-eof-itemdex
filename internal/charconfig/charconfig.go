@@ -143,7 +143,9 @@ func Load(path string) (Config, error) {
 // identical for every character of a class but differing between classes.
 // Uniform schema — every classes/<class>.toml defines the same fields.
 type ClassData struct {
-	AutoAttackMultiplier float64 `toml:"auto_attack_multiplier"`
+	AutoAttackMultiplier float64  `toml:"auto_attack_multiplier"`
+	DualWield            bool     `toml:"dual_wield"`
+	WeaponWieldStyles    []string `toml:"weapon_wield_styles"`
 }
 
 // LoadClass reads classes/<class>.toml. Strict: unknown keys and a missing or
@@ -161,6 +163,9 @@ func LoadClass(dir, class string) (ClassData, error) {
 	}
 	if cd.AutoAttackMultiplier <= 0 {
 		return ClassData{}, fmt.Errorf("%s: auto_attack_multiplier must be > 0 (got %v)", path, cd.AutoAttackMultiplier)
+	}
+	if len(cd.WeaponWieldStyles) == 0 {
+		return ClassData{}, fmt.Errorf("%s: weapon_wield_styles must be non-empty", path)
 	}
 	return cd, nil
 }

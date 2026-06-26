@@ -2,3 +2,5 @@
 # docs/SPEC.md §6 + backlog §10). Every class file defines the same
 # fields — a missing field is a hard error (the sim is incomplete without it).
 auto_attack_multiplier = 2.0  # innate Assassin auto-attack multiplier (measured /weaponstat 2026-06-13; Enchanter ≈0.7 for reference)
+dual_wield = true             # Assassin wields a main-hand + off-hand weapon
+weapon_wield_styles = ["One-Handed"]  # catalog wieldstyles valid in the main-hand (off-hand uses the same one-handed set)

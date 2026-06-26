@@ -206,6 +206,21 @@ func TestLoadClassAssassin(t *testing.T) {
 	require.InDelta(t, 2.0, cd.AutoAttackMultiplier, 1e-9)
 }
 
+func TestLoadClassWeaponConfig(t *testing.T) {
+	cd, err := LoadClass("../../classes", "assassin")
+	require.NoError(t, err)
+	require.True(t, cd.DualWield)
+	require.Equal(t, []string{"One-Handed"}, cd.WeaponWieldStyles)
+}
+
+func TestLoadClassRejectsMissingWieldStyles(t *testing.T) {
+	dir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "x.toml"),
+		[]byte("auto_attack_multiplier = 2.0\ndual_wield = true\n"), 0o644))
+	_, err := LoadClass(dir, "x")
+	require.ErrorContains(t, err, "weapon_wield_styles")
+}
+
 func TestLoadClassMissingFile(t *testing.T) {
 	_, err := LoadClass("../../classes", "wizard")
 	require.Error(t, err)
