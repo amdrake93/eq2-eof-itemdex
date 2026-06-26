@@ -44,3 +44,34 @@ func TestSetAppliesClassAutoMult(t *testing.T) {
 	scaled := NewSet(model.StatBlock{}, lo, 2.0, 600).DPS()
 	require.InDelta(t, 2.0*base, scaled, 1e-9) // no CAs/arts in fixture → DPS is pure auto
 }
+
+func TestReplaceInstanceDeltaHoldsOtherInstanceFixed(t *testing.T) {
+	set := NewSet(model.StatBlock{}, testLoadout(), 1.0, 600)
+	strong := store.ScorableItem{ID: 1, Slot: "Finger", Stats: model.StatBlock{MultiAttack: 40}}
+	weak := store.ScorableItem{ID: 2, Slot: "Finger", Stats: model.StatBlock{MultiAttack: 5}}
+	set.Equipped["Finger"] = []store.ScorableItem{strong, weak}
+
+	cand := store.ScorableItem{ID: 3, Slot: "Finger", Stats: model.StatBlock{MultiAttack: 30}}
+
+	// Replacing the WEAK ring (idx 1) with a better one is a positive gain.
+	upWeak := set.ReplaceInstanceDelta("Finger", 1, cand)
+	require.Greater(t, upWeak, 0.0)
+
+	// Replacing the STRONG ring (idx 0) with the same candidate is a smaller gain
+	// (or a loss) — the two instances are evaluated independently.
+	upStrong := set.ReplaceInstanceDelta("Finger", 0, cand)
+	require.Greater(t, upWeak, upStrong)
+
+	// Filling an empty position (idx -1) ADDS the candidate alongside both rings.
+	add := set.ReplaceInstanceDelta("Finger", -1, cand)
+	require.Greater(t, add, 0.0)
+}
+
+func TestEquippedInstanceValueIsMarginalContribution(t *testing.T) {
+	set := NewSet(model.StatBlock{}, testLoadout(), 1.0, 600)
+	ring := store.ScorableItem{ID: 1, Slot: "Finger", Stats: model.StatBlock{MultiAttack: 40}}
+	set.Equipped["Finger"] = []store.ScorableItem{ring}
+
+	// The worn ring contributes positive DPS vs the slot without it.
+	require.Greater(t, set.EquippedInstanceValue("Finger", 0), 0.0)
+}

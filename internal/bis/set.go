@@ -66,6 +66,58 @@ func (s *Set) DPS() float64 {
 	return model.TotalDPSDual(s.restBase(""), s.Main, s.offWeapon(), s.Arts, s.AutoMult, s.FightLen)
 }
 
+// slotDPS computes full-set DPS with `slot`'s equipped items REPLACED by `items`,
+// every other slot held fixed. For the off-hand slot the off-hand weapon is
+// re-derived from `items`; otherwise the current off-hand is kept.
+func (s *Set) slotDPS(slot string, items []store.ScorableItem) float64 {
+	rb := s.restBase(slot)
+	for _, it := range items {
+		rb = rb.Add(it.Stats)
+	}
+	off := s.offWeapon()
+	if slot == offHandSlot {
+		off = model.Weapon{}
+		for _, it := range items {
+			if it.IsWeapon() {
+				off = model.Weapon{AvgDamage: it.WeaponAvg, MinDamage: it.WeaponMin, MaxDamage: it.WeaponMax, DelaySecs: it.WeaponDelay}
+				break
+			}
+		}
+	}
+	return model.TotalDPSDual(rb, s.Main, off, s.Arts, s.AutoMult, s.FightLen)
+}
+
+// ReplaceInstanceDelta is the ΔDPS of swapping the worn item at index `idx` in
+// `slot` for candidate `c`, holding every other equipped item — including the
+// slot's other instance(s) — fixed. idx == -1 fills an empty position (appends c,
+// replacing nothing).
+func (s *Set) ReplaceInstanceDelta(slot string, idx int, c store.ScorableItem) float64 {
+	cur := s.Equipped[slot]
+	swapped := make([]store.ScorableItem, 0, len(cur)+1)
+	for i, it := range cur {
+		if i == idx {
+			continue
+		}
+		swapped = append(swapped, it)
+	}
+	swapped = append(swapped, c)
+	return s.slotDPS(slot, swapped) - s.DPS()
+}
+
+// EquippedInstanceValue is the marginal slot-DPS contribution of the worn item at
+// index `idx` in `slot`: current DPS minus DPS with that item removed (others fixed).
+func (s *Set) EquippedInstanceValue(slot string, idx int) float64 {
+	cur := s.Equipped[slot]
+	without := make([]store.ScorableItem, 0, len(cur))
+	for i, it := range cur {
+		if i == idx {
+			continue
+		}
+		without = append(without, it)
+	}
+	return s.DPS() - s.slotDPS(slot, without)
+}
+
 // CandidateDelta is the in-context ΔDPS of putting a candidate in a slot, given
 // the rest of the (otherwise-fixed) set with that slot emptied.
 func (s *Set) CandidateDelta(slot string, c store.ScorableItem) float64 {
