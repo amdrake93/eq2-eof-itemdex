@@ -20,8 +20,3 @@ go.work.sum
 # Resume-state file from interrupted multi-session pulls — never commit
 /data/.census_next_offset
 /bis.db
-
-# Generated per-character outputs — local only (config.toml is committed)
-/characters/*/loadout.toml
-/characters/*/upgrade-report.md
-/characters/*/bis-report.md

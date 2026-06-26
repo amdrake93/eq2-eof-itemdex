@@ -1,0 +1,577 @@
+character_name = "Biffels (Wuoshi)"
+last_update = 1.782445102927068e+09
+
+[[slots]]
+  catalog_slot = "Primary"
+  char_slot = "primary"
+  item_id = 1606057721
+  name = "Soulfire Sabre"
+  optimizable = false
+  weapon_min = 80.0
+  weapon_max = 239.0
+  weapon_delay = 4.0
+  [slots.stats]
+    Haste = 0.0
+    MultiAttack = 6.3
+    CritChance = 2.4
+    Potency = 3.7
+    DPSMod = 0.0
+    Reuse = 0.0
+    Flurry = 0.0
+    AbilityMod = 98.0
+    CastSpeed = 0.0
+    RecoverySpeed = 0.0
+    MainStat = 46.0
+    PotencyBonus = 0.0
+    CritBonus = 0.0
+    HasteEffect = 0.0
+
+[[slots]]
+  catalog_slot = "Secondary"
+  char_slot = "secondary"
+  item_id = 3806934134
+  name = "Shock"
+  optimizable = true
+  weapon_min = 65.0
+  weapon_max = 194.0
+  weapon_delay = 4.0
+  [slots.stats]
+    Haste = 0.0
+    MultiAttack = 5.0
+    CritChance = 1.9
+    Potency = 2.7
+    DPSMod = 0.0
+    Reuse = 0.0
+    Flurry = 0.0
+    AbilityMod = 64.0
+    CastSpeed = 0.0
+    RecoverySpeed = 0.0
+    MainStat = 40.0
+    PotencyBonus = 0.0
+    CritBonus = 0.0
+    HasteEffect = 0.0
+
+[[slots]]
+  catalog_slot = "Head"
+  char_slot = "head"
+  item_id = 3016698706
+  name = "Cap of the Tempest"
+  optimizable = true
+  weapon_min = 0.0
+  weapon_max = 0.0
+  weapon_delay = 0.0
+  [slots.stats]
+    Haste = 0.0
+    MultiAttack = 0.0
+    CritChance = 1.9
+    Potency = 2.7
+    DPSMod = 0.0
+    Reuse = 0.0
+    Flurry = 0.0
+    AbilityMod = 64.0
+    CastSpeed = 1.7
+    RecoverySpeed = 0.0
+    MainStat = 40.0
+    PotencyBonus = 0.0
+    CritBonus = 0.0
+    HasteEffect = 0.0
+
+[[slots]]
+  catalog_slot = "Chest"
+  char_slot = "chest"
+  item_id = 2190964631
+  name = "Shiverback-hide Tunic"
+  optimizable = true
+  weapon_min = 0.0
+  weapon_max = 0.0
+  weapon_delay = 0.0
+  [slots.stats]
+    Haste = 4.3
+    MultiAttack = 0.0
+    CritChance = 1.9
+    Potency = 2.7
+    DPSMod = 0.0
+    Reuse = 0.0
+    Flurry = 0.0
+    AbilityMod = 64.0
+    CastSpeed = 0.0
+    RecoverySpeed = 0.0
+    MainStat = 40.0
+    PotencyBonus = 0.0
+    CritBonus = 0.0
+    HasteEffect = 0.0
+
+[[slots]]
+  catalog_slot = "Shoulders"
+  char_slot = "shoulders"
+  item_id = 1222870654
+  name = "Mangled Gossamer Sleeves"
+  optimizable = true
+  weapon_min = 0.0
+  weapon_max = 0.0
+  weapon_delay = 0.0
+  [slots.stats]
+    Haste = 0.0
+    MultiAttack = 0.0
+    CritChance = 1.8
+    Potency = 2.6
+    DPSMod = 0.0
+    Reuse = 1.9
+    Flurry = 0.0
+    AbilityMod = 62.0
+    CastSpeed = 0.0
+    RecoverySpeed = 0.0
+    MainStat = 39.0
+    PotencyBonus = 0.0
+    CritBonus = 0.0
+    HasteEffect = 0.0
+
+[[slots]]
+  catalog_slot = "Forearms"
+  char_slot = "forearms"
+  item_id = 1388313683
+  name = "Crested Lupine Bands"
+  optimizable = true
+  weapon_min = 0.0
+  weapon_max = 0.0
+  weapon_delay = 0.0
+  [slots.stats]
+    Haste = 4.0
+    MultiAttack = 0.0
+    CritChance = 1.8
+    Potency = 2.6
+    DPSMod = 0.0
+    Reuse = 1.9
+    Flurry = 0.0
+    AbilityMod = 0.0
+    CastSpeed = 0.0
+    RecoverySpeed = 0.0
+    MainStat = 39.0
+    PotencyBonus = 0.0
+    CritBonus = 0.0
+    HasteEffect = 0.0
+
+[[slots]]
+  catalog_slot = "Hands"
+  char_slot = "hands"
+  item_id = 2731982702
+  name = "Adrenaline Mitts"
+  optimizable = true
+  weapon_min = 0.0
+  weapon_max = 0.0
+  weapon_delay = 0.0
+  [slots.stats]
+    Haste = 4.3
+    MultiAttack = 0.0
+    CritChance = 1.9
+    Potency = 2.7
+    DPSMod = 0.0
+    Reuse = 0.0
+    Flurry = 0.0
+    AbilityMod = 64.0
+    CastSpeed = 0.0
+    RecoverySpeed = 0.0
+    MainStat = 40.0
+    PotencyBonus = 0.0
+    CritBonus = 0.0
+    HasteEffect = 0.0
+
+[[slots]]
+  catalog_slot = "Legs"
+  char_slot = "legs"
+  item_id = 816354757
+  name = "Ripped Gossamer Leggings"
+  optimizable = true
+  weapon_min = 0.0
+  weapon_max = 0.0
+  weapon_delay = 0.0
+  [slots.stats]
+    Haste = 0.0
+    MultiAttack = 0.0
+    CritChance = 1.8
+    Potency = 2.6
+    DPSMod = 0.0
+    Reuse = 1.9
+    Flurry = 0.0
+    AbilityMod = 62.0
+    CastSpeed = 0.0
+    RecoverySpeed = 0.0
+    MainStat = 39.0
+    PotencyBonus = 0.0
+    CritBonus = 0.0
+    HasteEffect = 0.0
+
+[[slots]]
+  catalog_slot = "Feet"
+  char_slot = "feet"
+  item_id = 481234302
+  name = "Boots of Trepidation"
+  optimizable = true
+  weapon_min = 0.0
+  weapon_max = 0.0
+  weapon_delay = 0.0
+  [slots.stats]
+    Haste = 0.0
+    MultiAttack = 0.0
+    CritChance = 1.8
+    Potency = 2.6
+    DPSMod = 8.1
+    Reuse = 0.0
+    Flurry = 0.0
+    AbilityMod = 62.0
+    CastSpeed = 0.0
+    RecoverySpeed = 0.0
+    MainStat = 39.0
+    PotencyBonus = 0.0
+    CritBonus = 0.0
+    HasteEffect = 0.0
+
+[[slots]]
+  catalog_slot = "Finger"
+  char_slot = "left_ring"
+  item_id = 2721982512
+  name = "Bloodfang Ring"
+  optimizable = true
+  weapon_min = 0.0
+  weapon_max = 0.0
+  weapon_delay = 0.0
+  [slots.stats]
+    Haste = 0.0
+    MultiAttack = 0.0
+    CritChance = 1.8
+    Potency = 2.6
+    DPSMod = 0.0
+    Reuse = 1.9
+    Flurry = 0.0
+    AbilityMod = 62.0
+    CastSpeed = 0.0
+    RecoverySpeed = 0.0
+    MainStat = 39.0
+    PotencyBonus = 0.0
+    CritBonus = 0.0
+    HasteEffect = 0.0
+
+[[slots]]
+  catalog_slot = "Finger"
+  char_slot = "right_ring"
+  item_id = 556654298
+  name = "Mistmoore Sage's Signet"
+  optimizable = true
+  weapon_min = 0.0
+  weapon_max = 0.0
+  weapon_delay = 0.0
+  [slots.stats]
+    Haste = 0.0
+    MultiAttack = 0.0
+    CritChance = 1.8
+    Potency = 2.6
+    DPSMod = 0.0
+    Reuse = 1.9
+    Flurry = 0.0
+    AbilityMod = 62.0
+    CastSpeed = 0.0
+    RecoverySpeed = 0.0
+    MainStat = 39.0
+    PotencyBonus = 0.0
+    CritBonus = 0.0
+    HasteEffect = 0.0
+
+[[slots]]
+  catalog_slot = "Ear"
+  char_slot = "ears"
+  item_id = 2136491350
+  name = "Soul Snatcher Earrings"
+  optimizable = true
+  weapon_min = 0.0
+  weapon_max = 0.0
+  weapon_delay = 0.0
+  [slots.stats]
+    Haste = 0.0
+    MultiAttack = 0.0
+    CritChance = 1.8
+    Potency = 2.6
+    DPSMod = 0.0
+    Reuse = 1.9
+    Flurry = 0.0
+    AbilityMod = 62.0
+    CastSpeed = 0.0
+    RecoverySpeed = 0.0
+    MainStat = 39.0
+    PotencyBonus = 0.0
+    CritBonus = 0.0
+    HasteEffect = 0.0
+
+[[slots]]
+  catalog_slot = "Ear"
+  char_slot = "ears2"
+  item_id = 1124205607
+  name = "Atramentous Dangle"
+  optimizable = true
+  weapon_min = 0.0
+  weapon_max = 0.0
+  weapon_delay = 0.0
+  [slots.stats]
+    Haste = 0.0
+    MultiAttack = 0.0
+    CritChance = 1.9
+    Potency = 2.7
+    DPSMod = 0.0
+    Reuse = 2.0
+    Flurry = 0.0
+    AbilityMod = 64.0
+    CastSpeed = 0.0
+    RecoverySpeed = 0.0
+    MainStat = 40.0
+    PotencyBonus = 0.0
+    CritBonus = 0.0
+    HasteEffect = 0.0
+
+[[slots]]
+  catalog_slot = "Neck"
+  char_slot = "neck"
+  item_id = 2982466857
+  name = "Broken Gossamer Collar"
+  optimizable = true
+  weapon_min = 0.0
+  weapon_max = 0.0
+  weapon_delay = 0.0
+  [slots.stats]
+    Haste = 0.0
+    MultiAttack = 0.0
+    CritChance = 1.8
+    Potency = 2.6
+    DPSMod = 0.0
+    Reuse = 1.9
+    Flurry = 0.0
+    AbilityMod = 62.0
+    CastSpeed = 0.0
+    RecoverySpeed = 0.0
+    MainStat = 39.0
+    PotencyBonus = 0.0
+    CritBonus = 0.0
+    HasteEffect = 0.0
+
+[[slots]]
+  catalog_slot = "Wrist"
+  char_slot = "left_wrist"
+  item_id = 1012473856
+  name = "Bangle of Fright"
+  optimizable = true
+  weapon_min = 0.0
+  weapon_max = 0.0
+  weapon_delay = 0.0
+  [slots.stats]
+    Haste = 0.0
+    MultiAttack = 0.0
+    CritChance = 1.9
+    Potency = 2.7
+    DPSMod = 8.4
+    Reuse = 0.0
+    Flurry = 0.0
+    AbilityMod = 64.0
+    CastSpeed = 0.0
+    RecoverySpeed = 0.0
+    MainStat = 40.0
+    PotencyBonus = 0.0
+    CritBonus = 0.0
+    HasteEffect = 0.0
+
+[[slots]]
+  catalog_slot = "Wrist"
+  char_slot = "right_wrist"
+  item_id = 1967575301
+  name = "Bracelet of Haunted Visions"
+  optimizable = true
+  weapon_min = 0.0
+  weapon_max = 0.0
+  weapon_delay = 0.0
+  [slots.stats]
+    Haste = 0.0
+    MultiAttack = 4.8
+    CritChance = 1.8
+    Potency = 2.6
+    DPSMod = 0.0
+    Reuse = 0.0
+    Flurry = 2.1
+    AbilityMod = 0.0
+    CastSpeed = 0.0
+    RecoverySpeed = 0.0
+    MainStat = 39.0
+    PotencyBonus = 0.0
+    CritBonus = 0.0
+    HasteEffect = 0.0
+
+[[slots]]
+  catalog_slot = "Ranged"
+  char_slot = "ranged"
+  item_id = 1654646071
+  name = "Star Darkened Longbow"
+  optimizable = false
+  weapon_min = 203.0
+  weapon_max = 609.0
+  weapon_delay = 9.0
+  [slots.stats]
+    Haste = 4.6
+    MultiAttack = 0.0
+    CritChance = 2.0
+    Potency = 2.8
+    DPSMod = 0.0
+    Reuse = 2.1
+    Flurry = 0.0
+    AbilityMod = 0.0
+    CastSpeed = 0.0
+    RecoverySpeed = 0.0
+    MainStat = 41.0
+    PotencyBonus = 0.0
+    CritBonus = 0.0
+    HasteEffect = 0.0
+
+[[slots]]
+  catalog_slot = ""
+  char_slot = "ammo"
+  item_id = 4181977189
+  name = "Belted Leather Quiver"
+  optimizable = false
+  weapon_min = 0.0
+  weapon_max = 0.0
+  weapon_delay = 0.0
+  [slots.stats]
+    Haste = 0.0
+    MultiAttack = 0.0
+    CritChance = 0.0
+    Potency = 0.0
+    DPSMod = 0.0
+    Reuse = 0.0
+    Flurry = 0.0
+    AbilityMod = 0.0
+    CastSpeed = 0.0
+    RecoverySpeed = 0.0
+    MainStat = 0.0
+    PotencyBonus = 0.0
+    CritBonus = 0.0
+    HasteEffect = 0.0
+
+[[slots]]
+  catalog_slot = "Waist"
+  char_slot = "waist"
+  item_id = 3319543542
+  name = "Girdle of Gore"
+  optimizable = true
+  weapon_min = 0.0
+  weapon_max = 0.0
+  weapon_delay = 0.0
+  [slots.stats]
+    Haste = 0.0
+    MultiAttack = 5.1
+    CritChance = 1.9
+    Potency = 2.7
+    DPSMod = 0.0
+    Reuse = 0.0
+    Flurry = 0.0
+    AbilityMod = 68.0
+    CastSpeed = 0.0
+    RecoverySpeed = 0.0
+    MainStat = 40.0
+    PotencyBonus = 0.0
+    CritBonus = 0.0
+    HasteEffect = 0.0
+
+[[slots]]
+  catalog_slot = "Cloak"
+  char_slot = "cloak"
+  item_id = 264598753
+  name = "Cloak of Flames"
+  optimizable = true
+  weapon_min = 0.0
+  weapon_max = 0.0
+  weapon_delay = 0.0
+  [slots.stats]
+    Haste = 0.0
+    MultiAttack = 0.0
+    CritChance = 1.9
+    Potency = 2.7
+    DPSMod = 8.4
+    Reuse = 0.0
+    Flurry = 0.0
+    AbilityMod = 64.0
+    CastSpeed = 0.0
+    RecoverySpeed = 0.0
+    MainStat = 40.0
+    PotencyBonus = 0.0
+    CritBonus = 0.0
+    HasteEffect = 25.0
+
+[[slots]]
+  catalog_slot = "Charm"
+  char_slot = "activate1"
+  item_id = 2609164477
+  name = "Shard of Fear"
+  optimizable = false
+  weapon_min = 0.0
+  weapon_max = 0.0
+  weapon_delay = 0.0
+  [slots.stats]
+    Haste = 0.0
+    MultiAttack = 0.0
+    CritChance = 1.9
+    Potency = 2.7
+    DPSMod = 0.0
+    Reuse = 0.0
+    Flurry = 0.0
+    AbilityMod = 68.0
+    CastSpeed = 1.7
+    RecoverySpeed = 0.0
+    MainStat = 40.0
+    PotencyBonus = 0.0
+    CritBonus = 0.0
+    HasteEffect = 0.0
+
+[[slots]]
+  catalog_slot = "Charm"
+  char_slot = "activate2"
+  item_id = 4135486725
+  name = "Arachibutyrophobia"
+  optimizable = false
+  weapon_min = 0.0
+  weapon_max = 0.0
+  weapon_delay = 0.0
+  [slots.stats]
+    Haste = 0.0
+    MultiAttack = 0.0
+    CritChance = 1.9
+    Potency = 2.7
+    DPSMod = 0.0
+    Reuse = 2.0
+    Flurry = 0.0
+    AbilityMod = 0.0
+    CastSpeed = 0.0
+    RecoverySpeed = 0.0
+    MainStat = 40.0
+    PotencyBonus = 0.0
+    CritBonus = 0.0
+    HasteEffect = 0.0
+
+[[slots]]
+  catalog_slot = "Textures"
+  char_slot = "event_slot"
+  item_id = 3649577502
+  name = "Robust Plume of Inspired Jubilation"
+  optimizable = false
+  weapon_min = 0.0
+  weapon_max = 0.0
+  weapon_delay = 0.0
+  [slots.stats]
+    Haste = 0.0
+    MultiAttack = 0.0
+    CritChance = 0.0
+    Potency = 0.0
+    DPSMod = 0.0
+    Reuse = 0.0
+    Flurry = 0.0
+    AbilityMod = 0.0
+    CastSpeed = 0.0
+    RecoverySpeed = 0.0
+    MainStat = 0.0
+    PotencyBonus = 0.0
+    CritBonus = 0.0
+    HasteEffect = 0.0
