@@ -76,3 +76,13 @@ func TestRenderProgression(t *testing.T) {
 	best := strings.Index(chest, "Avatar Robe")
 	require.True(t, pre >= 0 && raid > pre && best > raid, "progression order pre-raid → raid → best")
 }
+
+func TestEQ2ULink(t *testing.T) {
+	require.Equal(t,
+		"[Cloak of Flames](https://u.eq2wire.com/item/264598753)",
+		EQ2ULink("Cloak of Flames", 264598753))
+
+	// No catalog id -> plain text, no link.
+	require.Equal(t, "Empty", EQ2ULink("Empty", 0))
+	require.Equal(t, "Mystery", EQ2ULink("Mystery", -1))
+}

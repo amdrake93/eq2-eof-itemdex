@@ -37,12 +37,17 @@ func rarityTag(it store.ScorableItem) string {
 	return it.Tier
 }
 
-func writeScored(b *strings.Builder, s ScoredItem) {
-	fmt.Fprintf(b, "- **%s** [%s] — +%.1f DPS", s.Item.Name, rarityTag(s.Item), s.Delta)
-	if s.Item.GameLink != "" {
-		fmt.Fprintf(b, " ([item](%s))", s.Item.GameLink)
+// EQ2ULink renders an item name as a markdown link to its EQ2U page. Items
+// without a catalog id (id <= 0) render as plain text.
+func EQ2ULink(name string, id int) string {
+	if id <= 0 {
+		return name
 	}
-	b.WriteString("\n")
+	return fmt.Sprintf("[%s](https://u.eq2wire.com/item/%d)", name, id)
+}
+
+func writeScored(b *strings.Builder, s ScoredItem) {
+	fmt.Fprintf(b, "- **%s** [%s] — +%.1f DPS\n", EQ2ULink(s.Item.Name, s.Item.ID), rarityTag(s.Item), s.Delta)
 	for i, term := range s.Terms {
 		if i >= 4 {
 			break
