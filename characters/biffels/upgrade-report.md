@@ -30,7 +30,7 @@ _last_update: 1782445103_
 
 | Slot | Wearing | Best upgrade | Alternative |
 |------|---------|--------------|-------------|
-| Secondary | [Shock](https://u.eq2wire.com/item/3806934134) (508) | **[Wrath](https://u.eq2wire.com/item/3064748413) +115 (+1.9%)** | [Blade of the Swarm](https://u.eq2wire.com/item/1661709365) +108 (+1.8%) |
+| Secondary | [Shock](https://u.eq2wire.com/item/3806934134) (508) | **[Soulfire Gladius](https://u.eq2wire.com/item/485108314) +165 (+2.7%)** | [Wrath](https://u.eq2wire.com/item/3064748413) +115 (+1.9%) |
 | Forearms | [Crested Lupine Bands](https://u.eq2wire.com/item/1388313683) (187) | **[Evoker's Spellbound Weave Cuffs](https://u.eq2wire.com/item/2961809192) +99 (+1.6%)** | [Insulated Sleeves of Focus](https://u.eq2wire.com/item/1357725342) +77 (+1.3%) |
 | Wrist | [Bracelet of Haunted Visions](https://u.eq2wire.com/item/1967575301) (192) | **[Bangle of Polished Marble](https://u.eq2wire.com/item/2870641579) +82 (+1.3%)** | [Werewolf Hide Cuff](https://u.eq2wire.com/item/2428672600) +75 (+1.2%) |
 | Feet | [Boots of Trepidation](https://u.eq2wire.com/item/481234302) (217) | **[Reinforced Very Light Dwarven Work Boots](https://u.eq2wire.com/item/379071687) +57 (+0.9%)** | [Boots of the Cunning](https://u.eq2wire.com/item/672376229) +39 (+0.6%) |
@@ -53,8 +53,8 @@ _last_update: 1782445103_
 | Slot | Wearing | Best upgrade | Alternative |
 |------|---------|--------------|-------------|
 | Wrist | [Bracelet of Haunted Visions](https://u.eq2wire.com/item/1967575301) (192) | **[Bracelet of the Chime](https://u.eq2wire.com/item/1934029673) +172 (+2.8%)** | [Bangle of Polished Marble](https://u.eq2wire.com/item/2870641579) +82 (+1.3%) |
+| Secondary | [Shock](https://u.eq2wire.com/item/3806934134) (508) | **[Soulfire Gladius](https://u.eq2wire.com/item/485108314) +165 (+2.7%)** | [Wrath](https://u.eq2wire.com/item/3064748413) +115 (+1.9%) |
 | Wrist | [Bangle of Fright](https://u.eq2wire.com/item/1012473856) (230) | **[Bracelet of the Chime](https://u.eq2wire.com/item/1934029673) +138 (+2.3%)** | [Bangle of Polished Marble](https://u.eq2wire.com/item/2870641579) +50 (+0.8%) |
-| Secondary | [Shock](https://u.eq2wire.com/item/3806934134) (508) | **[Wrath](https://u.eq2wire.com/item/3064748413) +115 (+1.9%)** | [Blade of the Swarm](https://u.eq2wire.com/item/1661709365) +108 (+1.8%) |
 | Forearms | [Crested Lupine Bands](https://u.eq2wire.com/item/1388313683) (187) | **[Evoker's Spellbound Weave Cuffs](https://u.eq2wire.com/item/2961809192) +99 (+1.6%)** | [Insulated Sleeves of Focus](https://u.eq2wire.com/item/1357725342) +77 (+1.3%) |
 | Shoulders | [Mangled Gossamer Sleeves](https://u.eq2wire.com/item/1222870654) (258) | **[Shoulderpads of the Unkempt Prophet](https://u.eq2wire.com/item/2539402469) +97 (+1.6%)** | [Mantle of Secrets](https://u.eq2wire.com/item/560837353) +41 (+0.7%) |
 | Waist | [Girdle of Gore](https://u.eq2wire.com/item/3319543542) (241) | **[Belt of Manifestations](https://u.eq2wire.com/item/2791539981) +92 (+1.5%)** | [Belt of Purity](https://u.eq2wire.com/item/1772355253) +35 (+0.6%) |
@@ -72,5 +72,5 @@ _last_update: 1782445103_
 
 ## Seeded optimization
 
-Optimizing from the imported set (fixed slots locked): **6862 DPS** (+723 over current).
+Optimizing from the imported set (fixed slots locked): **6920 DPS** (+781 over current).
 
