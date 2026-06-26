@@ -9,29 +9,6 @@ import (
 	"github.com/amdrake93/eq2-eof-itemdex/internal/store"
 )
 
-func TestUpgradeDeltaIsSwapGainNotStandalone(t *testing.T) {
-	lo := store.Loadout{Main: model.Weapon{AvgDamage: 160, DelaySecs: 4}}
-	set := NewSet(model.StatBlock{}, lo, 1.0, 600)
-	equipped := store.ScorableItem{ID: 1, Name: "Worn", Slot: "Head", Stats: model.StatBlock{MultiAttack: 10}}
-	set.Equipped["Head"] = []store.ScorableItem{equipped}
-
-	same := store.ScorableItem{ID: 2, Name: "Same", Slot: "Head", Stats: model.StatBlock{MultiAttack: 10}}
-	better := store.ScorableItem{ID: 3, Name: "Better", Slot: "Head", Stats: model.StatBlock{MultiAttack: 20}}
-
-	// CandidateDelta is standalone-vs-empty: positive even for an equal item.
-	require.Greater(t, set.CandidateDelta("Head", same), 0.0)
-
-	// UpgradeDelta is the swap gain: ~0 for an equal item, and strictly less than the
-	// equal item's inflated standalone CandidateDelta.
-	require.InDelta(t, 0.0, set.UpgradeDelta("Head", same), 1e-9)
-	require.Less(t, set.UpgradeDelta("Head", same), set.CandidateDelta("Head", same))
-
-	// A genuinely better item shows a positive — but still modest — swap gain.
-	up := set.UpgradeDelta("Head", better)
-	require.Greater(t, up, 0.0)
-	require.Less(t, up, set.CandidateDelta("Head", better))
-}
-
 func TestOptimizableSlot(t *testing.T) {
 	for _, s := range []string{"Head", "Chest", "Finger", "Ear", "Wrist", "Cloak", "Waist", "Secondary"} {
 		require.True(t, OptimizableSlot(s), s)
@@ -108,31 +85,77 @@ func TestTwoEffectHasteItemsDoNotStack(t *testing.T) {
 func TestRankSlotUpgrades(t *testing.T) {
 	lo := store.Loadout{Main: model.Weapon{AvgDamage: 160, MinDamage: 100, MaxDamage: 220, DelaySecs: 4}}
 	set := NewSet(model.StatBlock{}, lo, 1.0, 600)
-	set.Equipped["Head"] = []store.ScorableItem{{ID: 1, Slot: "Head"}}
-	set.Equipped["Hands"] = []store.ScorableItem{{ID: 2, Slot: "Hands"}}
-	optimizable := map[string]bool{"Head": true, "Hands": true}
+	// Finger is a two-capacity slot: one strong ring, one weak ring.
+	set.Equipped["Finger"] = []store.ScorableItem{
+		{ID: 10, Name: "StrongRing", Slot: "Finger", Stats: model.StatBlock{MultiAttack: 40}},
+		{ID: 11, Name: "WeakRing", Slot: "Finger", Stats: model.StatBlock{MultiAttack: 5}},
+	}
+	optimizable := map[string]bool{"Finger": true}
+	// One candidate strong enough to beat BOTH worn rings, so both instances yield
+	// a positive upgrade row.
 	bySlot := map[string][]store.ScorableItem{
-		"Head": {
-			{Name: "BigHead", Tier: "FABLED", Slot: "Head", Stats: model.StatBlock{MultiAttack: 40}},
-			{Name: "MidHead", Tier: "LEGENDARY", Slot: "Head", Stats: model.StatBlock{MultiAttack: 20}},
-		},
-		"Hands": {
-			{Name: "SmallHands", Tier: "LEGENDARY", Slot: "Hands", Stats: model.StatBlock{MultiAttack: 5}},
+		"Finger": {
+			{ID: 20, Name: "BigRing", Tier: "FABLED", Slot: "Finger", Stats: model.StatBlock{MultiAttack: 50}},
 		},
 	}
 
 	got := RankSlotUpgrades(set, bySlot, optimizable, 0)
-	require.Len(t, got, 2)
-	require.Equal(t, "Head", got[0].Slot)
-	require.Equal(t, "BigHead", got[0].Best.Name)
-	require.Equal(t, "FABLED", got[0].Best.Tier)
-	require.NotNil(t, got[0].Alt)
-	require.Equal(t, "MidHead", got[0].Alt.Name)
-	require.Greater(t, got[0].Best.Delta, got[0].Alt.Delta)
-	require.Equal(t, "Hands", got[1].Slot)
-	require.Nil(t, got[1].Alt)
 
-	top1 := RankSlotUpgrades(set, bySlot, optimizable, 1)
-	require.Len(t, top1, 1)
-	require.Equal(t, "Head", top1[0].Slot)
+	// Two-capacity slot -> two instance rows, both labelled "Finger".
+	require.Len(t, got, 2)
+	require.Equal(t, "Finger", got[0].Slot)
+	require.Equal(t, "Finger", got[1].Slot)
+
+	// Rows are ranked by best delta: replacing the WEAK ring ranks first.
+	require.Equal(t, "WeakRing", got[0].EquippedName)
+	require.Equal(t, 11, got[0].EquippedID)
+	require.Greater(t, got[0].EquippedValue, 0.0)
+	require.Equal(t, "BigRing", got[0].Best.Name)
+	require.Equal(t, 20, got[0].Best.ID)
+	require.Greater(t, got[0].Best.Delta, got[1].Best.Delta)
+
+	require.Equal(t, "StrongRing", got[1].EquippedName)
+}
+
+func TestRankSlotUpgradesEmptyPositionRow(t *testing.T) {
+	lo := store.Loadout{Main: model.Weapon{AvgDamage: 160, MinDamage: 100, MaxDamage: 220, DelaySecs: 4}}
+	set := NewSet(model.StatBlock{}, lo, 1.0, 600)
+	// Only ONE ring worn in a two-capacity slot: the second position is empty.
+	set.Equipped["Finger"] = []store.ScorableItem{
+		{ID: 10, Name: "OnlyRing", Slot: "Finger", Stats: model.StatBlock{MultiAttack: 40}},
+	}
+	optimizable := map[string]bool{"Finger": true}
+	// NewRing beats OnlyRing, so the worn-item row is also a positive upgrade —
+	// giving two rows total: the OnlyRing row and the Empty row.
+	bySlot := map[string][]store.ScorableItem{
+		"Finger": {{ID: 20, Name: "NewRing", Slot: "Finger", Stats: model.StatBlock{MultiAttack: 50}}},
+	}
+
+	got := RankSlotUpgrades(set, bySlot, optimizable, 0)
+	require.Len(t, got, 2)
+
+	var foundEmpty bool
+	for _, su := range got {
+		if su.EquippedName == "Empty" {
+			foundEmpty = true
+			require.Equal(t, 0, su.EquippedID)
+			require.Equal(t, 0.0, su.EquippedValue)
+		}
+	}
+	require.True(t, foundEmpty, "an unfilled position should produce an Empty row")
+}
+
+func TestRankSlotUpgradesTopNCapsRows(t *testing.T) {
+	lo := store.Loadout{Main: model.Weapon{AvgDamage: 160, MinDamage: 100, MaxDamage: 220, DelaySecs: 4}}
+	set := NewSet(model.StatBlock{}, lo, 1.0, 600)
+	set.Equipped["Finger"] = []store.ScorableItem{
+		{ID: 10, Name: "WeakRing", Slot: "Finger", Stats: model.StatBlock{MultiAttack: 5}},
+		{ID: 11, Name: "WeakRing2", Slot: "Finger", Stats: model.StatBlock{MultiAttack: 5}},
+	}
+	optimizable := map[string]bool{"Finger": true}
+	bySlot := map[string][]store.ScorableItem{
+		"Finger": {{ID: 20, Name: "BigRing", Slot: "Finger", Stats: model.StatBlock{MultiAttack: 40}}},
+	}
+
+	require.Len(t, RankSlotUpgrades(set, bySlot, optimizable, 1), 1)
 }
