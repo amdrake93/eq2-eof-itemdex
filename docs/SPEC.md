@@ -78,7 +78,7 @@ Census API
 | `internal/classify` | EoF and KoS expansion-window detection. Defines the Varsoon world ID (614), the EoF discovery window (2023-04-11 – 2023-08-08), and the KoS window immediately prior. `IsEoF` / `IsKoS` are the client-side per-item gates applied after server-side pre-filtering. |
 | `internal/source` | CSV cache gatekeeper. `Load` serves items from the category CSVs when they exist and `--refresh` is false; otherwise calls `FreshPull`. `FreshPull` merges any prior partial cache, calls `extract.AllEoFFrom`, splits output by catalog category, and writes `weapons.csv`, `armor.csv`, `jewelry-charms.csv`, and `maxlife.csv`. |
 | `internal/catalog` | CSV schema and item classification. `WriteCSV` / `ReadCSV` round-trip items in wide format (fixed columns + the union of all stat keys). `CategoryForSlot` maps slot names to the three catalog categories. `ArmorType` maps Census `typeinfo.skilltype` values to Cloth / Leather / Chain / Plate labels. |
-| `internal/store` | SQLite schema and queries. Five tables: `items`, `item_stats`, `combat_arts`, `combat_art_components`, `scores`. Key operations: `LoadGear`, `LoadCombatArts`, `LoadLoadout` (highest-rank CAs; the main-hand is no longer loaded as a fixed Soulfire — it is optimized as a normal slot, §7), `LoadScorableItems` (Assassin items with stat blocks resolved, `ORDER BY id`), `WriteScores`. |
+| `internal/store` | SQLite schema and queries. Five tables: `items`, `item_stats`, `combat_arts`, `combat_art_components`, `scores`. Key operations: `LoadGear`, `LoadCombatArts`, `LoadLoadout` (highest-rank CAs), `LoadScorableItems` (Assassin items with stat blocks resolved, `ORDER BY id`), `WriteScores`. |
 | `internal/spell` | Combat-art pull, parse, and manual supplement. `AssassinCombatArts` queries the Census `spell` collection for Assassin Expert-tier arts at level ≤ 70, then `FilterCombatArts` drops non-damaging and beneficial entries. `ParseDamage` and `ParseComponents` extract damage ranges and component kinds (DirectHit, DoT, Proc) from Census `effect_list` text. `ManualArts` returns two arts learned below the level-57 census floor, recovered via tooltip calibration. |
 | `internal/model` | DPS arithmetic. `AutoDPS` (per-weapon sustained swing DPS), `AutoDPSDual` (dual-wield with ×1.33 off-hand delay penalty), `CADPS` (fight-length-smoothed combat-art DPS from rotation timeline), `TotalDPSDual` (auto + CA combined). `DeriveWeights` finite-differences marginal DPS per +1 to each stat. |
 | `internal/bis` | Set builder, ranker, and renderer. `BuildSet` runs coordinate ascent (up to 12 passes) to fill each equipment slot with the DPS-maximizing pick given the current full-set context. `SlotCandidates` builds per-slot candidate pools (both weapon slots from the class weapon config, §6). `ConvergedWeights` derives stat weights at the converged set. `Render` produces the markdown report. |
@@ -321,7 +321,7 @@ The top-level `Config` struct has four sections:
 
 Avatar gear is defined by `IsAvatar`: `Tier == "MYTHICAL"` and `Name` does not start with `"Soulfire"`. Hunter's gear is defined by `IsHunters`: `Name` contains `"Hunter's"`. `Curated` is a hand-maintained map in `exclusions.go` for items that are discoverable on Varsoon but practically inaccessible; it is currently empty.
 
-The main-hand (`Primary`) is a normal optimized weapon slot across all tiers (§7); it is no longer pinned to Soulfire. Soulfire stays an ordinary candidate — `IsAvatar`'s `Name`-starts-with-`"Soulfire"` carve-out keeps the epic out of *avatar* classification so it remains selectable in the non-avatar (`RAID`) tier.
+The main-hand (`Primary`) is an optimized weapon slot like any other (§7), subject to the same tier filters as every slot.
 
 ## 7. BiS Engine
 
@@ -337,7 +337,7 @@ The main-hand (`Primary`) is a normal optimized weapon slot across all tiers (§
 | `FightLen` | `float64` | Target fight length in seconds (rotation smoothing window). |
 | `Equipped` | `map[string][]store.ScorableItem` | Currently equipped items per Census slot. Multi-capacity slots hold more than one item (see below). Both weapons live here too: the main-hand in `Equipped["Primary"]`, the off-hand in `Equipped["Secondary"]`. |
 
-There is **no fixed `Main` field** — the main-hand weapon is **derived** from `Equipped["Primary"]` by `mainWeapon()`, exactly mirroring how `offWeapon()` derives the off-hand from `Equipped["Secondary"]`. This makes the main-hand a normal slot: its stat line flows through `restBase` like any other item, and its weapon damage/delay drives the main-hand auto-attack. (Previously the main-hand was a fixed Soulfire field, never optimized.)
+The main-hand weapon is **derived** from `Equipped["Primary"]` by `mainWeapon()`, exactly mirroring how `offWeapon()` derives the off-hand from `Equipped["Secondary"]`. The main-hand is thus an ordinary slot: its stat line flows through `restBase` like any other item, and its weapon damage/delay drives the main-hand auto-attack.
 
 `Set.DPS()` evaluates the full set's modeled DPS by calling `model.TotalDPSDual` with the complete equipped stat totals, the derived main-hand (`mainWeapon()`), and the derived off-hand (`offWeapon()`).
 
@@ -345,7 +345,7 @@ There is **no fixed `Main` field** — the main-hand weapon is **derived** from 
 
 ### Slot candidates
 
-`SlotCandidates(items, keep, weapons)` builds the per-slot candidate pools passed to `BuildSet`. It groups all items that pass the `keep` predicate by their Census slot, then overrides the **weapon** slots from the class weapon config (`weapons`, §6): the **main-hand** (`Primary`) pool is every weapon whose `WieldStyle` is in the class's allowed `weapon_wield_styles`, and — when the class dual-wields — the **off-hand** (`Secondary`) pool is the same one-handed weapon set. Soulfire is **not** excluded; it is an ordinary weapon candidate (the single-Soulfire reality is enforced by the no-duplicate rule in the optimizer below, not by dropping it from the pool). Both weapon pools are sorted by item id for deterministic ranking (§7 Tiered upgrade report).
+`SlotCandidates(items, keep, weapons)` builds the per-slot candidate pools passed to `BuildSet`. It groups all items that pass the `keep` predicate by their Census slot, then overrides the **weapon** slots from the class weapon config (`weapons`, §6): the **main-hand** (`Primary`) pool is every weapon whose `WieldStyle` is in the class's allowed `weapon_wield_styles`, and — when the class dual-wields — the **off-hand** (`Secondary`) pool is the same one-handed weapon set. A unique weapon the player owns only one of cannot fill both hands at once; that is enforced by the no-duplicate rule in the optimizer below, not by any pool-level exclusion. Both weapon pools are sorted by item id for deterministic ranking (§7 Tiered upgrade report).
 
 ### Imported loadout
 
@@ -416,7 +416,7 @@ Weights are outputs derived from the full model at the converged set — no stat
 
 `ConvergedWeights(set)` derives weights at the converged full-set baseline (with the converged off-hand weapon) for use in the report's explainable breakdowns.
 
-`BuildSlotReports` produces one `SlotReport` per slot, each carrying the converged pick (`Chosen`) and the top-N ranked alternatives (`Ranked`) by in-context ΔDPS via `SlotCandidatesScored`. The Primary main-hand is now a normal ranked slot (no longer excluded and prepended as a fixed entry — `withFixedPrimary` is removed).
+`BuildSlotReports` produces one `SlotReport` per slot, each carrying the converged pick (`Chosen`) and the top-N ranked alternatives (`Ranked`) by in-context ΔDPS via `SlotCandidatesScored`. The Primary main-hand is a ranked slot like any other.
 
 ## 8. Commands & Operations
 
@@ -780,7 +780,7 @@ The system is currently Assassin-specific in two hardcoded places:
 - **`assassinClassID = 40`** in `internal/spell/pull.go` — the Census `classes.assassin` filter that gates which combat arts are fetched. Moving this to `classes/<class>.toml` as `census_class_id` makes `spell.AssassinCombatArts` (and `builddb`) class-parameterized; no CA pull for another class is possible without it.
 - **`expert`-tier and `assassin`-class validation** in `internal/charconfig` — guards that reject non-Assassin configs. These become per-class config checks once the class field drives the lookup.
 
-`classAutoMult = 2.0` already lives in `classes/assassin.toml` and is the template for the above; `dual_wield` and `weapon_wield_styles` (§6) now also live there, making weapon eligibility and the main/off slot structure class-driven rather than hardcoded — a further step toward agnosticism. **Deferred:** the two-handed-main-hand path (a 2H pick zeroing out the off-hand slot) is not implemented — only one-handed dual-wield is wired today; a 2H class would need that branch in the candidate-pool builder, the optimizer, and the auto-attack model. See `docs/backlog.md §10` for the full class-intrinsic data plan.
+`classAutoMult = 2.0` already lives in `classes/assassin.toml` and is the template for the above; `dual_wield` and `weapon_wield_styles` (§6) also live there, making weapon eligibility and the main/off slot structure class-driven. **Deferred:** the two-handed-main-hand path (a 2H pick zeroing out the off-hand slot) is not implemented — only one-handed dual-wield is wired today; a 2H class would need that branch in the candidate-pool builder, the optimizer, and the auto-attack model. See `docs/backlog.md §10` for the full class-intrinsic data plan.
 
 Note: the `strength` → `MainStat` mapping (`internal/stats` / Census item stat key) is a **general game encoding** — the Census files all "+N primary attributes" under the `strength` key for all classes; scouts receive AGI point-for-point from it. This is not an Assassin coupling and is not a blocker for class-agnosticism (see §4 and §11).
 
