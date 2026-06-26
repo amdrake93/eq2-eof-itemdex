@@ -17,14 +17,14 @@ _last_update: 1782445103_
 | Waist | [Girdle of Gore](https://u.eq2wire.com/item/3319543542) (241) | **[Spellshield Sash](https://u.eq2wire.com/item/2790044269) +33 (+0.5%)** |  |
 | Head | [Cap of the Tempest](https://u.eq2wire.com/item/3016698706) (210) | **[Halo of the Enlightened](https://u.eq2wire.com/item/2386926777) +21 (+0.3%)** |  |
 | Feet | [Boots of Trepidation](https://u.eq2wire.com/item/481234302) (217) | **[Boots of the Malefic Creator](https://u.eq2wire.com/item/2638513866) +16 (+0.3%)** | [Boots of the Scattered Dusts](https://u.eq2wire.com/item/1476767789) +7 (+0.1%) |
-| Shoulders | [Mangled Gossamer Sleeves](https://u.eq2wire.com/item/1222870654) (258) | **[Kithicor's Nighthunter Shoulderpads](https://u.eq2wire.com/item/1008501946) +10 (+0.2%)** |  |
 | Ear | [Soul Snatcher Earrings](https://u.eq2wire.com/item/2136491350) (258) | **[Atramentous Dangle](https://u.eq2wire.com/item/1124205607) +10 (+0.2%)** | [Mana Commandant Hoop](https://u.eq2wire.com/item/3577823017) +10 (+0.2%) |
+| Shoulders | [Mangled Gossamer Sleeves](https://u.eq2wire.com/item/1222870654) (258) | **[Kithicor's Nighthunter Shoulderpads](https://u.eq2wire.com/item/1008501946) +10 (+0.2%)** |  |
 | Legs | [Ripped Gossamer Leggings](https://u.eq2wire.com/item/816354757) (258) | **[Black Silk Breeches](https://u.eq2wire.com/item/1423378802) +6 (+0.1%)** |  |
 | Secondary | [Shock](https://u.eq2wire.com/item/3806934134) (508) | **[Blood Fire, Burning Essence of Thule](https://u.eq2wire.com/item/1118405699) +1 (+0.0%)** |  |
-| Wrist | [Bangle of Fright](https://u.eq2wire.com/item/1012473856) (230) | — |  |
 | Ear | [Atramentous Dangle](https://u.eq2wire.com/item/1124205607) (269) | — |  |
 | Finger | [Mistmoore Sage's Signet](https://u.eq2wire.com/item/556654298) (258) | — |  |
 | Finger | [Bloodfang Ring](https://u.eq2wire.com/item/2721982512) (258) | — |  |
+| Wrist | [Bangle of Fright](https://u.eq2wire.com/item/1012473856) (230) | — |  |
 
 ### Raid look-out
 
@@ -43,8 +43,8 @@ _last_update: 1782445103_
 | Finger | [Bloodfang Ring](https://u.eq2wire.com/item/2721982512) (258) | **[Band of Enchanted Leaves](https://u.eq2wire.com/item/3388239584) +34 (+0.6%)** | [Knotted Ring](https://u.eq2wire.com/item/1305861754) +31 (+0.5%) |
 | Waist | [Girdle of Gore](https://u.eq2wire.com/item/3319543542) (241) | **[Spellshield Sash](https://u.eq2wire.com/item/2790044269) +33 (+0.5%)** | [Cincture of the Unkempt Master](https://u.eq2wire.com/item/471827522) +5 (+0.1%) |
 | Legs | [Ripped Gossamer Leggings](https://u.eq2wire.com/item/816354757) (258) | **[Natural Grove Leggings](https://u.eq2wire.com/item/2035744216) +31 (+0.5%)** | [Leggings of the Cunning](https://u.eq2wire.com/item/2195972160) +31 (+0.5%) |
-| Shoulders | [Mangled Gossamer Sleeves](https://u.eq2wire.com/item/1222870654) (258) | **[Kithicor's Nighthunter Shoulderpads](https://u.eq2wire.com/item/1008501946) +10 (+0.2%)** |  |
 | Ear | [Soul Snatcher Earrings](https://u.eq2wire.com/item/2136491350) (258) | **[Atramentous Dangle](https://u.eq2wire.com/item/1124205607) +10 (+0.2%)** | [Mana Commandant Hoop](https://u.eq2wire.com/item/3577823017) +10 (+0.2%) |
+| Shoulders | [Mangled Gossamer Sleeves](https://u.eq2wire.com/item/1222870654) (258) | **[Kithicor's Nighthunter Shoulderpads](https://u.eq2wire.com/item/1008501946) +10 (+0.2%)** |  |
 | Neck | [Broken Gossamer Collar](https://u.eq2wire.com/item/2982466857) (258) | **[Necklace of Natural Power](https://u.eq2wire.com/item/4243055992) +6 (+0.1%)** |  |
 | Ear | [Atramentous Dangle](https://u.eq2wire.com/item/1124205607) (269) | — |  |
 

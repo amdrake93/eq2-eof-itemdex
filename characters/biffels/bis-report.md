@@ -88,12 +88,12 @@ BiS: **Cloak of Flames**
 
 BiS: **Atramentous Dangle**, **Mana Commandant Hoop**
 
-- **[Mana Commandant Hoop](https://u.eq2wire.com/item/3577823017)** [LEGENDARY] — +246.7 DPS
+- **[Atramentous Dangle](https://u.eq2wire.com/item/1124205607)** [LEGENDARY] — +246.7 DPS
   - abilitymod 64 × 1.40 = 89.6
   - reuse 2 × 29.92 = 59.8
   - critchance 2 × 23.44 = 44.5
   - potency 3 × 15.78 = 42.6
-- **[Atramentous Dangle](https://u.eq2wire.com/item/1124205607)** [LEGENDARY] — +246.7 DPS
+- **[Mana Commandant Hoop](https://u.eq2wire.com/item/3577823017)** [LEGENDARY] — +246.7 DPS
   - abilitymod 64 × 1.40 = 89.6
   - reuse 2 × 29.92 = 59.8
   - critchance 2 × 23.44 = 44.5
@@ -138,7 +138,7 @@ BiS: **Mistmoore Sage's Signet**, **Bloodfang Ring**
   - reuse 2 × 29.92 = 56.8
   - critchance 2 × 23.44 = 42.2
   - potency 3 × 15.78 = 41.0
-- **[Band of Unbridled Terror](https://u.eq2wire.com/item/1673302454)** [LEGENDARY] — +209.7 DPS
+- **[Band of Haunted Visions](https://u.eq2wire.com/item/1607035013)** [LEGENDARY] — +209.7 DPS
   - abilitymod 64 × 1.40 = 89.6
   - critchance 2 × 23.44 = 44.5
   - potency 3 × 15.78 = 42.6
@@ -168,12 +168,12 @@ BiS: **Fear-encased Armguards**
 
 BiS: **Dirtied Gossamer Gloves**
 
-- **[Dusty Bloodstained Gloves](https://u.eq2wire.com/item/1940273423)** [TREASURED] — +251.6 DPS
+- **[Dirtied Gossamer Gloves](https://u.eq2wire.com/item/43157329)** [TREASURED] — +251.6 DPS
   - abilitymod 62 × 1.40 = 86.8
   - reuse 2 × 29.92 = 56.8
   - critchance 2 × 23.44 = 42.2
   - potency 3 × 15.78 = 41.0
-- **[Dirtied Gossamer Gloves](https://u.eq2wire.com/item/43157329)** [TREASURED] — +251.6 DPS
+- **[Dusty Bloodstained Gloves](https://u.eq2wire.com/item/1940273423)** [TREASURED] — +251.6 DPS
   - abilitymod 62 × 1.40 = 86.8
   - reuse 2 × 29.92 = 56.8
   - critchance 2 × 23.44 = 42.2
@@ -233,12 +233,12 @@ BiS: **Broken Gossamer Collar**
   - reuse 2 × 29.92 = 56.8
   - critchance 2 × 23.44 = 42.2
   - potency 3 × 15.78 = 41.0
-- **[Aphotic Choker](https://u.eq2wire.com/item/3653550815)** [TREASURED] — +192.4 DPS
+- **[Pendant of Devotion](https://u.eq2wire.com/item/2513043499)** [LEGENDARY] — +192.4 DPS
   - abilitymod 62 × 1.40 = 86.8
   - critchance 2 × 23.44 = 42.2
   - potency 3 × 15.78 = 41.0
   - haste 4 × 3.14 = 12.6
-- **[Pendant of Devotion](https://u.eq2wire.com/item/2513043499)** [LEGENDARY] — +192.4 DPS
+- **[Aphotic Choker](https://u.eq2wire.com/item/3653550815)** [TREASURED] — +192.4 DPS
   - abilitymod 62 × 1.40 = 86.8
   - critchance 2 × 23.44 = 42.2
   - potency 3 × 15.78 = 41.0
@@ -293,7 +293,7 @@ BiS: **Kithicor's Nighthunter Shoulderpads**
   - reuse 2 × 29.92 = 59.8
   - critchance 2 × 23.44 = 44.5
   - potency 3 × 15.78 = 42.6
-- **[A'Ntasi's Mantle](https://u.eq2wire.com/item/3642046974)** [LEGENDARY] — +248.7 DPS
+- **[Elementalist's Cowl](https://u.eq2wire.com/item/1000364691)** [LEGENDARY] — +248.7 DPS
   - abilitymod 62 × 1.40 = 86.8
   - reuse 2 × 29.92 = 56.8
   - critchance 2 × 23.44 = 42.2
@@ -375,7 +375,7 @@ BiS: **Severed Werewolf Paw**, **Orb of Teleportation**
   - reuse 2 × 29.82 = 56.7
   - potency 3 × 19.15 = 49.8
   - critchance 2 × 27.30 = 49.1
-- **[Orb of Teleportation](https://u.eq2wire.com/item/2383442430)** [LEGENDARY] — +299.5 DPS
+- **[Orb of Teleportation](https://u.eq2wire.com/item/2383442430)** [LEGENDARY] — +297.0 DPS
   - abilitymod 62 × 1.71 = 106.3
   - reuse 2 × 29.82 = 56.7
   - potency 3 × 19.15 = 49.8
@@ -430,17 +430,17 @@ BiS: **Mistmoore's Cloak**
 
 BiS: **Atramentous Dangle**, **Crystal Gift**
 
-- **[Hemoglobin Drop Earring](https://u.eq2wire.com/item/3837848726)** [TREASURED] — +310.0 DPS
-  - abilitymod 64 × 1.71 = 109.7
-  - reuse 2 × 29.82 = 59.6
-  - critchance 2 × 27.30 = 51.9
-  - potency 3 × 19.15 = 51.7
-- **[Mana Commandant Hoop](https://u.eq2wire.com/item/3577823017)** [LEGENDARY] — +310.0 DPS
-  - abilitymod 64 × 1.71 = 109.7
-  - reuse 2 × 29.82 = 59.6
-  - critchance 2 × 27.30 = 51.9
-  - potency 3 × 19.15 = 51.7
 - **[Atramentous Dangle](https://u.eq2wire.com/item/1124205607)** [LEGENDARY] — +308.1 DPS
+  - abilitymod 64 × 1.71 = 109.7
+  - reuse 2 × 29.82 = 59.6
+  - critchance 2 × 27.30 = 51.9
+  - potency 3 × 19.15 = 51.7
+- **[Hemoglobin Drop Earring](https://u.eq2wire.com/item/3837848726)** [TREASURED] — +308.1 DPS
+  - abilitymod 64 × 1.71 = 109.7
+  - reuse 2 × 29.82 = 59.6
+  - critchance 2 × 27.30 = 51.9
+  - potency 3 × 19.15 = 51.7
+- **[Mana Commandant Hoop](https://u.eq2wire.com/item/3577823017)** [LEGENDARY] — +308.1 DPS
   - abilitymod 64 × 1.71 = 109.7
   - reuse 2 × 29.82 = 59.6
   - critchance 2 × 27.30 = 51.9
@@ -550,12 +550,12 @@ BiS: **Coif of the Cunning**
 
 BiS: **Natural Grove Leggings**
 
-- **[Leggings of the Cunning](https://u.eq2wire.com/item/2195972160)** [FABLED] — +323.5 DPS
+- **[Natural Grove Leggings](https://u.eq2wire.com/item/2035744216)** [FABLED] — +323.5 DPS
   - abilitymod 71 × 1.71 = 121.7
   - reuse 2 × 29.82 = 62.6
   - critchance 2 × 27.30 = 54.6
   - potency 3 × 19.15 = 53.6
-- **[Natural Grove Leggings](https://u.eq2wire.com/item/2035744216)** [FABLED] — +323.5 DPS
+- **[Leggings of the Cunning](https://u.eq2wire.com/item/2195972160)** [FABLED] — +323.5 DPS
   - abilitymod 71 × 1.71 = 121.7
   - reuse 2 × 29.82 = 62.6
   - critchance 2 × 27.30 = 54.6
@@ -635,12 +635,12 @@ BiS: **Kithicor's Nighthunter Shoulderpads**
   - reuse 2 × 29.82 = 59.6
   - critchance 2 × 27.30 = 51.9
   - potency 3 × 19.15 = 51.7
-- **[A'Ntasi's Mantle](https://u.eq2wire.com/item/3642046974)** [LEGENDARY] — +281.5 DPS
+- **[Mangled Gossamer Sleeves](https://u.eq2wire.com/item/1222870654)** [TREASURED] — +284.5 DPS
   - abilitymod 62 × 1.71 = 106.3
   - reuse 2 × 29.82 = 56.7
   - potency 3 × 19.15 = 49.8
   - critchance 2 × 27.30 = 49.1
-- **[Mangled Gossamer Sleeves](https://u.eq2wire.com/item/1222870654)** [TREASURED] — +281.5 DPS
+- **[Elementalist's Cowl](https://u.eq2wire.com/item/1000364691)** [LEGENDARY] — +281.5 DPS
   - abilitymod 62 × 1.71 = 106.3
   - reuse 2 × 29.82 = 56.7
   - potency 3 × 19.15 = 49.8
@@ -680,7 +680,7 @@ BiS: **Bangle of Polished Marble**, **Werewolf Hide Cuff**
   - reuse 2 × 29.82 = 56.7
   - potency 3 × 19.15 = 49.8
   - critchance 2 × 27.30 = 49.1
-- **[White Unicorn Horn Wristlet](https://u.eq2wire.com/item/1299631739)** [FABLED] — +268.5 DPS
+- **[White Unicorn Horn Wristlet](https://u.eq2wire.com/item/1299631739)** [FABLED] — +268.6 DPS
   - abilitymod 68 × 1.71 = 116.6
   - critchance 2 × 27.30 = 51.9
   - potency 3 × 19.15 = 51.7
@@ -737,27 +737,27 @@ BiS: **Resplendent Robe of Battle**
   - potency 4 × 19.00 = 70.3
   - critchance 2 × 28.10 = 67.4
   - haste 6 × 5.81 = 32.0
-- **[Black Silk Doublet](https://u.eq2wire.com/item/1394246793)** [LEGENDARY] — +306.1 DPS
-  - abilitymod 66 × 1.74 = 114.6
-  - critchance 2 × 28.10 = 50.6
-  - potency 3 × 19.00 = 49.4
-  - reuse 2 × 22.29 = 42.3
-- **[Robe of Al'Kabor](https://u.eq2wire.com/item/37982706)** [MYTHICAL · avatar] — +304.3 DPS
+- **[Robe of Al'Kabor](https://u.eq2wire.com/item/37982706)** [MYTHICAL · avatar] — +311.5 DPS
   - abilitymod 98 × 1.74 = 170.2
   - potency 4 × 19.00 = 70.3
   - critchance 2 × 28.10 = 67.4
   - castspeed 2 × 6.66 = 14.0
+- **[Black Silk Doublet](https://u.eq2wire.com/item/1394246793)** [LEGENDARY] — +303.5 DPS
+  - abilitymod 66 × 1.74 = 114.6
+  - critchance 2 × 28.10 = 50.6
+  - potency 3 × 19.00 = 49.4
+  - reuse 2 × 22.29 = 42.3
 
 ### Cloak
 
 BiS: **Cloak of Woven Vines**
 
-- **[Cloak of Woven Leaves](https://u.eq2wire.com/item/1051991351)** [FABLED] — +355.5 DPS
+- **[Cloak of Woven Vines](https://u.eq2wire.com/item/613117937)** [FABLED] — +355.5 DPS
   - abilitymod 71 × 1.74 = 123.3
   - critchance 2 × 28.10 = 56.2
   - potency 3 × 19.00 = 53.2
   - reuse 2 × 22.29 = 46.8
-- **[Cloak of Woven Vines](https://u.eq2wire.com/item/613117937)** [FABLED] — +355.5 DPS
+- **[Cloak of Woven Leaves](https://u.eq2wire.com/item/1051991351)** [FABLED] — +355.5 DPS
   - abilitymod 71 × 1.74 = 123.3
   - critchance 2 × 28.10 = 56.2
   - potency 3 × 19.00 = 53.2
@@ -772,17 +772,17 @@ BiS: **Cloak of Woven Vines**
 
 BiS: **Atramentous Dangle**, **Mana Commandant Hoop**
 
-- **[Hemoglobin Drop Earring](https://u.eq2wire.com/item/3837848726)** [TREASURED] — +345.0 DPS
-  - abilitymod 64 × 1.74 = 111.1
-  - critchance 2 × 28.10 = 53.4
-  - potency 3 × 19.00 = 51.3
-  - reuse 2 × 22.29 = 44.6
 - **[Mana Commandant Hoop](https://u.eq2wire.com/item/3577823017)** [LEGENDARY] — +345.0 DPS
   - abilitymod 64 × 1.74 = 111.1
   - critchance 2 × 28.10 = 53.4
   - potency 3 × 19.00 = 51.3
   - reuse 2 × 22.29 = 44.6
-- **[Atramentous Dangle](https://u.eq2wire.com/item/1124205607)** [LEGENDARY] — +345.0 DPS
+- **[Atramentous Dangle](https://u.eq2wire.com/item/1124205607)** [LEGENDARY] — +342.0 DPS
+  - abilitymod 64 × 1.74 = 111.1
+  - critchance 2 × 28.10 = 53.4
+  - potency 3 × 19.00 = 51.3
+  - reuse 2 × 22.29 = 44.6
+- **[Hemoglobin Drop Earring](https://u.eq2wire.com/item/3837848726)** [TREASURED] — +342.0 DPS
   - abilitymod 64 × 1.74 = 111.1
   - critchance 2 × 28.10 = 53.4
   - potency 3 × 19.00 = 51.3
@@ -892,17 +892,17 @@ BiS: **Coif of the Cunning**
 
 BiS: **Natural Grove Leggings**
 
-- **[Leggings of the Cunning](https://u.eq2wire.com/item/2195972160)** [FABLED] — +355.5 DPS
-  - abilitymod 71 × 1.74 = 123.3
-  - critchance 2 × 28.10 = 56.2
-  - potency 3 × 19.00 = 53.2
-  - reuse 2 × 22.29 = 46.8
 - **[Natural Grove Leggings](https://u.eq2wire.com/item/2035744216)** [FABLED] — +355.5 DPS
   - abilitymod 71 × 1.74 = 123.3
   - critchance 2 × 28.10 = 56.2
   - potency 3 × 19.00 = 53.2
   - reuse 2 × 22.29 = 46.8
-- **[Black Silk Breeches](https://u.eq2wire.com/item/1423378802)** [LEGENDARY] — +314.8 DPS
+- **[Leggings of the Cunning](https://u.eq2wire.com/item/2195972160)** [FABLED] — +355.5 DPS
+  - abilitymod 71 × 1.74 = 123.3
+  - critchance 2 × 28.10 = 56.2
+  - potency 3 × 19.00 = 53.2
+  - reuse 2 × 22.29 = 46.8
+- **[Black Silk Breeches](https://u.eq2wire.com/item/1423378802)** [LEGENDARY] — +318.9 DPS
   - abilitymod 66 × 1.74 = 114.6
   - critchance 2 × 28.10 = 50.6
   - potency 3 × 19.00 = 49.4
@@ -1047,12 +1047,12 @@ _Top pick per accessibility tier. ΔDPS is in each tier's own buff context, so v
 ### Cloak
 - PRE-RAID     **Cloak of Flames** [LEGENDARY] (+291.4)
 - RAID         **Mistmoore's Cloak** [FABLED] (+458.5)
-- BEST-OF-BEST **Cloak of Woven Leaves** [FABLED] (+355.5)
+- BEST-OF-BEST **Cloak of Woven Vines** [FABLED] (+355.5)
 
 ### Ear
-- PRE-RAID     **Mana Commandant Hoop** [LEGENDARY] (+246.7)
-- RAID         **Hemoglobin Drop Earring** [TREASURED] (+310.0)
-- BEST-OF-BEST **Hemoglobin Drop Earring** [TREASURED] (+345.0)
+- PRE-RAID     **Atramentous Dangle** [LEGENDARY] (+246.7)
+- RAID         **Atramentous Dangle** [LEGENDARY] (+308.1)
+- BEST-OF-BEST **Mana Commandant Hoop** [LEGENDARY] (+345.0)
 
 ### Feet
 - PRE-RAID     **Boots of Trepidation** [TREASURED] (+205.8)
@@ -1070,7 +1070,7 @@ _Top pick per accessibility tier. ΔDPS is in each tier's own buff context, so v
 - BEST-OF-BEST **Evoker's Spellbound Weave Cuffs** [FABLED] (+355.5)
 
 ### Hands
-- PRE-RAID     **Dusty Bloodstained Gloves** [TREASURED] (+251.6)
+- PRE-RAID     **Dirtied Gossamer Gloves** [TREASURED] (+251.6)
 - RAID         **Blessed Direwood Gloves** [FABLED] (+307.8)
 - BEST-OF-BEST **Blessed Direwood Gloves** [FABLED] (+338.5)
 
@@ -1081,8 +1081,8 @@ _Top pick per accessibility tier. ΔDPS is in each tier's own buff context, so v
 
 ### Legs
 - PRE-RAID     **Black Silk Breeches** [LEGENDARY] (+257.0)
-- RAID         **Leggings of the Cunning** [FABLED] (+323.5)
-- BEST-OF-BEST **Leggings of the Cunning** [FABLED] (+355.5)
+- RAID         **Natural Grove Leggings** [FABLED] (+323.5)
+- BEST-OF-BEST **Natural Grove Leggings** [FABLED] (+355.5)
 
 ### Neck
 - PRE-RAID     **Broken Gossamer Collar** [TREASURED] (+251.6)
