@@ -184,7 +184,7 @@ func main() {
 	dbPath := flag.String("db", "bis.db", "scored SQLite db (built by builddb)")
 	out := flag.String("out", "", "report output path (default: <config-or-loadout-dir>/{bis-report,upgrade-report}.md)")
 	lock := flag.String("lock", "", "comma-separated item IDs to lock (raid re-model)")
-	topN := flag.Int("top", 3, "alternatives per slot")
+	topN := flag.Int("top", -1, "loadout mode: max upgrade rows per bucket (default all); from-scratch mode: alternatives per slot (default 3)")
 	character := flag.String("character", "characters/biffels/config.toml", "character config (TOML)")
 	fight := flag.Float64("fight", constants.FightDurationSecs, "target fight length in seconds (smoothed)")
 	loadoutPath := flag.String("loadout", "", "imported loadout file to sim from (itemdex import output)")
@@ -253,7 +253,11 @@ func main() {
 		if reportPath == "" {
 			reportPath = filepath.Join(filepath.Dir(*loadoutPath), "upgrade-report.md")
 		}
-		runLoadoutReport(classData, lo, raid, items, *loadoutPath, reportPath, *topN, *fight)
+		loadoutTop := *topN
+		if loadoutTop < 0 {
+			loadoutTop = 0 // all instance rows
+		}
+		runLoadoutReport(classData, lo, raid, items, *loadoutPath, reportPath, loadoutTop, *fight)
 		return
 	}
 
@@ -267,6 +271,11 @@ func main() {
 		{"BEST-OF-BEST", raid, bis.BestFilter},
 	}
 
+	reportTop := *topN
+	if reportTop < 0 {
+		reportTop = 3 // default alternatives per slot
+	}
+
 	var reports []bis.BaselineReport
 	var allRows []store.ScoreRow
 	for _, t := range tiers {
@@ -277,7 +286,7 @@ func main() {
 		bySlot := bis.SlotCandidates(items, t.keep)
 		set := bis.BuildSet(profile, lo, bySlot, nil, maxBuildPasses, classData.AutoAttackMultiplier, *fight)
 		weights := bis.ConvergedWeights(set)
-		slotReports := withFixedPrimary(bis.BuildSlotReports(set, bySlot, weights, *topN), mainItem, haveMain)
+		slotReports := withFixedPrimary(bis.BuildSlotReports(set, bySlot, weights, reportTop), mainItem, haveMain)
 		allRows = append(allRows, scoreRows(slotReports, strings.ToLower(t.name))...)
 		reports = append(reports, bis.BaselineReport{Name: t.name, Weights: weights, Reports: slotReports})
 	}
@@ -291,7 +300,7 @@ func main() {
 		}
 		set := bis.BuildSet(profile, lo, bySlot, locked, maxBuildPasses, classData.AutoAttackMultiplier, *fight)
 		weights := bis.ConvergedWeights(set)
-		slotReports := withFixedPrimary(bis.BuildSlotReports(set, bySlot, weights, *topN), mainItem, haveMain)
+		slotReports := withFixedPrimary(bis.BuildSlotReports(set, bySlot, weights, reportTop), mainItem, haveMain)
 		reports = append(reports, bis.BaselineReport{
 			Name: fmt.Sprintf("RAID (locked: %s)", *lock), Weights: weights, Reports: slotReports,
 		})
