@@ -21,6 +21,10 @@ _last_update: 1782445103_
 | Ear | [Soul Snatcher Earrings](https://u.eq2wire.com/item/2136491350) (258) | **[Atramentous Dangle](https://u.eq2wire.com/item/1124205607) +10 (+0.2%)** | [Mana Commandant Hoop](https://u.eq2wire.com/item/3577823017) +10 (+0.2%) |
 | Legs | [Ripped Gossamer Leggings](https://u.eq2wire.com/item/816354757) (258) | **[Black Silk Breeches](https://u.eq2wire.com/item/1423378802) +6 (+0.1%)** |  |
 | Secondary | [Shock](https://u.eq2wire.com/item/3806934134) (508) | **[Blood Fire, Burning Essence of Thule](https://u.eq2wire.com/item/1118405699) +1 (+0.0%)** |  |
+| Wrist | [Bangle of Fright](https://u.eq2wire.com/item/1012473856) (230) | — |  |
+| Ear | [Atramentous Dangle](https://u.eq2wire.com/item/1124205607) (269) | — |  |
+| Finger | [Mistmoore Sage's Signet](https://u.eq2wire.com/item/556654298) (258) | — |  |
+| Finger | [Bloodfang Ring](https://u.eq2wire.com/item/2721982512) (258) | — |  |
 
 ### Raid look-out
 
@@ -42,6 +46,7 @@ _last_update: 1782445103_
 | Shoulders | [Mangled Gossamer Sleeves](https://u.eq2wire.com/item/1222870654) (258) | **[Kithicor's Nighthunter Shoulderpads](https://u.eq2wire.com/item/1008501946) +10 (+0.2%)** |  |
 | Ear | [Soul Snatcher Earrings](https://u.eq2wire.com/item/2136491350) (258) | **[Atramentous Dangle](https://u.eq2wire.com/item/1124205607) +10 (+0.2%)** | [Mana Commandant Hoop](https://u.eq2wire.com/item/3577823017) +10 (+0.2%) |
 | Neck | [Broken Gossamer Collar](https://u.eq2wire.com/item/2982466857) (258) | **[Necklace of Natural Power](https://u.eq2wire.com/item/4243055992) +6 (+0.1%)** |  |
+| Ear | [Atramentous Dangle](https://u.eq2wire.com/item/1124205607) (269) | — |  |
 
 ### Best-of-best (aspirational)
 
@@ -58,11 +63,11 @@ _last_update: 1782445103_
 | Hands | [Adrenaline Mitts](https://u.eq2wire.com/item/2731982702) (232) | **[Blessed Direwood Gloves](https://u.eq2wire.com/item/427239084) +57 (+0.9%)** | [Dirtied Gossamer Gloves](https://u.eq2wire.com/item/43157329) +42 (+0.7%) |
 | Cloak | [Cloak of Flames](https://u.eq2wire.com/item/264598753) (372) | **[Mistmoore's Cloak](https://u.eq2wire.com/item/1061861823) +48 (+0.8%)** |  |
 | Head | [Cap of the Tempest](https://u.eq2wire.com/item/3016698706) (210) | **[Coif of the Cunning](https://u.eq2wire.com/item/2340205443) +35 (+0.6%)** | [Veil Scarf](https://u.eq2wire.com/item/3729856282) +28 (+0.5%) |
-| Finger | [Bloodfang Ring](https://u.eq2wire.com/item/2721982512) (258) | **[Band of Enchanted Leaves](https://u.eq2wire.com/item/3388239584) +34 (+0.6%)** | [Knotted Ring](https://u.eq2wire.com/item/1305861754) +31 (+0.5%) |
 | Finger | [Mistmoore Sage's Signet](https://u.eq2wire.com/item/556654298) (258) | **[Band of Enchanted Leaves](https://u.eq2wire.com/item/3388239584) +34 (+0.6%)** | [Knotted Ring](https://u.eq2wire.com/item/1305861754) +31 (+0.5%) |
+| Finger | [Bloodfang Ring](https://u.eq2wire.com/item/2721982512) (258) | **[Band of Enchanted Leaves](https://u.eq2wire.com/item/3388239584) +34 (+0.6%)** | [Knotted Ring](https://u.eq2wire.com/item/1305861754) +31 (+0.5%) |
 | Legs | [Ripped Gossamer Leggings](https://u.eq2wire.com/item/816354757) (258) | **[Natural Grove Leggings](https://u.eq2wire.com/item/2035744216) +31 (+0.5%)** | [Leggings of the Cunning](https://u.eq2wire.com/item/2195972160) +31 (+0.5%) |
-| Neck | [Broken Gossamer Collar](https://u.eq2wire.com/item/2982466857) (258) | **[Necklace of Pain](https://u.eq2wire.com/item/457044369) +10 (+0.2%)** | [Necklace of Natural Power](https://u.eq2wire.com/item/4243055992) +6 (+0.1%) |
 | Ear | [Soul Snatcher Earrings](https://u.eq2wire.com/item/2136491350) (258) | **[Bauble of the Chime](https://u.eq2wire.com/item/3105079100) +10 (+0.2%)** | [Atramentous Dangle](https://u.eq2wire.com/item/1124205607) +10 (+0.2%) |
+| Neck | [Broken Gossamer Collar](https://u.eq2wire.com/item/2982466857) (258) | **[Necklace of Pain](https://u.eq2wire.com/item/457044369) +10 (+0.2%)** | [Necklace of Natural Power](https://u.eq2wire.com/item/4243055992) +6 (+0.1%) |
 | Ear | [Atramentous Dangle](https://u.eq2wire.com/item/1124205607) (269) | **[Bauble of the Chime](https://u.eq2wire.com/item/3105079100) +2 (+0.0%)** |  |
 
 ## Seeded optimization
