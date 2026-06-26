@@ -52,7 +52,7 @@ _last_update: 1782445103_
 
 | Slot | Wearing | Best upgrade | Alternative |
 |------|---------|--------------|-------------|
-| Wrist | [Bracelet of Haunted Visions](https://u.eq2wire.com/item/1967575301) (192) | **[Bracelet of the Chime](https://u.eq2wire.com/item/1934029673) +169 (+2.8%)** | [Bangle of Polished Marble](https://u.eq2wire.com/item/2870641579) +82 (+1.3%) |
+| Wrist | [Bracelet of Haunted Visions](https://u.eq2wire.com/item/1967575301) (192) | **[Bracelet of the Chime](https://u.eq2wire.com/item/1934029673) +172 (+2.8%)** | [Bangle of Polished Marble](https://u.eq2wire.com/item/2870641579) +82 (+1.3%) |
 | Wrist | [Bangle of Fright](https://u.eq2wire.com/item/1012473856) (230) | **[Bracelet of the Chime](https://u.eq2wire.com/item/1934029673) +138 (+2.3%)** | [Bangle of Polished Marble](https://u.eq2wire.com/item/2870641579) +50 (+0.8%) |
 | Secondary | [Shock](https://u.eq2wire.com/item/3806934134) (508) | **[Wrath](https://u.eq2wire.com/item/3064748413) +115 (+1.9%)** | [Blade of the Swarm](https://u.eq2wire.com/item/1661709365) +108 (+1.8%) |
 | Forearms | [Crested Lupine Bands](https://u.eq2wire.com/item/1388313683) (187) | **[Evoker's Spellbound Weave Cuffs](https://u.eq2wire.com/item/2961809192) +99 (+1.6%)** | [Insulated Sleeves of Focus](https://u.eq2wire.com/item/1357725342) +77 (+1.3%) |

@@ -214,6 +214,169 @@ git commit -m "feat(bis): render em dash for no-upgrade instance rows"
 
 ---
 
+## Task 3: Deterministic ordering (so committed reports diff cleanly)
+
+**Problem:** Ranking sorts compare only ΔDPS and the code ranges over slot maps, so tied rows (e.g. multiple `+10` upgrades, all the `—`/0 rows) reshuffle every rebuild — noisy diffs on committed reports.
+
+**Files:**
+- Modify: `internal/bis/loadoutset.go` (candidate sort + cross-instance sort), `internal/bis/report.go` (`SlotCandidatesScored`), `internal/bis/render.go` (weight table sort).
+- Test: `internal/bis/loadoutset_test.go`, `internal/bis/report_test.go`.
+
+- [ ] **Step 1: Failing test for the upgrade report**
+
+Append to `internal/bis/loadoutset_test.go`:
+
+```go
+func TestRankSlotUpgradesDeterministicTieBreak(t *testing.T) {
+	lo := store.Loadout{Main: model.Weapon{AvgDamage: 160, MinDamage: 100, MaxDamage: 220, DelaySecs: 4}}
+	set := NewSet(model.StatBlock{}, lo, 1.0, 600)
+	set.Equipped["Finger"] = []store.ScorableItem{{ID: 1, Name: "Worn", Slot: "Finger"}}
+	optimizable := map[string]bool{"Finger": true}
+	// Two candidates with identical stats => identical ΔDPS (a tie).
+	bySlot := map[string][]store.ScorableItem{
+		"Finger": {
+			{ID: 77, Name: "RingHi", Slot: "Finger", Stats: model.StatBlock{MultiAttack: 20}},
+			{ID: 33, Name: "RingLo", Slot: "Finger", Stats: model.StatBlock{MultiAttack: 20}},
+		},
+	}
+
+	got := RankSlotUpgrades(set, bySlot, optimizable, 0)
+	// Tie broken by candidate id: lower id is Best.
+	require.Equal(t, 33, got[0].Best.ID)
+	require.Equal(t, 77, got[0].Alt.ID)
+
+	// Whole result is stable across repeated runs.
+	for i := 0; i < 5; i++ {
+		require.Equal(t, got, RankSlotUpgrades(set, bySlot, optimizable, 0))
+	}
+}
+```
+
+- [ ] **Step 2: Run it — expect flaky/fail**
+
+Run: `go test ./internal/bis/ -run TestRankSlotUpgradesDeterministicTieBreak -count=10`
+Expected: FAIL on at least one of the 10 runs (the tie currently resolves by unstable sort, so `Best.ID` is sometimes 77).
+
+- [ ] **Step 3: Add tiebreakers in `loadoutset.go`**
+
+Replace the candidate sort:
+
+```go
+			sort.Slice(cands, func(i, j int) bool { return cands[i].Delta > cands[j].Delta })
+```
+
+with:
+
+```go
+			sort.Slice(cands, func(i, j int) bool {
+				if cands[i].Delta != cands[j].Delta {
+					return cands[i].Delta > cands[j].Delta
+				}
+				return cands[i].ID < cands[j].ID
+			})
+```
+
+Replace the cross-instance sort:
+
+```go
+	sort.Slice(out, func(i, j int) bool { return out[i].Best.Delta > out[j].Best.Delta })
+```
+
+with:
+
+```go
+	sort.Slice(out, func(i, j int) bool {
+		if out[i].Best.Delta != out[j].Best.Delta {
+			return out[i].Best.Delta > out[j].Best.Delta
+		}
+		if out[i].Slot != out[j].Slot {
+			return out[i].Slot < out[j].Slot
+		}
+		if out[i].EquippedID != out[j].EquippedID {
+			return out[i].EquippedID < out[j].EquippedID
+		}
+		if out[i].EquippedName != out[j].EquippedName {
+			return out[i].EquippedName < out[j].EquippedName
+		}
+		return out[i].Best.ID < out[j].Best.ID
+	})
+```
+
+- [ ] **Step 4: Failing test for the from-scratch report**
+
+Append to `internal/bis/report_test.go`:
+
+```go
+func TestSlotCandidatesScoredDeterministicTieBreak(t *testing.T) {
+	lo := store.Loadout{Main: model.Weapon{AvgDamage: 160, DelaySecs: 4}}
+	set := NewSet(model.StatBlock{}, lo, 1.0, 600)
+	weights := map[string]float64{}
+	// Identical stats => identical ΔDPS tie.
+	cands := []store.ScorableItem{
+		{ID: 77, Name: "Hi", Slot: "Chest", Stats: model.StatBlock{Flurry: 10}},
+		{ID: 33, Name: "Lo", Slot: "Chest", Stats: model.StatBlock{Flurry: 10}},
+	}
+
+	for i := 0; i < 5; i++ {
+		got := SlotCandidatesScored(set, "Chest", cands, weights)
+		require.Equal(t, 33, got[0].Item.ID) // lower id first on tie
+		require.Equal(t, 77, got[1].Item.ID)
+	}
+}
+```
+
+(If `report_test.go` lacks imports for `store`/`model`/`require`, add them.)
+
+- [ ] **Step 5: Add the tiebreaker in `report.go`**
+
+Replace:
+
+```go
+	sort.Slice(out, func(i, j int) bool { return out[i].Delta > out[j].Delta })
+```
+
+with:
+
+```go
+	sort.Slice(out, func(i, j int) bool {
+		if out[i].Delta != out[j].Delta {
+			return out[i].Delta > out[j].Delta
+		}
+		return out[i].Item.ID < out[j].Item.ID
+	})
+```
+
+- [ ] **Step 6: Tiebreak the weight table in `render.go`** (for fully stable `bis-report.md`)
+
+Replace:
+
+```go
+	sort.Slice(keys, func(i, j int) bool { return weights[keys[i]] > weights[keys[j]] })
+```
+
+with:
+
+```go
+	sort.Slice(keys, func(i, j int) bool {
+		if weights[keys[i]] != weights[keys[j]] {
+			return weights[keys[i]] > weights[keys[j]]
+		}
+		return keys[i] < keys[j]
+	})
+```
+
+- [ ] **Step 7: Run all tests (with repeats to catch residual flakiness)**
+
+Run: `go test ./internal/bis/ -count=5`
+Expected: PASS on all runs.
+
+- [ ] **Step 8: Commit**
+
+```bash
+git add internal/bis/loadoutset.go internal/bis/loadoutset_test.go internal/bis/report.go internal/bis/report_test.go internal/bis/render.go
+git commit -m "fix(bis): deterministic ranking tiebreakers so committed reports diff cleanly"
+```
+
 ## Final verification
 
 - [ ] `go build ./... && go vet ./... && go test ./...` — all green.

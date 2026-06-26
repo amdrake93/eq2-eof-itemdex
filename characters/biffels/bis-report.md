@@ -435,12 +435,12 @@ BiS: **Atramentous Dangle**, **Crystal Gift**
   - reuse 2 × 29.82 = 59.6
   - critchance 2 × 27.30 = 51.9
   - potency 3 × 19.15 = 51.7
-- **[Hemoglobin Drop Earring](https://u.eq2wire.com/item/3837848726)** [TREASURED] — +308.1 DPS
+- **[Mana Commandant Hoop](https://u.eq2wire.com/item/3577823017)** [LEGENDARY] — +308.1 DPS
   - abilitymod 64 × 1.71 = 109.7
   - reuse 2 × 29.82 = 59.6
   - critchance 2 × 27.30 = 51.9
   - potency 3 × 19.15 = 51.7
-- **[Mana Commandant Hoop](https://u.eq2wire.com/item/3577823017)** [LEGENDARY] — +308.1 DPS
+- **[Hemoglobin Drop Earring](https://u.eq2wire.com/item/3837848726)** [TREASURED] — +308.1 DPS
   - abilitymod 64 × 1.71 = 109.7
   - reuse 2 × 29.82 = 59.6
   - critchance 2 × 27.30 = 51.9
@@ -515,12 +515,12 @@ BiS: **Blessed Direwood Gloves**
   - reuse 2 × 29.82 = 59.6
   - critchance 2 × 27.30 = 51.9
   - potency 3 × 19.15 = 51.7
-- **[Dusty Bloodstained Gloves](https://u.eq2wire.com/item/1940273423)** [TREASURED] — +284.4 DPS
+- **[Dirtied Gossamer Gloves](https://u.eq2wire.com/item/43157329)** [TREASURED] — +281.3 DPS
   - abilitymod 62 × 1.71 = 106.3
   - reuse 2 × 29.82 = 56.7
   - potency 3 × 19.15 = 49.8
   - critchance 2 × 27.30 = 49.1
-- **[Dirtied Gossamer Gloves](https://u.eq2wire.com/item/43157329)** [TREASURED] — +281.3 DPS
+- **[Dusty Bloodstained Gloves](https://u.eq2wire.com/item/1940273423)** [TREASURED] — +281.3 DPS
   - abilitymod 62 × 1.71 = 106.3
   - reuse 2 × 29.82 = 56.7
   - potency 3 × 19.15 = 49.8
@@ -635,12 +635,12 @@ BiS: **Kithicor's Nighthunter Shoulderpads**
   - reuse 2 × 29.82 = 59.6
   - critchance 2 × 27.30 = 51.9
   - potency 3 × 19.15 = 51.7
-- **[Mangled Gossamer Sleeves](https://u.eq2wire.com/item/1222870654)** [TREASURED] — +284.5 DPS
+- **[Elementalist's Cowl](https://u.eq2wire.com/item/1000364691)** [LEGENDARY] — +281.5 DPS
   - abilitymod 62 × 1.71 = 106.3
   - reuse 2 × 29.82 = 56.7
   - potency 3 × 19.15 = 49.8
   - critchance 2 × 27.30 = 49.1
-- **[Elementalist's Cowl](https://u.eq2wire.com/item/1000364691)** [LEGENDARY] — +281.5 DPS
+- **[Mangled Gossamer Sleeves](https://u.eq2wire.com/item/1222870654)** [TREASURED] — +281.5 DPS
   - abilitymod 62 × 1.71 = 106.3
   - reuse 2 × 29.82 = 56.7
   - potency 3 × 19.15 = 49.8
@@ -772,12 +772,12 @@ BiS: **Cloak of Woven Vines**
 
 BiS: **Atramentous Dangle**, **Mana Commandant Hoop**
 
-- **[Mana Commandant Hoop](https://u.eq2wire.com/item/3577823017)** [LEGENDARY] — +345.0 DPS
+- **[Atramentous Dangle](https://u.eq2wire.com/item/1124205607)** [LEGENDARY] — +342.0 DPS
   - abilitymod 64 × 1.74 = 111.1
   - critchance 2 × 28.10 = 53.4
   - potency 3 × 19.00 = 51.3
   - reuse 2 × 22.29 = 44.6
-- **[Atramentous Dangle](https://u.eq2wire.com/item/1124205607)** [LEGENDARY] — +342.0 DPS
+- **[Mana Commandant Hoop](https://u.eq2wire.com/item/3577823017)** [LEGENDARY] — +342.0 DPS
   - abilitymod 64 × 1.74 = 111.1
   - critchance 2 × 28.10 = 53.4
   - potency 3 × 19.00 = 51.3
@@ -1052,7 +1052,7 @@ _Top pick per accessibility tier. ΔDPS is in each tier's own buff context, so v
 ### Ear
 - PRE-RAID     **Atramentous Dangle** [LEGENDARY] (+246.7)
 - RAID         **Atramentous Dangle** [LEGENDARY] (+308.1)
-- BEST-OF-BEST **Mana Commandant Hoop** [LEGENDARY] (+345.0)
+- BEST-OF-BEST **Atramentous Dangle** [LEGENDARY] (+342.0)
 
 ### Feet
 - PRE-RAID     **Boots of Trepidation** [TREASURED] (+205.8)
